@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS - Container Services - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <header>
+        <h1>AWS DevOps Notes</h1>
+    </header>
+    <main>
+        
+<article>
+    <h1 id="docker">Docker 一般</h1>
+<p><img alt="" src="_attachment/image_467.png" /></p>
+<ul>
+<li>レジストリは  dockerhub または Amazon ECR</li>
+<li>ECR 使う場合の Dockerfile の FROM は ECR の URL になる。</li>
+</ul>
+<pre><code>FROM 012345678910.dkr.ecr.us-east-1.amazonaws.com/base-image
+...
+</code></pre>
+<ul>
+<li><a href="https://aws.amazon.com/jp/blogs/news/build-a-continuous-delivery-pipeline-for-your-container-images-with-amazon-ecr-as-source/">https://aws.amazon.com/jp/blogs/news/build-a-continuous-delivery-pipeline-for-your-container-images-with-amazon-ecr-as-source/</a></li>
+</ul>
+<p>コンテナイメージ作成のベストプラクティス？</p>
+<p><img alt="" src="_attachment/image_468.png" /></p>
+<ul>
+<li>1つめは再現性に関するプラクティス</li>
+<li>続く3つはサイズに関するプラクティス？</li>
+<li>最後のは大きいベースイメージを使わないということでサイズに関することでもあるが、構成管理やセキュリティにも関わる。</li>
+</ul>
+<p>コンテナを使った CI/CD でのアーティファクト・デプロイは Docker イメージ単位となり、そのバージョニングはタグで行える。</p>
+<p><img alt="" src="_attachment/image_469.png" /><img alt="" src="_attachment/image_470.png" /></p>
+<ul>
+<li>ベースイメージをセキュリティチームが提供している。</li>
+</ul>
+<h1 id="aws">AWS のコンテナサービス</h1>
+<p><img alt="" src="_attachment/image_471.png" /><img alt="" src="_attachment/image_472.png" /></p>
+<p>コントロールプレーン</p>
+<ul>
+<li>ECS/EKS</li>
+<li>コンテナのデプロイ・死活監視等。</li>
+<li>AZ サービス</li>
+</ul>
+<p>データプレーン</p>
+<ul>
+<li>コンテナのホスト: OS + Docker + エージェント (kubelet 等)</li>
+<li>
+<p>EC2</p>
+<ul>
+<li>リザーブドやスポットインスタンスも使える。</li>
+<li>EC2 Auto Scaling でスケーリングできる。</li>
+<li>ECS 用の AMI を使用する。</li>
+</ul>
+</li>
+<li>
+<p>Fargate</p>
+<ul>
+<li>インスタンスクラスタのプロビジョニングやスケールが不要。</li>
+</ul>
+</li>
+</ul>
+<p>レジストリ</p>
+<ul>
+<li>ECR: Elastic Container Registry<ul>
+<li>パブリックには公開できない。</li>
+<li>S3 をストレージとして使用。</li>
+<li>暗号化、IAM によるアクセス制限がある。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_473.png" /></p>
+<ul>
+<li>＊ 印は Fargate についての説明</li>
+</ul>
+<hr />
+<h1 id="amazon-ecs">Amazon ECS</h1>
+<p>概要</p>
+<p><img alt="" src="_attachment/20190731_AmazonECS_DeepDive_AWSBlackBelt.png" /></p>
+<p>Task</p>
+<ul>
+<li>1つのタスクを構成する複数のコンテナ群が起動される。</li>
+<li>Task Definition でタスク内に起動する各コンテナを実際に定義する。</li>
+</ul>
+<p><a href="https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/userguide/create-task-definition.html">Task Definition</a></p>
+<ul>
+<li>(複数の)コンテナ定義、コンテナの CPU/メモリサイズ、タスク実行ロール</li>
+<li>コンテナへのボリュームマッピングやポートマッピング</li>
+<li>ネットワークモード (VPC)</li>
+</ul>
+<p>Service</p>
+<ul>
+<li>Task の並列実行数や ELB の指定。</li>
+<li>起動タイプ (EC2, Fargate) の指定。</li>
+</ul>
+<p>Cluster</p>
+<ul>
+<li>EC2 or Fargate</li>
+<li><img alt="" src="_attachment/image_474.png" /></li>
+</ul>
+<p>Ref.</p>
+<ul>
+<li><a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20200422_BlackBelt_Amazon_ECS_Share.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20200422_BlackBelt_Amazon_ECS_Share.pdf</a></li>
+<li><a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20190731_AWS-BlackBelt_AmazonECS_DeepDive_Rev.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20190731_AWS-BlackBelt_AmazonECS_DeepDive_Rev.pdf</a></li>
+</ul>
+<h2 id="ecs-cluster">ECS Cluster</h2>
+<ul>
+<li>Fargate / EC2 / 外部クラスター</li>
+<li>クラスターテンプレートは CloudFormation テンプレート。クラスターが CloudFormation スタックで展開される。</li>
+</ul>
+<p><img alt="" src="_attachment/image_475.png" /></p>
+<p>EC2 のクラスターを作成する場合、以下のような項目を指定する:</p>
+<ul>
+<li>インスタンスタイプ (t2-micro 等)</li>
+<li>
+<p>インスタンス数</p>
+<ul>
+<li>指定したインスタンス数を起動する Auto Scaling グループが作成される。</li>
+<li>クラスタ作成後にインスタンス数を変更したい場合は、ASG を直接編集する。</li>
+</ul>
+</li>
+<li>
+<p>使用する AMI</p>
+<ul>
+<li>通常は ECS Agent コンテナを起動する AWS 管理の Amazon Linux AMI を使用。</li>
+</ul>
+</li>
+<li>
+<p>ルート EBS ボリュームサイズ</p>
+</li>
+<li>キーペア</li>
+<li>
+<p>VPC・サブネット</p>
+<ul>
+<li>複数サブネットで Multi-AZ の HA 構成にできる。</li>
+</ul>
+</li>
+<li>
+<p>セキュリティグループ</p>
+<ul>
+<li>タスク(=コンテナ)へのインバウンド接続ポートもここで許可する必要がある。</li>
+</ul>
+</li>
+<li>
+<p>コンテナインスタンス IAM ロール</p>
+<ul>
+<li>ECS Agent が ECS API を呼び出すためのロール</li>
+</ul>
+</li>
+</ul>
+<p>同じ ECS クラスタに Fargate で動くタスクと、EC2 インスタンス上で動くタスクを共存させることができる。
+- クラスタ」と「タスク実行方式（Capacity Provider／Launch Type）」を切り分けて考える</p>
+<table>
+<thead>
+<tr>
+<th>レイヤ</th>
+<th>役割</th>
+<th>補足</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>クラスタ</strong></td>
+<td>タスク実行の「論理的な入れ物」。</td>
+<td>1 クラスタ内に <strong>Fargate Capacity Provider</strong> と <strong>Auto Scaling Group (EC2) Capacity Provider</strong> を<strong>両方登録</strong>できる。 <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/clusters.html?utm_source=chatgpt.com">docs.aws.amazon.com</a></td>
+</tr>
+<tr>
+<td><strong>Capacity Provider</strong></td>
+<td>タスクを <strong>どこで</strong>起動するかを決める設定。</td>
+<td>- Fargate / Fargate Spot  <br>- EC2（ASG で管理するコンテナインスタンス）</td>
+</tr>
+<tr>
+<td><strong>タスク / サービス</strong></td>
+<td>実行単位。</td>
+<td>起動時に <strong>Launch Type</strong> か <strong>Capacity Provider Strategy</strong> を指定して「Fargate で走るか / EC2 で走るか」を決定する。</td>
+</tr>
+<tr>
+<td>運用パターン: 基幹 API サービスを Auto Scaling Group（EC2）で常時稼働させ、バッチ処理や一時的負荷対応を Fargate Spot でコスト最適化、</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="task-definition">Task Definition</h2>
+<p><img alt="" src="_attachment/image_476.png" /></p>
+<ul>
+<li>アプリケーションで実行するコンテナ群のワンセットの定義。</li>
+<li>Task Definition で定義されたコンテナ群がクラスタ内のインスタンスで実行される。</li>
+<li>ECS Agent もコンテナとして並行して動作している。</li>
+<li><a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html">https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ecs-taskdefinition.html</a></li>
+</ul>
+<p><img alt="" src="_attachment/image_477.png" /></p>
+<h3 id="family">family</h3>
+<ul>
+<li>タスク定義の名前。family + revision でタスク定義を特定する。</li>
+<li>タスク定義はイミュータブルなので、タスク定義更新時は新しい revision を作成する必要がある。</li>
+</ul>
+<p><img alt="" src="_attachment/image_478.png" /></p>
+<h3 id="containerdefinitions">containerDefinitions</h3>
+<ul>
+<li>各コンテナの定義 (containerDefinition) のリスト。</li>
+<li>イメージやポートマッピング等、docker run に指定するパラメータとなる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_479.png" /></p>
+<ul>
+<li>
+<p>memory/memoryReservation: 各コンテナのメモリ上限・予約指定 (オプショナル)</p>
+<ul>
+<li>タスクサイズ (cpu/memory) がタスク全体の割り当てサイズを指定する。</li>
+</ul>
+</li>
+<li>
+<p>環境変数の設定</p>
+<ul>
+<li>environment</li>
+<li>secrets<ul>
+<li>ASM/SSM Parameter Store のパラメータ名の ARN で参照。</li>
+<li>タスク実行ロールでアクセス権が必要。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_480.png" /></p>
+<ul>
+<li>logConfiguration: docker run --log-driver オプションの指定。<ul>
+<li>"awslogs" は CloudWatch agent 不要でログを送れる。</li>
+<li><img alt="" src="_attachment/image_481.png" /></li>
+</ul>
+</li>
+</ul>
+<h3 id="taskrolearnexecutionrolearn">taskRoleARn/executionRoleArn</h3>
+<p><img alt="" src="_attachment/image_482.png" /></p>
+<p>タスクロール (taskRoleArn)</p>
+<ul>
+<li>Task Definition で設定。コンテナ内のアプリケーションに割り当てるロール。</li>
+<li>ECS タスク ("ecs-tasks.amazonaws.com") に AssumeRole を許可する信頼ポリシーをもつロールを作成する。</li>
+<li>設定すると ECS Agent により AWS_CONTAINER_CREDENTIALS_RELATIVE_URI という環境変数が設定され、コンテナ内の SDK/CLI はこの環境変数があるとそちらからクリデンシャルを取得する。</li>
+<li><a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html">https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html</a></li>
+</ul>
+<pre><code>$ curl 169.254.170.2$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI
+{
+    &quot;AccessKeyId&quot;: &quot;ACCESS_KEY_ID&quot;,
+    &quot;Expiration&quot;: &quot;EXPIRATION_DATE&quot;,
+    &quot;RoleArn&quot;: &quot;TASK_ROLE_ARN&quot;,
+    &quot;SecretAccessKey&quot;: &quot;SECRET_ACCESS_KEY&quot;,
+    &quot;Token&quot;: &quot;SECURITY_TOKEN_STRING&quot;
+}
+</code></pre>
+<p>タスク実行ロール</p>
+<ul>
+<li>Task Definition で設定する、ECS Agent に使用されるロール。</li>
+<li>Fargate や外部インスタンスの場合、タスク実行ロールでコンテナイメージのプル、コンテナログの CloudWatch Logs への書き込みを許可する。</li>
+<li>
+<p>EC2 クラスターの場合はコンテナインスタンスロールで許可がカバー出来ていれば不要。</p>
+<ul>
+<li>Task Definition 毎に追加の許可が必要な場合はこちらも使用。</li>
+<li>例: containerDefinition の secrets で SSM Parameter Store を参照する場合など</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html">https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html</a></p>
+</li>
+</ul>
+<p>コンテナインスタンスロール</p>
+<ul>
+<li>ECS クラスターに指定する。</li>
+<li>クラスターの EC2 インスタンスのインスタンスロールとして設定される。</li>
+<li>ECS Agent に適用されるロール。</li>
+</ul>
+<h3 id="networkmode">networkMode</h3>
+<p><img alt="" src="_attachment/image_483.png" />
+- Fargate は awsvpc モードのみ。EC2 は4種類から選べる
+<img alt="" src="Pasted%20image%2020250612135039.png" /></p>
+<h3 id="task-definition_1">Task Definitionの実行</h3>
+<p>Task Definition を直接実行する run-task と、Service で指定数のタスク起動を維持する方法の2つがある。</p>
+<p><img alt="" src="_attachment/image_484.png" /></p>
+<p>Task Definition は EventBridge からも実行できる:</p>
+<p><img alt="" src="_attachment/image_485.png" /></p>
+<h2 id="service">Service</h2>
+<p>Service は ECS Cluster 内に作成し、起動する Task Definition とタスク数等を指定する。</p>
+<p><img alt="" src="_attachment/image_486.png" /><img alt="" src="_attachment/image_487.png" /></p>
+<p>Fargate の場合 awsvpc ネットワークモードとし、Service の設定で接続する VPC/サブネット(=AZ) を指定する。</p>
+<p><img alt="" src="_attachment/image_488.png" /></p>
+<h3 id="service-elb">Service の ELB 連携</h3>
+<p>起動したタスクをターゲットグループに追加する。</p>
+<p>httpd などインバウンド接続されるサーバを立てる場合には必須。</p>
+<p><img alt="" src="_attachment/image_489.png" /></p>
+<p>動的ポートマッピングを ALB で使用するため、TaskDefinition のポートマッピング定義でホストポートを 0 (ANY) に設定することで動的にポートがアサインされる。</p>
+<pre><code>      &quot;portMappings&quot;: [
+        {
+          &quot;hostPort&quot;: 0,
+          &quot;protocol&quot;: &quot;tcp&quot;,
+          &quot;containerPort&quot;: 80
+        }
+      ],
+</code></pre>
+<p>クラスタの EC2 インスタンスのセキュリティグループで、ALB にアサインしたセキュリティグループからの全トラフィックの接続を許可する。</p>
+<p><img alt="" src="_attachment/image_490.png" /></p>
+<p>Service のロードバランサ設定で ALB の ARN を指定する。</p>
+<p><img alt="" src="_attachment/image_491.png" /></p>
+<p>ALB のリスナールールの追加とその宛先のターゲットグループの設定を行う。</p>
+<p><img alt="" src="_attachment/image_492.png" /></p>
+<h3 id="service-auto-scaling">Service Auto Scaling</h3>
+<p>平均 CPU 使用率などのメトリクスで Auto Scaling で Service の維持タスク数を増減する。</p>
+<p>EC2 クラスタの場合、EC2 インスタンスも自動で増える訳でないので自前で EC2 Auto Scaling も設定する必要がある。(Beanstalk の Docker ECS を使うと両方のスケーリングを設定してくれる)</p>
+<p><img alt="" src="_attachment/image_493.png" /><img alt="" src="_attachment/image_494.png" /><img alt="" src="_attachment/image_495.png" /></p>
+<h2 id="_1">インスタンスへのタスク配置</h2>
+<p><img alt="" src="_attachment/image_496.png" /></p>
+<p>例: ポートマッピングでホストのポートを占有するタスクを複数個起動するには、その個数分のインスタンスが必要。</p>
+<p><img alt="" src="_attachment/image_497.png" /></p>
+<ul>
+<li>binpack ... コンテナをホスト集中することでコストを最適化</li>
+</ul>
+<p>forceNewDeployment</p>
+<ul>
+<li>UpdateService のオプション</li>
+<li>latest タグのレポジトリのイメージが更新されていた場合に、サービス更新しても新しいバージョンはデプロイされないが、このオプションを指定することで新しいイメージがデプロイされる。</li>
+<li><a href="https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_UpdateService.html">https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_UpdateService.html</a></li>
+</ul>
+<hr />
+<h1 id="aws-fargate">AWS Fargate</h1>
+<p>特徴</p>
+<ul>
+<li>ECS cluster インスタンスのプロビジョニング・スケーリング不要</li>
+<li>パッチ適用やアップグレードのメンテナンス不要</li>
+<li>ECS と Amazon EKS の両方をサポート</li>
+<li>1 秒単位の 使用量をベースとして課金</li>
+<li>Ref. <a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20190925_AWS-BlackBelt_AWSFargate.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20190925_AWS-BlackBelt_AWSFargate.pdf</a></li>
+</ul>
+<p><img alt="" src="_attachment/image_498.png" /></p>
+<ul>
+<li>タスク毎にCPUとメモリサイズの組み合わせを指定。</li>
+<li>オプションでコンテナレベルの cpu, memory 指定もできる。</li>
+</ul>
+<h2 id="fargate">Fargate のストレージ</h2>
+<ul>
+<li>レイヤストレージ ... コンテナ毎に独立。</li>
+<li>ボリュームストレージ ... コンテナ間で共有。タスク定義でマウントを指定する。</li>
+<li>どちらも揮発性でタスク停止で消去される。</li>
+</ul>
+<p><img alt="" src="_attachment/image_499.png" /><img alt="" src="_attachment/image_500.png" /></p>
+<h2 id="fargate_1">Fargate のネットワークモード</h2>
+<p>タスク毎に ENI が割り当てられ、VPC に接続される。</p>
+<p><img alt="" src="_attachment/image_501.png" /></p>
+<p>外部からのインバウンド接続は ELB で受け付ける:</p>
+<ul>
+<li>ALB/NLB が使用可能。</li>
+<li>ターゲットグループでタスクに割り当てられた ENI の IP を設定する。</li>
+<li>ELB からタスクへのインバウンド通信を受け付けるセキュリティグループ設定も必要。</li>
+</ul>
+<p><img alt="" src="_attachment/image_502.png" /></p>
+<ul>
+<li>ホストのインスタンスへの<strong>SSH 接続は提供していない</strong>。</li>
+</ul>
+<p>アウトバウンド接続はサブネット内の EC2 インスタンスと同様:</p>
+<ul>
+<li>パブリック/プライベートサブネット</li>
+<li>NAT ゲートウェイ</li>
+<li>VPC エンドポイントによるプライベートサブネットからの AWS サービスへのアクセス:</li>
+</ul>
+<p><img alt="" src="_attachment/image_503.png" /></p>
+<h2 id="iam">IAM ポリシー</h2>
+<p><img alt="" src="_attachment/image_504.png" /></p>
+<p>なお、タスク実行ロールで行うイメージのプル、CloudWatch Logs へのログ書き込みについても VPC 内から行われるため、IGW や VPC エンドポイントによるアウトバウンド接続となる。</p>
+<p><img alt="" src="_attachment/image_505.png" /></p>
+<h1 id="eks">EKS</h1>
+<p><img alt="" src="Pasted%20image%2020250612135644.png" />
+<img alt="" src="Pasted%20image%2020250612135715.png" />
+<img alt="" src="Pasted%20image%2020250612135803.png" /></p>
+<p><img alt="" src="Pasted%20image%2020250612135840.png" /></p>
+<hr />
+<h1 id="amazon-ecr">Amazon ECR</h1>
+<p>プライベートなレポジトリで IAM ポリシーでアクセス制御できる。</p>
+<p>基本操作</p>
+<p><img alt="" src="_attachment/image_506.png" /></p>
+<p>認証情報の取得</p>
+<ul>
+<li>docker login でレポジトリにログインにする際の認証情報。</li>
+<li>aws ecr get-login-password (AWS CLI v2 )<ul>
+<li>パスワードだけ吐き出す</li>
+</ul>
+</li>
+</ul>
+<pre><code>aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin
+</code></pre>
+<ul>
+<li>aws ecr get-login (AWS CLI v1)<ul>
+<li>docker login -u AWS -p <em>password</em> -e none <em>ecr_server</em> コマンド全体を吐き出す。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_507.png" /></p>
+<hr />
+<h1 id="cicd">CI/CD パイプライン連携</h1>
+<h2 id="ci">CI フェーズ</h2>
+<ul>
+<li>CodeBuild や Jenkins で docker build したイメージをレジストリに push する。</li>
+<li>CodeBuild の artifact は S3 なので、bulidspec で直接 docker push コマンドを叩く。</li>
+</ul>
+<p><img alt="" src="_attachment/image_508.png" /></p>
+<h2 id="cd">CD フェーズ</h2>
+<p><img alt="" src="_attachment/image_509.png" /></p>
+<ul>
+<li>
+<p>CodeDeploy で ECS にデプロイ。</p>
+<ul>
+<li>Task Definition の新しいリビジョンを CodeDeploy 外で作成しておき、AppSpec ファイルにその ARN を設定して create-deployment を実施する。</li>
+<li>新しいタスクセットを作成して ELB の接続先を置き換える Blue/Green デプロイが実施される。</li>
+</ul>
+</li>
+<li>
+<p>CodePipeline はソースステージに ECR も指定できる</p>
+</li>
+</ul>
+<p>ラボでは CodePipeline の CodeDeploy アクションプロバイダーの機能？で AppSpec ファイル内のプレースホルダーの ARN を置き換えていた。</p>
+<pre><code>version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: &lt;TASK_DEFINITION&gt;
+        LoadBalancerInfo:
+          ContainerName: &quot;my-webapp&quot;
+          ContainerPort: 80
+</code></pre>
+<p><a href="AWS/DevOps%20Engineering%20on%20AWS%20%E3%83%A9%E3%83%9C%205%20CICD%20%E3%83%91%E3%82%A4%E3%83%97%E3%83%A9%E3%82%A4%E3%83%B3%E3%81%A8%20Amazon%20ECS%20%E3%82%92%E4%BD%BF%E7%94%A8%E3%81%97%E3%81%A6%20BlueGreen%20%E3%83%87%E3%83%97%E3%83%AD%E3%82%A4%E3%82%92%E5%AE%9F%E8%A1%8C%E3%81%99%E3%82%8B.html">DevOps Engineering on AWS: ラボ 5: CI/CD パイプラインと Amazon ECS を使用して Blue/Green デプロイを実行する</a></p>
+<hr />
+<h1 id="app-mesh">App Mesh</h1>
+<p>サービスメッシュによるコンテナの連携のマネージドサービス</p>
+<p><img alt="" src="_attachment/image_510.png" /><img alt="" src="_attachment/image_511.png" /></p>
+<p><br></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

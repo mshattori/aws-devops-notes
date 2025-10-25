@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS - Deployment Strategy - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <header>
+        <h1>AWS DevOps Notes</h1>
+    </header>
+    <main>
+        
+<article>
+    <p>デプロイ戦略概要</p>
+<h2 id="_1">用語</h2>
+<p>カットオーバー</p>
+<ul>
+<li>新バージョンまたは別システムへの移行</li>
+</ul>
+<p>ダークローンチ</p>
+<ul>
+<li>フィーチャーフラグで一部のインスタンスで機能を有効にする。</li>
+</ul>
+<p>セグメンテーション</p>
+<ul>
+<li>デプロイを小さなチャンクに分割することでリスク軽減。</li>
+<li>リージョン, AZ, インスタンスごとなどで分割。</li>
+<li>タグや Auto Scaling グループでグループ化。</li>
+</ul>
+<p><img alt="" src="_attachment/image_512.png" /></p>
+<p>インプレース</p>
+<ul>
+<li>稼働中インスタンスを落とさずにデプロイする。</li>
+<li>インスタンスが並列しないので低コスト。</li>
+<li>CodeDeploy, Beanstalk, OpsWorks でサポート。</li>
+</ul>
+<p>イミュータブル</p>
+<ul>
+<li>インプレースの反対。新しいインスタンスまたは並列環境を作ってデプロイする。</li>
+<li>EC2 Auto Scaling: AutoScalingReplacingUpdate</li>
+</ul>
+<p>ローリング</p>
+<ul>
+<li>インプレースまたはイミュータブルの複数形。ダウンタイムなし。</li>
+<li>本番環境の稼働中インスタンスを一部切り離してデプロイし、再びオンラインに戻すを繰り返す。</li>
+<li>CodeDeploy: インプレースの OneAtATime, HalfAtATime</li>
+<li>Beanstalk: ローリング, 追加バッチとローリング</li>
+<li>EC2 Auto Scaling: AutoScalingRollingUpdate: 既存 Auto Scaling グループ内で新しいインスタンスを立ててローリングアップデート</li>
+</ul>
+<p>Blue/Green</p>
+<ul>
+<li>Blue と Green の２つの並列環境を作成してトラフィックを振り分ける。(ローリングは単一環境)</li>
+<li>トラフィックルーティングの仕組みが必要。</li>
+<li>原理的にイミュータブルになる。</li>
+<li>ロールバックが容易。</li>
+<li>AllAtOnce: 一度で切り替え</li>
+<li>Canary: 比率を指定して２段階目で切り替え。</li>
+<li>Linear: 段階的に振り分け。</li>
+<li>CodeDeploy, Beanstalk, OpsWorks, CloudFormation</li>
+</ul>
+<p>カナリアリリース, A/B デプロイ</p>
+<ul>
+<li>A/B 環境に比率を設定してトラフィックを流す、Blue/Green の一種。</li>
+<li>一部ユーザでの新機能を Beta テストやフィードバック収集。</li>
+</ul>
+<h1 id="bluegreen">Blue/Green デプロイ</h1>
+<p>概要</p>
+<ul>
+<li>ブルー (既存環境) / グリーン (新しいバージョン) をスイッチ</li>
+<li>一般的な手法<ul>
+<li>DNS カットオーバー</li>
+<li>Auto Scaling グループの交換</li>
+</ul>
+</li>
+</ul>
+<h2 id="aws">AWS での実現方法</h2>
+<p>Ref. <a href="https://d1.awsstatic.com/whitepapers/AWS_Blue_Green_Deployments.pdf">https://d1.awsstatic.com/whitepapers/AWS_Blue_Green_Deployments.pdf</a></p>
+<p>Route53 CNAME 切り替え (AllAtOnce)</p>
+<ul>
+<li>エイリアス (CNAME) が指す ELB の DNS 名を切り替える。</li>
+</ul>
+<p><img alt="" src="_attachment/File_3.png" /><img alt="" src="_attachment/image_513.png" /></p>
+<p>Route53 加重ラウンドロビン</p>
+<ul>
+<li><img alt="" src="_attachment/File_4.png" /></li>
+</ul>
+<p>ELB ターゲットグループ切り替え</p>
+<ul>
+<li>Blue に加えて Green の Auto Scaling グループを ELB のターゲットに登録。</li>
+<li>Blue のインスタンスを段階的にスケールインして減らしていく。</li>
+</ul>
+<p><img alt="" src="_attachment/image_514.png" /></p>
+<p>ALB 加重ターゲットグループ</p>
+<ul>
+<li>Blue/Green のターゲットグループに重みを指定。</li>
+<li><img alt="" src="_attachment/image_515.png" /></li>
+<li><br></li>
+</ul>
+<p>Auto Scaling スケールアウト/スケールイン</p>
+<ul>
+<li>デフォルトの終了ポリシーが古い起動設定により起動されたインスタンスから終了させることを利用。起動テンプレートでAMIを変更後、インスタンス数を増やしてから減らすと自動的に古いインスタンスがなくなる。</li>
+<li>1. Auto Scaling グループの起動設定を変更して新しい AMI を指定。</li>
+<li>2. 手動スケーリングで希望容量を 4 から 8 に増やす。新しいインスタンスが 4 加わる。</li>
+<li>4. 希望容量を 4 に戻す。古いインスタンスが終了される。</li>
+<li><a href="https://www.yamamanx.com/wordpress-update-blue-green/">https://www.yamamanx.com/wordpress-update-blue-green/</a></li>
+</ul>
+<p>API Gateway</p>
+<ul>
+<li>Canary ステージを作成して比率を指定。</li>
+<li><img alt="" src="_attachment/File_5.png" /></li>
+</ul>
+<p>Lambda 加重エイリアス</p>
+<ul>
+<li>route-config でセカンダリのバージョンと比率を設定。</li>
+<li>ユースケース例: API Gateway フロントの Lambda 関数の Blue/Green を API Gateway 側の設定を変更せずに実施できる。</li>
+</ul>
+<p>SAM の AWS::Serverless::Function</p>
+<ul>
+<li>DeploymentPreference プロパティでカナリアリリースを指定できる。</li>
+</ul>
+<p>CodeDeploy</p>
+<ul>
+<li>EC2, オンプレ:  ALB の加重ターゲットグループで移行。</li>
+<li>ECS: サービスに新しいタスクセットを作成、ELB の加重ターゲットグループで移行。</li>
+<li>Lambda: 加重エイリアスを使用。</li>
+</ul>
+<p>Elastic Beanstalk</p>
+<ul>
+<li>eb clone/swap による DNS カットオーバー</li>
+<li>
+<p>eb deploy の展開タイプ</p>
+<ul>
+<li>
+<p>インプレース (All at once):</p>
+<ul>
+<li>全インスタンスが一旦停止。</li>
+</ul>
+</li>
+<li>
+<p>ローリング (Rolling / Rolling with additional batch):</p>
+<ul>
+<li>ELB ターゲットグループのインスタンス入れ替え。</li>
+</ul>
+</li>
+<li>
+<p>イミュータブル (Immutable):</p>
+<ul>
+<li>Auto Scaling グループの交換。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>CloudFormation</p>
+<p>OpsWorsk</p>
+<h1 id="codedeploy">CodeDeploy のデプロイタイプ</h1>
+<p>EC2/オンプレ</p>
+<ul>
+<li>インプレース (=ローリング)</li>
+<li>Blue/Green (=イミュータブル)</li>
+</ul>
+<p>ECS, Lamda</p>
+<ul>
+<li>Blue/Green (仕組み的にコンテナやLambdaはインプレース切り替えの概念がない)</li>
+</ul>
+<p>デプロイ設定</p>
+<p><img alt="" src="_attachment/image_516.png" /></p>
+<h3 id="ec2">EC2/オンプレ</h3>
+<p>インプレース(=ローリング)</p>
+<ul>
+<li>稼働中サーバを停止せずに新バージョンのアプリを配置/起動する。</li>
+<li>各インスタンスでアプリを停止後、新リビジョンをインストールして起動・検証。</li>
+</ul>
+<p>Blue/Green デプロイ(=イミュータブル)</p>
+<ul>
+<li>Green のインスタンス群を起動、新リビジョンをインストールして起動・検証。</li>
+<li>ELB で実現されるので ELB が必須。</li>
+<li>検証を通った Green インスタンスを ELB に登録し、Blue インスタンスを登録解除。</li>
+<li><img alt="" src="_attachment/File_6.png" /></li>
+<li>Auto Scaling グループの自動コピー: デプロイグループに Auto Scaling グループを指定した場合。Auto Scaling グループ全体の置き換えによるデプロイメントを行う。</li>
+<li>Auto Scaling グループの自動コピーを指定しない場合、deployment 作成時に個別にインスタンスを指定することになる。</li>
+<li><img alt="" src="_attachment/image_517.png" /></li>
+</ul>
+<p><img alt="" src="_attachment/image_518.png" /><img alt="" src="_attachment/image_519.png" /></p>
+<p>カスタム</p>
+<ul>
+<li>Half の代わりの割合か台数で必要な稼働中インスタンス数を指定する。</li>
+<li><img alt="" src="_attachment/image_520.png" /></li>
+</ul>
+<h3 id="ecs">ECS</h3>
+<p>サービスに新しいタスクセットを作成、ELB の加重ターゲットグループで移行。</p>
+<ul>
+<li>CloudFormation スタックによる Blue/Green デプロイもある。</li>
+</ul>
+<p><img alt="" src="_attachment/image_521.png" /></p>
+<ul>
+<li>Canary は2段階。Liner は10%ずつ段階的に。</li>
+</ul>
+<h3 id="lambda">Lambda</h3>
+<p>新しいバージョンを発行し、加重エイリアスを使う。</p>
+<ul>
+<li>エイリアスはバージョンへのポインタ。別バージョンに簡単に切り替えられる。</li>
+<li>加重エイリアスは2つのバージョンへのルーティング比率を指定する。</li>
+</ul>
+<p><img alt="" src="_attachment/image_522.png" /></p>
+<p>Ref. <a href="https://docs.aws.amazon.com/ja_jp/codedeploy/latest/userguide/deployment-configurations.html">https://docs.aws.amazon.com/ja_jp/codedeploy/latest/userguide/deployment-configurations.html</a></p>
+<h1 id="elastic-beanstalk">Elastic Beanstalk のデプロイ</h1>
+<h3 id="deployment-policy">デプロイポリシー (Deployment policy)</h3>
+<p><img alt="" src="_attachment/image_523.png" /></p>
+<p>All at once</p>
+<ul>
+<li>単純なインプレースデプロイ。新バージョンを全インスタンスに同時展開。</li>
+<li>環境の全インスタンスのアプリケーションが短時間停止する。</li>
+<li>展開終了までの合計時間は最短。インスタンスの追加コストなし。</li>
+</ul>
+<p>Rolling</p>
+<ul>
+<li>環境のインスタンスを複数バッチに分割、バッチごとに新バージョンをデプロイ。</li>
+<li>バッチサイズ分のインスタンスを LB からデタッチしてデプロイ実施。ヘルスチェックが通ればそのバッチを LB に再アタッチ。全インスタンスにデプロイがされるまで繰り返し。</li>
+<li>インスタンスの追加コストなし。</li>
+<li><img alt="" src="_attachment/image_524.png" /></li>
+</ul>
+<p>Rolling with additional batch</p>
+<ul>
+<li>バッチサイズ分の新しいインスタンスにデプロイして環境に追加した後でローリングを実行。</li>
+<li>追加バッチのインスタンスは最終的には消去される。</li>
+<li><img alt="" src="_attachment/image_525.png" /></li>
+</ul>
+<p>Immutable</p>
+<ul>
+<li>別の Auto Scaling グループを作成して新バージョンを展開したインスタンスのフルセットを起動。</li>
+<li>新しいインスタンスでヘルスチェックが FAIL した場合は終了し、元のインスタンスをそのまま残す。(FAIL 時のロールバックが迅速)</li>
+<li>Blue のインスタンスは削除されるのでイミュータブル。</li>
+<li>一時的にインスタンスコストが二倍。</li>
+<li><img alt="" src="_attachment/image_526.png" /></li>
+</ul>
+<p><img alt="" src="_attachment/image_527.png" /></p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.deploy-existing-version.html">https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.deploy-existing-version.html</a></li>
+</ul>
+<h3 id="bluegreen_1">手動 Blue/Green デプロイ</h3>
+<ul>
+<li>eb clone で既存スタックのクローンを作成後、新バージョンをデプロイしてテスト。</li>
+<li>eb swap で内部の CNAME を既存スタックから新スタックに切り替え。(DNS カットオーバー)</li>
+</ul>
+<p><img alt="" src="_attachment/File_7.png" /><img alt="" src="_attachment/image_528.png" /><img alt="" src="_attachment/image_529.png" /></p>
+<h1 id="ecs_1">ECS のデプロイ</h1>
+<h2 id="deploymentcontroller">サービスの deploymentController 設定</h2>
+<p>次のいずれかに設定する:</p>
+<ul>
+<li>
+<p>ECS</p>
+<ul>
+<li>ローリング更新</li>
+</ul>
+</li>
+<li>
+<p>CODE_DEPLOY</p>
+<ul>
+<li>Blue/Green</li>
+</ul>
+</li>
+<li>
+<p>EXTERNAL</p>
+<ul>
+<li>ECS API でサービス・タスクを制御する外部のデプロイコントローラー</li>
+</ul>
+</li>
+<li>
+<p>Ref. <a href="https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/userguide/service_definition_parameters.html">https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/userguide/service_definition_parameters.html</a></p>
+</li>
+</ul>
+<h2 id="ecs_2">ECS (ローリング更新)</h2>
+<p>サービスのタスク定義を更新すると ECS はローリングデプロイを実施する。</p>
+<p>ECS は古いバージョ ンのコンテナへの接続をドレイニングし、新しいコンテナを ALB に登録する。</p>
+<p><img alt="" src="_attachment/image_530.png" /></p>
+<h2 id="codedeploy-bluegreen">CodeDeploy (Blue/Green)</h2>
+<p>本番トラフィックの送信前に Hooks の Lambda でデプロイを検証できる。</p>
+<p><img alt="" src="_attachment/image_531.png" /></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

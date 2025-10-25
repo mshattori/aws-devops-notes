@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS-DOP-02-exam-guide - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <header>
+        <h1>AWS DevOps Notes</h1>
+    </header>
+    <main>
+        
+<article>
+    <h1 id="aws-certified-devops-engineer-professional-dop-c02">AWS Certified DevOps Engineer - Professional (DOP-C02) 試験ガイド</h1>
+<h2 id="_1">はじめに</h2>
+<p>AWS Certified DevOps Engineer - Professional (DOP-C02) 試験は、DevOps エンジニアロールを担う個人を対象としています。この試験では、AWS での分散システムおよびサービスのプロビジョン、運用、および管理についての受験者の技術的な専門知識を検証します。</p>
+<h3 id="_2">検証される能力</h3>
+<ul>
+<li>AWS での継続的デリバリーシステムとその配信方法を実装および管理する</li>
+<li>セキュリティコントロール、ガバナンスプロセス、コンプライアンス検証を実装および自動化する</li>
+<li>AWS でのモニタリング、メトリクス、ロギングシステムを定義およびデプロイする</li>
+<li>AWS での可用性、スケーラビリティ、自己修復性の高いシステムを実装する</li>
+<li>運用プロセスを自動化するためのツールを設計、管理、および保守する</li>
+</ul>
+<h2 id="_3">受験対象者について</h2>
+<h3 id="_4">必要な経験</h3>
+<ul>
+<li>AWS 環境でのプロビジョン、運用、管理に関する <strong>2年以上の経験</strong></li>
+<li>ソフトウェア開発ライフサイクルとプログラミングおよび/またはスクリプティングの経験</li>
+</ul>
+<h3 id="it">推奨される IT 全般に関する知識と経験</h3>
+<ul>
+<li>高度に自動化されたインフラストラクチャの構築に関する経験</li>
+<li>オペレーティングシステムの管理に関する経験</li>
+<li>最新の開発プロセス、運用プロセス、開発手法、運用手法に関する経験</li>
+</ul>
+<h3 id="aws">推奨される AWS の知識と経験</h3>
+<ul>
+<li>AWS インフラストラクチャのセキュリティ保護の経験</li>
+</ul>
+<h3 id="_5">範囲外の職務</h3>
+<p>以下のタスクは本試験の範囲外です：</p>
+<ul>
+<li>高度なネットワークに関する知識（高度なルーティングアルゴリズム、フェイルオーバーの手法など）</li>
+<li>デベロッパーに対して高度なセキュリティに関する推奨事項を提供する</li>
+<li>データベースの設計、クエリ、パフォーマンスの最適化を行う</li>
+<li>フルスタックアプリケーションのコード開発を行う</li>
+</ul>
+<h2 id="_6">試験内容</h2>
+<h3 id="_7">解答タイプ</h3>
+<ol>
+<li><strong>択一選択問題</strong>: 正しい選択肢が1つ、誤った選択肢が3つ</li>
+<li>
+<p><strong>複数選択問題</strong>: 5つ以上の選択肢のうち、正解が2つ以上</p>
+</li>
+<li>
+<p>採点対象設問：<strong>65問</strong></p>
+</li>
+<li>採点対象外設問：<strong>10問</strong>（パフォーマンス評価用）</li>
+</ol>
+<h3 id="_8">試験の結果</h3>
+<ul>
+<li>スコア範囲：<strong>100～1,000</strong></li>
+<li>合格スコア：<strong>750</strong></li>
+<li>合否判定方式</li>
+</ul>
+<h2 id="_9">試験内容の概要</h2>
+<h3 id="_10">コンテンツ分野と重み設定</h3>
+<table>
+<thead>
+<tr>
+<th>分野</th>
+<th>タイトル</th>
+<th>重み</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第1分野</td>
+<td>SDLC のオートメーション</td>
+<td>22%</td>
+</tr>
+<tr>
+<td>第2分野</td>
+<td>設定管理と IaC</td>
+<td>17%</td>
+</tr>
+<tr>
+<td>第3分野</td>
+<td>耐障害性の高いクラウドソリューション</td>
+<td>15%</td>
+</tr>
+<tr>
+<td>第4分野</td>
+<td>モニタリングとロギング</td>
+<td>15%</td>
+</tr>
+<tr>
+<td>第5分野</td>
+<td>インシデントとイベントへの対応</td>
+<td>14%</td>
+</tr>
+<tr>
+<td>第6分野</td>
+<td>セキュリティとコンプライアンス</td>
+<td>17%</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-sdlc-22">第1分野: SDLC のオートメーション（22%）</h2>
+<h3 id="11-cicd">タスクステートメント 1.1: CI/CD パイプラインを実装する</h3>
+<h4 id="_11">対象知識</h4>
+<ul>
+<li>ソフトウェア開発ライフサイクル (SDLC) の概念、フェーズ、モデル</li>
+<li>シングルアカウントとマルチアカウント環境のパイプラインデプロイパターン</li>
+</ul>
+<h4 id="_12">対象スキル</h4>
+<ul>
+<li>コード、イメージ、アーティファクトリポジトリの設定</li>
+<li>バージョン管理を使用してパイプラインをアプリケーション環境に統合</li>
+<li>構築プロセスのセットアップ（AWS CodeBuild など）</li>
+<li>構築とデプロイのシークレットの管理（AWS Secrets Manager、AWS Systems Manager Parameter Store など）</li>
+<li>適切なデプロイ戦略の決定（AWS CodeDeploy など）</li>
+</ul>
+<h3 id="12-cicd">タスクステートメント 1.2: 自動テストを CI/CD パイプラインに統合する</h3>
+<h4 id="_13">対象知識</h4>
+<ul>
+<li>各種テスト（単体テスト、統合テスト、受け入れテスト、ユーザーインターフェイステスト、セキュリティスキャンなど）</li>
+<li>CI/CD パイプラインの各段階でさまざまなタイプのテストを合理的に使用</li>
+</ul>
+<h4 id="_14">対象スキル</h4>
+<ul>
+<li>プルリクエストまたはコードマージを生成するときに構築またはテストを実行（CodeBuild など）</li>
+<li>負荷/ストレステスト、パフォーマンスベンチマーキング、アプリケーションテストを大規模環境で実行</li>
+<li>アプリケーション終了コードに基づいてアプリケーションのヘルスを測定</li>
+<li>単位テストとコードカバレッジの自動化</li>
+<li>テストのためパイプラインでの AWS サービスの呼び出し</li>
+</ul>
+<h3 id="13">タスクステートメント 1.3: アーティファクトを構築して管理する</h3>
+<h4 id="_15">対象知識</h4>
+<ul>
+<li>アーティファクトのユースケースとセキュアな管理</li>
+<li>アーティファクトを作成および生成するメソッド</li>
+<li>アーティファクトのライフサイクルに関する注意事項</li>
+</ul>
+<h4 id="_16">対象スキル</h4>
+<ul>
+<li>アーティファクトリポジトリの作成と設定（AWS CodeArtifact、Amazon S3、Amazon ECR など）</li>
+<li>アーティファクトを生成する構築ツールの設定（CodeBuild、AWS Lambda など）</li>
+<li>Amazon EC2 インスタンスとコンテナイメージの構築プロセスの自動化（EC2 Image Builder など）</li>
+</ul>
+<h3 id="14">タスクステートメント 1.4: インスタンス、コンテナ、サーバーレス環境のデプロイ戦略を実装する</h3>
+<h4 id="_17">対象知識</h4>
+<ul>
+<li>さまざまなプラットフォームのデプロイ方法（Amazon EC2、Amazon ECS、Amazon EKS、Lambda など）</li>
+<li>アプリケーションストレージパターン（Amazon EFS、Amazon S3、Amazon EBS など）</li>
+<li>ミュータブルなデプロイパターンとイミュータブルなデプロイパターンの比較</li>
+<li>コードの配布に使用できるツールとサービス（CodeDeploy、EC2 Image Builder など）</li>
+</ul>
+<h4 id="_18">対象スキル</h4>
+<ul>
+<li>アーティファクトリポジトリへのアクセスを許可するセキュリティ権限の設定（IAM、CodeArtifact など）</li>
+<li>デプロイメントエージェントの設定（CodeDeploy エージェントなど）</li>
+<li>デプロイに関する問題のトラブルシューティング</li>
+<li>さまざまなデプロイ方法の使用（blue/green、Canary など）</li>
+</ul>
+<hr />
+<h2 id="2-iac17">第2分野: 設定管理と IaC（17%）</h2>
+<h3 id="21">タスクステートメント 2.1: クラウドインフラストラクチャと再利用可能なコンポーネントを定義</h3>
+<h4 id="_19">対象知識</h4>
+<ul>
+<li>AWS の Infrastructure as Code (IaC) のオプションとツール</li>
+<li>IaC ベースのプラットフォームの変更管理プロセス</li>
+<li>設定管理サービスと戦略</li>
+</ul>
+<h4 id="_20">対象スキル</h4>
+<ul>
+<li>IaC テンプレートの作成とデプロイ（AWS SAM、AWS CloudFormation、AWS CDK など）</li>
+<li>CloudFormation StackSets を複数のアカウントと複数の AWS リージョンに適用</li>
+<li>最適な設定管理サービスを決定（AWS OpsWorks、AWS Systems Manager、AWS Config、AWS AppConfig など）</li>
+<li>インフラストラクチャのパターン、ガバナンスコントロール、セキュリティ標準を再利用可能な IaC テンプレートに実装</li>
+</ul>
+<h3 id="22">タスクステートメント 2.2: マルチアカウント環境またはマルチリージョン環境でのオートメーション</h3>
+<h4 id="_21">対象知識</h4>
+<ul>
+<li>AWS アカウント構造、ベストプラクティス、および関連する AWS サービス</li>
+</ul>
+<h4 id="_22">対象スキル</h4>
+<ul>
+<li>アカウントのプロビジョンと設定の標準化と自動化</li>
+<li>アカウントの作成、統合、および一元管理（AWS Organizations、AWS Control Tower など）</li>
+<li>複数アカウントや複雑な組織構造に IAM ソリューションを適用（SCP、ロールを引き受けるなど）</li>
+<li>大規模環境でのガバナンスとセキュリティコントロールの実装と開発</li>
+</ul>
+<h3 id="23">タスクステートメント 2.3: 複雑なタスクや大規模環境向けの自動化ソリューション</h3>
+<h4 id="_23">対象知識</h4>
+<ul>
+<li>タスクとプロセスを自動化する AWS のサービスとソリューション</li>
+<li>AWS ソフトウェア定義インフラストラクチャとのインタラクション方法と戦略</li>
+</ul>
+<h4 id="_24">対象スキル</h4>
+<ul>
+<li>システムインベントリ、設定、およびパッチ管理の自動化（Systems Manager、AWS Config など）</li>
+<li>複雑なシナリオ向けに Lambda 関数オートメーションを開発（AWS SDK、Lambda、AWS Step Functions など）</li>
+<li>ソフトウェアアプリケーションを希望の状態に自動設定（OpsWorks、Systems Manager ステートマネージャーなど）</li>
+<li>ソフトウェアコンプライアンスの維持（Systems Manager など）</li>
+</ul>
+<hr />
+<h2 id="3-15">第3分野: 耐障害性の高いクラウドソリューション（15%）</h2>
+<h3 id="31">タスクステートメント 3.1: 高可用性ソリューションを実装する</h3>
+<h4 id="_25">対象知識</h4>
+<ul>
+<li>マルチ AZ およびマルチリージョンデプロイ（コンピューティングレイヤー、データレイヤーなど）</li>
+<li>SLA</li>
+<li>ステートフルサービスのためのレプリケーションとフェイルオーバーの方法</li>
+<li>高可用性を実現する手法（マルチ AZ、マルチリージョンなど）</li>
+</ul>
+<h4 id="_26">対象スキル</h4>
+<ul>
+<li>ビジネス要件を技術的耐障害性のニーズに変換</li>
+<li>既存のワークロードで単一障害点を特定して修正</li>
+<li>クロスリージョンソリューションを有効化（DynamoDB、RDS、Route 53、S3、CloudFront など）</li>
+<li>クロス AZ サービスをサポートするためにロードバランシングを設定</li>
+<li>ダウンタイムを最小限に抑えながら、複数のアベイラビリティーゾーンとリージョンをサポート</li>
+</ul>
+<h3 id="32">タスクステートメント 3.2: スケーラブルなソリューションを実装する</h3>
+<h4 id="_27">対象知識</h4>
+<ul>
+<li>サービスをスケーリングするための適切なメトリクス</li>
+<li>疎結合および分散アーキテクチャ</li>
+<li>サーバーレスアーキテクチャ</li>
+<li>コンテナプラットフォーム</li>
+</ul>
+<h4 id="_28">対象スキル</h4>
+<ul>
+<li>スケーリングに関する問題を特定して修正</li>
+<li>適切なオートスケーリング、ロードバランシング、およびキャッシュソリューションを特定して実装</li>
+<li>コンテナベースのアプリケーション（Amazon ECS、Amazon EKS など）のデプロイ</li>
+<li>複数のリージョンにワークロードをデプロイしてグローバルなスケーラビリティを実現</li>
+<li>サーバーレスアプリケーションの設定（Amazon API Gateway、Lambda、AWS Fargate など）</li>
+</ul>
+<h3 id="33">タスクステートメント 3.3: 自動復旧プロセスを実装する</h3>
+<h4 id="_29">対象知識</h4>
+<ul>
+<li>災害対策の概念（RTO、RPO など）</li>
+<li>バックアップと復旧戦略（パイロットライト、ウォームスタンバイなど）</li>
+<li>復旧手順</li>
+</ul>
+<h4 id="_30">対象スキル</h4>
+<ul>
+<li>マルチ AZ とマルチリージョンのワークロードのフェイルオーバーのテスト</li>
+<li>適切なリージョン間バックアップとリカバリ戦略の特定と実装</li>
+<li>バックエンドの障害から復旧するためのロードバランサーの設定</li>
+</ul>
+<hr />
+<h2 id="4-15">第4分野: モニタリングとロギング（15%）</h2>
+<h3 id="41">タスクステートメント 4.1: ログとメトリクスの収集、集計、および保存を設定する</h3>
+<h4 id="_31">対象知識</h4>
+<ul>
+<li>アプリケーションとインフラストラクチャをモニタリングする方法</li>
+<li>Amazon CloudWatch メトリクス（名前空間、メトリクス、ディメンション、解像度など）</li>
+<li>リアルタイムのログ取り込み</li>
+<li>保存中および転送中のログとメトリクスの暗号化オプション</li>
+<li>セキュリティ設定（ログ収集を許可する IAM ロールや権限など）</li>
+</ul>
+<h4 id="_32">対象スキル</h4>
+<ul>
+<li>ログをセキュアに保存して管理</li>
+<li>メトリクスフィルターを使用してログイベントから CloudWatch メトリクスを作成</li>
+<li>CloudWatch メトリクスストリームの作成</li>
+<li>カスタムメトリクスの収集（CloudWatch エージェントの使用など）</li>
+<li>ログストレージライフサイクルの管理</li>
+<li>CloudWatch Log サブスクリプションを使用してログデータを処理</li>
+<li>フィルターとパターン構文または CloudWatch Logs Insights を使用してログデータを検索</li>
+<li>ログデータの暗号化の設定（AWS KMS など）</li>
+</ul>
+<h3 id="42">タスクステートメント 4.2: ログとメトリクスを監査、モニタリング、分析して問題を検出する</h3>
+<h4 id="_33">対象知識</h4>
+<ul>
+<li>異常検出アラーム（CloudWatch 異常検知など）</li>
+<li>一般的な CloudWatch メトリクスとログ</li>
+<li>Amazon Inspector と一般的な評価テンプレート</li>
+<li>AWS Config ルール</li>
+<li>AWS CloudTrail ログイベント</li>
+</ul>
+<h4 id="_34">対象スキル</h4>
+<ul>
+<li>CloudWatch ダッシュボードと Amazon QuickSight ビジュアライゼーションの構築</li>
+<li>CloudWatch アラームと CloudWatch メトリクスとの関連付け</li>
+<li>さまざまなサービス用に AWS X-Ray を設定</li>
+<li>リアルタイムログストリームの分析</li>
+<li>AWS のサービスでのログの分析（Amazon Athena、CloudWatch Logs Insights など）</li>
+</ul>
+<h3 id="43">タスクステートメント 4.3: 複雑な環境のモニタリングとイベント管理を自動化する</h3>
+<h4 id="_35">対象知識</h4>
+<ul>
+<li>イベント駆動型の非同期設計パターン</li>
+<li>さまざまな AWS サービスのオートスケーリング機能</li>
+<li>アラート通知とアクション機能</li>
+<li>AWS サービスのヘルスチェック機能</li>
+</ul>
+<h4 id="_36">対象スキル</h4>
+<ul>
+<li>オートスケーリングのソリューションの設定</li>
+<li>CloudWatch カスタムメトリクスとメトリクスフィルター、アラーム、通知の作成</li>
+<li>ログファイルを処理し、別の送信先に配信するように S3 イベントを設定</li>
+<li>特定のイベントパターンに基づいて通知を送信するように EventBridge を設定</li>
+<li>EC2 インスタンスにエージェントをインストールして設定</li>
+<li>問題を修復するために AWS Config ルールを設定</li>
+<li>ヘルスチェックを設定（Route 53、ALB など）</li>
+</ul>
+<hr />
+<h2 id="5-14">第5分野: インシデントとイベントへの対応（14%）</h2>
+<h3 id="51">タスクステートメント 5.1: イベントソースを管理する</h3>
+<h4 id="_37">対象知識</h4>
+<ul>
+<li>イベントを生成、キャプチャ、処理する AWS のサービス（AWS Health、EventBridge、CloudTrail など）</li>
+<li>イベント駆動型アーキテクチャ（ファンアウト、イベントストリーミング、キューイングなど）</li>
+</ul>
+<h4 id="_38">対象スキル</h4>
+<ul>
+<li>AWS イベントソースの統合（AWS Health、EventBridge、CloudTrail など）</li>
+<li>イベント処理ワークフローの構築（Amazon SQS、Kinesis、Amazon SNS、Lambda、Step Functions など）</li>
+</ul>
+<h3 id="52">タスクステートメント 5.2: イベントに応じて設定の変更を実装する</h3>
+<h4 id="_39">対象知識</h4>
+<ul>
+<li>フリート管理サービス（Systems Manager、AWS Auto Scaling など）</li>
+<li>設定管理サービス（AWS Config など）</li>
+</ul>
+<h4 id="_40">対象スキル</h4>
+<ul>
+<li>設定の変更をシステムに適用</li>
+<li>イベントに応じたインフラストラクチャ設定の変更</li>
+<li>望ましくないシステム状態の修復</li>
+</ul>
+<h3 id="53">タスクステートメント 5.3: システムとアプリケーションの障害をトラブルシューティングする</h3>
+<h4 id="_41">対象知識</h4>
+<ul>
+<li>AWS メトリクスとロギングサービス（CloudWatch、X-Ray など）</li>
+<li>AWS サービスのヘルスサービス</li>
+<li>根本原因分析</li>
+</ul>
+<h4 id="_42">対象スキル</h4>
+<ul>
+<li>失敗したデプロイの分析（CodePipeline、CodeBuild、CodeDeploy、CloudFormation、CloudWatch 模擬モニタリングなど）</li>
+<li>失敗したプロセスに関するインシデントの分析（オートスケーリング、Amazon ECS、Amazon EKS など）</li>
+</ul>
+<hr />
+<h2 id="6-17">第6分野: セキュリティとコンプライアンス（17%）</h2>
+<h3 id="61-identity-and-access-management">タスクステートメント 6.1: Identity and Access Management の手法を大規模環境に実装する</h3>
+<h4 id="_43">対象知識</h4>
+<ul>
+<li>人間とマシンのアクセスに対するさまざまな IAM エンティティの適切な使用</li>
+<li>ID フェデレーション手法</li>
+<li>IAM アクセス許可の境界を使用したアクセス許可管理の委任</li>
+<li>組織 SCP</li>
+</ul>
+<h4 id="_44">対象スキル</h4>
+<ul>
+<li>最小権限アクセスを強制するポリシーの設計</li>
+<li>ロールベースおよび属性ベースのアクセス制御パターンの実装</li>
+<li>マシン ID の認証情報ローテーションの自動化</li>
+<li>人間とマシン ID へのアクセスを制御するアクセス許可の管理</li>
+</ul>
+<h3 id="62">タスクステートメント 6.2: セキュリティコントロールとデータ保護のオートメーションを適用する</h3>
+<h4 id="_45">対象知識</h4>
+<ul>
+<li>ネットワークセキュリティコンポーネント</li>
+<li>証明書とパブリックキーインフラストラクチャ (PKI)</li>
+<li>データ管理（データ分類、暗号化、キー管理、アクセスコントロールなど）</li>
+</ul>
+<h4 id="_46">対象スキル</h4>
+<ul>
+<li>マルチアカウント環境とマルチリージョン環境におけるセキュリティコントロール適用の自動化</li>
+<li>セキュリティコントロールを組み合わせた多層防御の適用</li>
+<li>大規模環境における機密データの検出の自動化（Amazon Macie など）</li>
+<li>転送中のデータと保存中のデータの暗号化</li>
+</ul>
+<h3 id="63">タスクステートメント 6.3: セキュリティモニタリングおよび監査ソリューションを実装する</h3>
+<h4 id="_47">対象知識</h4>
+<ul>
+<li>セキュリティモニタリングサービスと機能</li>
+<li>セキュリティの脆弱性とイベントを特定するための AWS のサービス</li>
+<li>一般的なクラウドセキュリティの脅威</li>
+</ul>
+<h4 id="_48">対象スキル</h4>
+<ul>
+<li>堅牢なセキュリティ監査の実装</li>
+<li>予期しない、または異常なセキュリティイベントに基づくアラートの設定</li>
+<li>サービスとアプリケーションのロギングの設定</li>
+<li>ログ、メトリクス、セキュリティ結果の分析</li>
+</ul>
+<hr />
+<h2 id="_49">付録</h2>
+<h3 id="_50">試験に出題される可能性のあるテクノロジーと概念</h3>
+<ul>
+<li>アプリケーションのデプロイ</li>
+<li>アプリケーション統合</li>
+<li>アプリケーションパイプライン</li>
+<li>オートメーション</li>
+<li>コードリポジトリのベストプラクティス</li>
+<li>コスト最適化</li>
+<li>デプロイの要件</li>
+<li>ハイブリッドデプロイ</li>
+<li>IAM Policy</li>
+<li>メトリクス、モニタリング、アラーム、ロギング</li>
+<li>ネットワーク ACL およびセキュリティグループの設計と実装</li>
+<li>運用上のベストプラクティス</li>
+<li>ロールバック手順</li>
+</ul>
+<h3 id="aws_1">範囲内の AWS のサービスと機能</h3>
+<h4 id="_51">分析</h4>
+<ul>
+<li>Amazon Athena</li>
+<li>Amazon EMR</li>
+<li>Amazon Kinesis Data Firehose</li>
+<li>Amazon Kinesis Data Streams</li>
+<li>Amazon OpenSearch Service</li>
+<li>Amazon QuickSight</li>
+</ul>
+<h4 id="_52">アプリケーション統合</h4>
+<ul>
+<li>Amazon AppFlow</li>
+<li>Amazon EventBridge</li>
+</ul>
+<h4 id="_53">コンピューティング</h4>
+<ul>
+<li>AWS App Runner</li>
+<li>Amazon EC2</li>
+<li>Amazon EC2 Auto Scaling</li>
+<li>EC2 Image Builder</li>
+<li>AWS Elastic Beanstalk</li>
+<li>AWS Serverless Application Repository</li>
+</ul>
+<h4 id="_54">コンテナ</h4>
+<ul>
+<li>AWS App2Container</li>
+<li>AWS Copilot</li>
+<li>Amazon Elastic Container Registry (Amazon ECR)</li>
+<li>Amazon Elastic Container Service (Amazon ECS)</li>
+<li>Amazon Elastic Kubernetes Service (Amazon EKS)</li>
+<li>Amazon EKS Distro</li>
+<li>AWS Fargate</li>
+<li>Red Hat OpenShift Service on AWS (ROSA)</li>
+</ul>
+<h4 id="_55">データベース</h4>
+<ul>
+<li>Amazon Aurora</li>
+<li>Amazon Aurora Serverless v2</li>
+<li>AWS Database Migration Service (AWS DMS)</li>
+<li>Amazon DocumentDB (MongoDB 互換)</li>
+<li>Amazon DynamoDB</li>
+<li>Amazon ElastiCache</li>
+<li>Amazon MemoryDB for Redis</li>
+<li>Amazon RDS</li>
+<li>Amazon Redshift</li>
+</ul>
+<h4 id="_56">デベロッパーツール</h4>
+<ul>
+<li>AWS CLI</li>
+<li>AWS Cloud Development Kit (AWS CDK)</li>
+<li>AWS CloudShell</li>
+<li>AWS CodeArtifact</li>
+<li>AWS CodeBuild</li>
+<li>AWS CodeDeploy</li>
+<li>Amazon CodeGuru</li>
+<li>AWS CodePipeline</li>
+<li>AWS CodeStar</li>
+<li>AWS Fault Injection Simulator (AWS FIS)</li>
+<li>AWS SDK とツール</li>
+<li>AWS X-Ray</li>
+</ul>
+<h4 id="_57">マネジメントとガバナンス</h4>
+<ul>
+<li>AWS Auto Scaling</li>
+<li>AWS CloudFormation</li>
+<li>AWS CloudTrail</li>
+<li>Amazon CloudWatch</li>
+<li>Amazon CloudWatch Logs</li>
+<li>AWS Compute Optimizer</li>
+<li>AWS Config</li>
+<li>AWS Control Tower</li>
+<li>AWS Health</li>
+<li>AWS License Manager</li>
+<li>Amazon Managed Grafana</li>
+<li>Amazon Managed Service for Prometheus</li>
+<li>AWS OpsWorks</li>
+<li>AWS Organizations</li>
+<li>AWS Proton</li>
+<li>AWS Resilience Hub</li>
+<li>AWS Service Catalog</li>
+<li>AWS Systems Manager</li>
+<li>AWS Trusted Advisor</li>
+</ul>
+<h4 id="_58">ネットワークとコンテンツ配信</h4>
+<ul>
+<li>Amazon API Gateway</li>
+<li>AWS Client VPN</li>
+<li>Amazon CloudFront</li>
+<li>Elastic Load Balancing (ELB)</li>
+<li>AWS PrivateLink</li>
+<li>Amazon Route 53</li>
+<li>AWS Site-to-Site VPN</li>
+<li>AWS Transit Gateway</li>
+<li>Amazon VPC</li>
+</ul>
+<h4 id="_59">セキュリティ、アイデンティティ、コンプライアンス</h4>
+<ul>
+<li>AWS Certificate Manager (ACM)</li>
+<li>AWS CloudHSM</li>
+<li>Amazon Cognito</li>
+<li>Amazon Detective</li>
+<li>AWS Directory Service</li>
+<li>Amazon GuardDuty</li>
+<li>AWS IAM アイデンティティセンター</li>
+<li>AWS Identity and Access Management (IAM)</li>
+<li>Amazon Inspector</li>
+<li>AWS Key Management Service (AWS KMS)</li>
+<li>Amazon Macie</li>
+<li>AWS Network Firewall</li>
+<li>AWS Resource Access Manager (AWS RAM)</li>
+<li>AWS Secrets Manager</li>
+<li>AWS Security Hub</li>
+<li>AWS Security Token Service (AWS STS)</li>
+<li>AWS Shield</li>
+<li>AWS WAF</li>
+</ul>
+<h4 id="_60">サーバーレス</h4>
+<ul>
+<li>AWS Lambda</li>
+<li>AWS Serverless Application Model (AWS SAM)</li>
+<li>Amazon Simple Notification Service (Amazon SNS)</li>
+<li>Amazon Simple Queue Service (Amazon SQS)</li>
+<li>AWS Step Functions</li>
+</ul>
+<h4 id="_61">ストレージ</h4>
+<ul>
+<li>AWS Backup</li>
+<li>Amazon Elastic Block Store (Amazon EBS)</li>
+<li>AWS Elastic Disaster Recovery</li>
+<li>Amazon Elastic File System (Amazon EFS)</li>
+<li>Amazon FSx for Lustre</li>
+<li>Amazon FSx for NetApp ONTAP</li>
+<li>Amazon FSx for OpenZFS</li>
+<li>Amazon FSx for Windows File Server</li>
+<li>Amazon S3</li>
+<li>Amazon S3 Glacier</li>
+<li>AWS Storage Gateway</li>
+</ul>
+<hr />
+<p><strong>バージョン</strong>: 1.6 DOP-C02</p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

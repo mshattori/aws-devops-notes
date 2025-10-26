@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS - Security - Governance, Incident Response - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS - Security - Governance, Incident Response</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="aws-config">AWS Config</h1>
+<p><a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20190618_AWS-Blackbelt_Config.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20190618_AWS-Blackbelt_Config.pdf</a></p>
+<p>概要</p>
+<p><img alt="" src="_attachment/aws-black-belt-online-seminar-2016-aws-cloudtrail-aws-config-34-638_jpg__638×359_.png" /></p>
+<ul>
+<li>
+<p>AWS リソース設定のスナップショットを取得し変更履歴を保持</p>
+<ul>
+<li>変更履歴とスナップショットを S3 バケットに保存</li>
+<li>変更発生時の SNS 通知 (オプショナル)</li>
+</ul>
+</li>
+<li>
+<p>AWS Config ルールによるリソース設定のコンプライアンス状態の管理</p>
+</li>
+</ul>
+<p>仕組み</p>
+<p><img alt="" src="_attachment/image_398.png" /></p>
+<ul>
+<li>定期的に各リソースの List, Describe 系 API をコールして変更監視しているとのこと。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/how-does-config-work.html">https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/how-does-config-work.html</a></li>
+</ul>
+<p><img alt="" src="_attachment/image_399.png" /></p>
+<p>リソースの作成・変更が SNS 通知される。</p>
+<p>リソースの依存関係が確認でき、リソース変更の他のリソースへの影響を評価できる。</p>
+<p><img alt="" src="_attachment/image_400.png" /><img alt="" src="_attachment/image_401.png" /></p>
+<h2 id="aws-config_1">AWS Config ルール</h2>
+<p>AWS リソースのコンプライアンス確認ルール:</p>
+<ul>
+<li>ルール実行後、対象リソースの状態が Compliant/Noncompliant に更新される。</li>
+<li>1 rule = 1 $/month</li>
+</ul>
+<p>２種類のトリガー(両方有効にもできる):</p>
+<ul>
+<li><img alt="" src="_attachment/image_402.png" /></li>
+<li><img alt="" src="_attachment/image_403.png" /></li>
+</ul>
+<p><img alt="" src="_attachment/image_404.png" /></p>
+<p>設定項目が Lambda 関数に送られてルール評価が実施される</p>
+<ul>
+<li>
+<p>カスタムルールはユーザが Lambda で実装。</p>
+<ul>
+<li>例えば全ての VPC で Flow Logs が有効になっているか等。</li>
+</ul>
+</li>
+<li>
+<p>リソースが対象なのでインスタンス内のアプリケーションなどはカバーされない。</p>
+</li>
+</ul>
+<p>マネージドルール</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/config/latest/developerguide/managed-rules-by-aws-config.html">https://docs.aws.amazon.com/config/latest/developerguide/managed-rules-by-aws-config.html</a></li>
+<li><img alt="" src="_attachment/image_405.png" /></li>
+<li><img alt="" src="_attachment/image_406.png" /></li>
+</ul>
+<p>コンフォーマンスパック テンプレート</p>
+<ul>
+<li>
+<p>用途に合わせたベストプラクティスの AWS Config ルールの詰め合わせ。</p>
+<ul>
+<li>CloudFormation テンプレートとして提供される</li>
+</ul>
+</li>
+<li>
+<p>マネージド・カスタム両方のルール、修復アクションを含む。</p>
+</li>
+<li>ルールが 200 以上あるので個々に選択するのは大変!</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/conformancepack-sample-templates.html">https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/conformancepack-sample-templates.html</a></li>
+</ul>
+<p>修復アクション</p>
+<ul>
+<li>
+<p>Config ルールに Noncompliant 発生時に実行する SSM Automation アクションを設定できる</p>
+<ul>
+<li>例: EC2 インスタンスの停止等</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/remediation.html">https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/remediation.html</a></p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_407.png" /></p>
+<p>イベントの SNS 通知/CloudWatch Events 監視</p>
+<ul>
+<li>コンプライアンス状態変更に限らずリソース変更等で何か行いたい場合は SNS 通知を使用。</li>
+<li>コンプライアンス状態変更で SSM Automation 以外を実行したい場合は CloudWatch Events を使用。</li>
+<li>ConfigurationItemChangeNotification: リソースの作成/削除/設定変更</li>
+<li>ComplianceChangeNotification: リソースの AWS Config ルール準拠状況の変更通知</li>
+<li>これらは SNS 通知するように設定できるとともに、CloudWatch Events/EventBridge でも監視できる。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/how-does-config-work.html#delivery-channel-SNS-topic">https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/how-does-config-work.html#delivery-channel-SNS-topic</a></li>
+<li><a href="https://docs.aws.amazon.com/config/latest/developerguide/monitor-config-with-cloudwatchevents.html">https://docs.aws.amazon.com/config/latest/developerguide/monitor-config-with-cloudwatchevents.html</a></li>
+</ul>
+<p>Config ダッシュボード</p>
+<ul>
+<li>監視対象のリソース数や非準拠ルール数を表示するダッシュボード</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/viewing-the-aws-config-dashboard.html">https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/viewing-the-aws-config-dashboard.html</a></li>
+</ul>
+<p><img alt="" src="_attachment/image_408.png" /></p>
+<p>アグリゲータ・集約ビュー</p>
+<ul>
+<li>マルチアカウント/マルチリージョンの AWS Config 情報を中央アカウントに作成したアグリゲーターで集約。</li>
+</ul>
+<p><img alt="" src="_attachment/image_409.png" /></p>
+<ul>
+<li>ソースアカウントとリージョンを指定する。</li>
+<li>アカウントは Organization 統合による一括設定も可能。</li>
+<li><img alt="" src="_attachment/image_410.png" /></li>
+<li><br></li>
+<li>Ref <a href="https://dev.classmethod.jp/articles/config-aggregator-in-organization-member-account/">https://dev.classmethod.jp/articles/config-aggregator-in-organization-member-account/</a></li>
+</ul>
+<p>集約ビューのメニューから集約ビューを表示</p>
+<p><img alt="" src="_attachment/image_411.png" /></p>
+<p><img alt="" src="_attachment/image_412.png" /></p>
+<ul>
+<li>このユースケースはカスタムルールを実装する Lambda で修復も行っている？</li>
+</ul>
+<h3 id="ref-aws-config">Ref. AWS Config によるモニタリングとレスポンス</h3>
+<p><a href="Security%20Engineering%20on%20AWS%20Lab%203%20-%20AWS%20Config%20%E3%81%AB%E3%82%88%E3%82%8B%E3%83%A2%E3%83%8B%E3%82%BF%E3%83%AA%E3%83%B3%E3%82%B0%E3%81%A8%E3%83%AC%E3%82%B9%E3%83%9D%E3%83%B3%E3%82%B9.html">Security Engineering on AWS: Lab 3 - AWS Config によるモニタリングとレスポンス</a></p>
+<p>AWS Config で S3 パブリックバケットを監視し CloudWatch Events 経由で SNS 通知と Lambda による修復を行う。</p>
+<p>CloudWatch Events がキモ:</p>
+<ul>
+<li>AWS Config をソースにした CloudWatch Event ルールを設定</li>
+<li>CloudWatch Event ルールのターゲットとして Lambda と SNS を設定</li>
+<li>Lambda の関数ポリシーに CloudWatch Event が InvokeFunction する許可を追加</li>
+</ul>
+<p>ステップ:</p>
+<ul>
+<li>
+<p>S3 を対象とした設定レコーダーを作成する。</p>
+<ul>
+<li>aws configservice put-configuration-recorder</li>
+</ul>
+</li>
+<li>
+<p>配信チャネルを作成する。</p>
+<ul>
+<li>スナップショット保存先のバケット名と通知先 SNS トピック名を指定。</li>
+<li>aws configservice put-delivery-channel</li>
+</ul>
+</li>
+<li>
+<p>設定レコーダーを起動する。</p>
+<ul>
+<li>aws configservice start-configuration-recorder</li>
+</ul>
+</li>
+<li>
+<p>AWS Config ルールを投入する</p>
+<ul>
+<li>
+<p>2つの AWS 管理ルールを指定してそれぞれ投入</p>
+<ul>
+<li>S3_BUCKET_PUBLIC_READ_PROHIBITED</li>
+<li>S3_BUCKET_PUBLIC_WRITE_PROHIBITED</li>
+</ul>
+</li>
+<li>
+<p>aws configservice put-config-rule</p>
+</li>
+</ul>
+</li>
+<li>
+<p>修復のための Lambda 関数を作成する</p>
+<ul>
+<li>CloudWatch Events でコールされ、バケット設定を修正し、SNS 通知する Lambda 関数。</li>
+<li>AWS Config のイベントが CloudWatch Events で渡される。</li>
+</ul>
+</li>
+<li>
+<p>AWS Config をソースにした CloudWatch Event ルールを設定する</p>
+<ul>
+<li>aws events put-rule</li>
+</ul>
+</li>
+<li>
+<p>CloudWatch Event ルールのターゲットとして Lambda と SNS を設定する</p>
+<ul>
+<li>aws events put-targets</li>
+</ul>
+</li>
+<li>
+<p>Lambda の関数ポリシーに CloudWatch Event が InvokeFunction する許可を追加</p>
+<ul>
+<li>aws lambda add-permission</li>
+</ul>
+</li>
+<li>
+<p>AWS Config ルールを実行する</p>
+<ul>
+<li>aws configservice start-config-rules-evaluation</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h1 id="aws-systems-manager-ssm">AWS Systems Manager (SSM)</h1>
+<p><a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20200212_AWSBlackBelt_SystemsManager_0214.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20200212_AWSBlackBelt_SystemsManager_0214.pdf</a></p>
+<ul>
+<li>インスタンスの運用サービス。</li>
+<li>インベントリ管理や、パッチ適用などの管理業務の自動化が可能。</li>
+</ul>
+<p><img alt="" src="_attachment/image_413.png" /><img alt="" src="_attachment/image_414.png" /></p>
+<h2 id="ssm-agent">マネージドインスタンス (SSM Agent)</h2>
+<ul>
+<li>SSM エージェントがインストールされたインスタンス。Amazon Linux はインストール済。</li>
+<li>インスタンスポリシーは AmazonSSMManagedInstanceCore をアタッチする。</li>
+<li>SSM エンドポイントにアウトバウンドでポーリングするのでインターネットアクセスか VPC エンドポイントが必要。</li>
+</ul>
+<p><img alt="" src="_attachment/image_415.png" /><img alt="" src="_attachment/image_416.png" /></p>
+<p>オンプレの場合: ロールを紐づけたアクティベーション ID/Code を発行して SSM Agent に指定する</p>
+<p><img alt="" src="_attachment/image_417.png" /></p>
+<p>Command:</p>
+<pre><code>sudo amazon-ssm-agent -register -code ${ACTIVATION_CODE} -id ${ACTIVATION_ID} -region ${REGION}
+</code></pre>
+<ul>
+<li>オンプレインスタンスには SSM コンソールからタグづけできる。</li>
+<li>コンソール上で「mi-」(managed-instance) プレフィックスで表示される。</li>
+</ul>
+<h2 id="_1">リソースグループ</h2>
+<ul>
+<li>AWS リソースのグループ化。同一リージョン。</li>
+</ul>
+<p><img alt="" src="_attachment/image_418.png" /></p>
+<h2 id="_2">ダッシュボード・インベントリ</h2>
+<p><img alt="" src="_attachment/image_419.png" /></p>
+<h3 id="ssm-explorer">SSM Explorer</h3>
+<p>運用データ (OpsData) のダッシュボード</p>
+<p>デフォルトダッシュボードに表示されるOpsData (運用データ):</p>
+<ul>
+<li>
+<p>EC2情報</p>
+<ul>
+<li>インスタンス数、マネージドインスタンス数、AMI別インスタンス</li>
+</ul>
+</li>
+<li>
+<p>OpsCenter OpsItems</p>
+</li>
+<li>パッチコンプライアンス<ul>
+<li>Patch Manager でパッチに準拠していないインスタンス数</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_420.png" /></p>
+<p>その他、AWS サポートセンターのケース、Trusted Advisor の項目, AWS Config ルールの準拠/非準拠数、Security Hub の検出数なども OpsData としてダッシュボード表示可能。</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/systems-manager/latest/userguide/Explorer.html">https://docs.aws.amazon.com/ja_jp/systems-manager/latest/userguide/Explorer.html</a></li>
+</ul>
+<h3 id="ssm-opscenter">SSM OpsCenter</h3>
+<p>AWSリソースに関する運用作業項目 (OpsItems) のダッシュボード。</p>
+<p>OpsItems の生成例:</p>
+<table>
+<thead>
+<tr>
+<th><strong>サービスや機能</strong></th>
+<th><strong>詳細</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EventBridge</td>
+<td>OpsItems 作成を設定できる EventBridge ルールの種類:<br><br>- AWS Security Hub: セキュリティアラートが発行されました<br>- Amazon DynamoDB: スロットリングイベント<br>- Amazon EC2 Auto Scaling: インスタンスの起動に失敗しました<br>- Systems Manager: オートメーションを実行できませんでした<br>- AWS Health: スケジュールされたメンテナンスのアラート<br>- EC2 インスタンスの状態の Runningから Stoppedへの変更</td>
+</tr>
+<tr>
+<td>CloudWatch アラーム</td>
+<td>OpsItems 作成の CloudWatch アラームを設定できるメトリクスのタイプ:<br><br>- EC2: CPU 使用率がしきい値に達する<br>- EC2: インスタンスがステータスチェックに失敗する<br>- EBS: ディスク領域の使用率がしきい値に達する<br>- DynamoDB: データベースの読み取りおよび書き込みアクションがしきい値に達する<br>- AWS Billing and Cost Management: 推定請求額がしきい値に達する</td>
+</tr>
+<tr>
+<td>SSM Incident Manager</td>
+<td>インシデント (サービスの品質の計画外の中断または低下) 発生時に OpsItems を作成。</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/systems-manager/latest/userguide/OpsCenter.html">https://docs.aws.amazon.com/ja_jp/systems-manager/latest/userguide/OpsCenter.html</a></li>
+</ul>
+<h3 id="ssm">SSM コンプライアンスダッシュボード</h3>
+<p>パッチマネージャーのスキャン結果等のダッシュボード。</p>
+<p><img alt="" src="_attachment/image_421.png" /></p>
+<h3 id="ssm_1">SSM インベントリ</h3>
+<p>インスタンス内のインベントリ情報の収集・可視化。</p>
+<p><img alt="" src="_attachment/image_422.png" /></p>
+<p>S3 に情報を保管するので、Athena などで分析できる。</p>
+<p>AWS Config に送信することで、変更履歴の追跡、Config ルールによるコンプライアンスチェックも。</p>
+<p><img alt="" src="_attachment/image_423.png" /></p>
+<h2 id="_3">自動化</h2>
+<p>SSM ドキュメントを Run Command や Automation で実行。</p>
+<p><img alt="" src="_attachment/image_424.png" /></p>
+<p>Command ドキュメント、Automation ドキュメントなどの4種類がある。</p>
+<p><img alt="" src="_attachment/image_425.png" /></p>
+<h3 id="document-builder">ドキュメント作成: Document Builder</h3>
+<p><img alt="" src="_attachment/image_426.png" /></p>
+<h3 id="run-commandautomation">ドキュメント実行: Run Command/Automation</h3>
+<p><img alt="" src="_attachment/image_427.png" /></p>
+<p>Run Command</p>
+<ul>
+<li>指定したインスタンス群でコマンドドキュメントを実行。</li>
+<li>コンソール出力は S3 や CloudWatch Logs にアウトプットするよう指定可能。</li>
+</ul>
+<p>Automation</p>
+<ul>
+<li>インスタンスや AWS リソースに処理を行う Runbook を実行する。</li>
+<li>Runbook の例: <a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-tutorial-update-patch-linux-ami.html">AWS-UpdateLinuxAmi</a><ul>
+<li>ベース AMI をインスタンス起動してアップデート実行後に新しい AMI を作成するまでの一連のステップを行う。</li>
+<li><img alt="" src="_attachment/image_428.png" /></li>
+</ul>
+</li>
+<li>アクションの例:<ul>
+<li>aws:executeAwsApi: AWS API を実行。</li>
+<li>aws:waitForAwsResourceProperty: 特定のリソース状態またはイベント状態を待つ。</li>
+</ul>
+</li>
+</ul>
+<h3 id="_4">実行のスケジュール: メンテナンスウィンドウ/ステートマネージャー</h3>
+<p><strong>SSM メンテナンスウィンドウ</strong></p>
+<ul>
+<li>スケジュールを指定して登録されたアクションを実行</li>
+<li><img alt="" src="_attachment/image_429.png" /></li>
+</ul>
+<p><img alt="" src="_attachment/image_430.png" /></p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/systems-manager/latest/userguide/systems-manager-maintenance.html">https://docs.aws.amazon.com/ja_jp/systems-manager/latest/userguide/systems-manager-maintenance.html</a></li>
+</ul>
+<p><img alt="" src="_attachment/image_431.png" /></p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/systems-manager/latest/userguide/systems-manager-state.html">https://docs.aws.amazon.com/ja_jp/systems-manager/latest/userguide/systems-manager-state.html</a></li>
+</ul>
+<h2 id="_5">パッチマネージャー</h2>
+<p><img alt="" src="_attachment/image_432.png" /><img alt="" src="_attachment/image_433.png" /></p>
+<p><img alt="" src="_attachment/image_434.png" /></p>
+<ul>
+<li>
+<p>AWS-RunPatchBaseline か AWS-RunPatchBaselineAssociation で実行される。</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-patch-baselines.html">https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-patch-baselines.html</a></li>
+</ul>
+</li>
+<li>
+<p>メンテナンスウィンドウに Run Command タスクの AWS-RunPatchBaseline を登録するような使い方。</p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_435.png" /></p>
+<h2 id="_6">ユースケース</h2>
+<p><img alt="" src="_attachment/image_436.png" /><img alt="" src="_attachment/image_437.png" /></p>
+<p>オートメーション</p>
+<ul>
+<li>SSM ドキュメントで AWS リソースのメンテナンスとデプロイタスクを実行</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/systems-manager/latest/userguide/systems-manager-automation.html">https://docs.aws.amazon.com/ja_jp/systems-manager/latest/userguide/systems-manager-automation.html</a></li>
+</ul>
+<p>Run Command</p>
+<ul>
+<li>インスタンスの OS 上でコマンドドキュメントを実行する。</li>
+</ul>
+<p>パッチマネージャー</p>
+<ul>
+<li>インスタンスのスキャン、コンプライアンスレポート生成、パッチ適用が可能。(パッチをチェックして自動的にあてるなら Inspector でなくこちら)</li>
+<li>オンデマンド/スケジュールでスキャンまたはパッチ適用を実施。</li>
+<li>OS とアプリの両方が対象。(Windows では MS のアプリのみ)</li>
+<li><a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-patch.html">https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-patch.html</a></li>
+</ul>
+<p>ステートマネージャー</p>
+<ul>
+<li>インスタンス起動時またはスケジュールで SSM ドキュメントを実行</li>
+<li><a href="https://dev.classmethod.jp/articles/patching-all-instance-by-ssm-state-manager/">https://dev.classmethod.jp/articles/patching-all-instance-by-ssm-state-manager/</a></li>
+</ul>
+<p>コンプライアンスダッシュボード</p>
+<ul>
+<li>パッチグループや環境など、定義した論理グループによってパッチ適用や設定のコンプライアンスをモニタリングできる</li>
+</ul>
+<p>Distributor</p>
+<ul>
+<li>AWS 提供のエージェントやカスタムソフトウェアのリソースをインスタンスに公開</li>
+</ul>
+<p>セッションマネージャー</p>
+<ul>
+<li>ブラウザからインスタンスにコンソールログインできる。</li>
+<li>セキュリティグループでのインバウンドポート開放や踏み台ホスト, SSH 不要。</li>
+<li>セッションヒストリを記録して S3 や CloudWatch Logs に送って監視することもできる。</li>
+<li>Session Manager Run As:<ul>
+<li>コマンドを実行するユーザの指定。</li>
+<li>OS ユーザとセッションマネージャーの IAM プリンシパルの関連付け。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_438.png" /></p>
+<p>インスタンスの SSH キーが流出した場合に RunCommand で ~/.ssh/auhorized_keys を変更するというユースケースがあった。</p>
+<p><a href="AWS/Security%20Engineering%20on%20AWS%20Lab2%20ASM%20%E3%81%A8%20Amazon%20Inspector%20%E9%80%A3%E6%90%BA.html">Security Engineering on AWS: Lab2 ASM と Amazon Inspector 連携</a></p>
+<p><img alt="" src="_attachment/image_439.png" /></p>
+<ol>
+<li>SSM Run Command でインスタンスへ Inspector エージェントをインストール</li>
+<li>Inspector を実施・レポートを確認</li>
+<li>SSM Automation で AWS-PatchInstanceWithRollback を実行してパッチをあてる</li>
+</ol>
+<hr />
+<h1 id="amazon-inspector">Amazon Inspector</h1>
+<ul>
+<li>起動中 EC2 インスタンス/ECS コンテナ/ECR イメージの脆弱性チェックを実行してレポートを生成。</li>
+<li>月250回までで1台実行毎に$0.3。</li>
+</ul>
+<p><img alt="" src="_attachment/image_440.png" /></p>
+<ul>
+<li>
+<p>アプリケーション脆弱性診断。</p>
+<ul>
+<li>apt, yum, Windows Installer を使用してイ ンストールされたソフトウェアを評価。</li>
+<li>make install 等で直接コピーされたバイナリは評価されない。</li>
+</ul>
+</li>
+<li>
+<p>ネットワーク到達性診断</p>
+<ul>
+<li>オープンポートの検査。不要なサーバやセキュリティグループ誤設定によって外部から到達可能なポートのチェック。</li>
+<li>RecognizedPort: Well known port</li>
+<li>UnrecognizedPortWithListener: Not well known port で Listen されているもの</li>
+<li>NetworkExposure: ENIとセキュリティグループの組み合わせごとに到達可能なポート範囲</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_441.png" /></p>
+<p>評価テンプレート</p>
+<ul>
+<li>実行時間のスケジュール、通知先 SNS トピック、ルールパッケージを設定。</li>
+</ul>
+<p>ルールパッケージ</p>
+<ul>
+<li>CVE (共通脆弱性識別子)</li>
+<li>
+<p>CIS (Center for Internet Security)</p>
+<ul>
+<li>OS のセキュリティ設定ベストプラクティスのベンチマーク</li>
+</ul>
+</li>
+<li>
+<p>セキュリティのベストプラクティス</p>
+<ul>
+<li>SSH 経由の root ログインを無効化する</li>
+<li>SSH バージョン 2 のみをサポート</li>
+<li>SSH 経由のパスワード認証を無効化する</li>
+<li>パスワードの有効期限を設定する</li>
+<li>パスワードの最小文字数を設定する</li>
+<li>パスワードの複雑さを設定する</li>
+<li>ASLR の有効化</li>
+<li>DEP の有効化</li>
+<li>システムディレクトリに対するアクセス許可の設定</li>
+</ul>
+</li>
+<li>
+<p>ネットワーク到達可能性ルール</p>
+</li>
+<li>Ref. <a href="https://docs.aws.amazon.com/ja_jp/inspector/latest/userguide/inspector_rule-packages.html">https://docs.aws.amazon.com/ja_jp/inspector/latest/userguide/inspector_rule-packages.html</a></li>
+</ul>
+<p>Inspector エージェント(オプショナル)</p>
+<ul>
+<li>SSM Agent あれば SSM Run Command でインストールできる</li>
+<li>Amazon Inspector also offers predefined software called an agent that you can optionally install in the operating system of the EC2 instances that you want to assess. The agent monitors the behavior of the EC2 instances, including network, file system, and process activity. It also collects a wide set of behavior and configuration data (telemetry).</li>
+</ul>
+<p>問題例: SSHでのルートログインを可能にするインスタンスをチェックするために、どのAmazon Inspectorルールパッケージを使用しますか？(2つ選択)</p>
+<ul>
+<li>CIS ルールパッケージ: SSH 経由の root ログインを含む安全な設定ポスチャーのレポート</li>
+<li>セキュリティのベストプラクティス: SSH 経由の root ログインを許可するインスタンスがレポートされる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_442.png" /></p>
+<hr />
+<h1 id="amazon-macie">Amazon Macie</h1>
+<ul>
+<li>S3 オブジェクトと CloudTrail のアクセスパターンから機械学習で脅威検知。</li>
+<li>S3 バケットで機密データを検出・分類・保護。</li>
+<li>
+<p>PII や知的財産などの機密データを識別</p>
+<ul>
+<li>人名, 住所, クレジットカード番号, IPアドレス, メールアドレス, パスポート番号など</li>
+<li>ソースコード, ログ, DB バックアップなど</li>
+<li>AWS 管理の識別子は日本語キーワードに対応していない<ul>
+<li>例 "Credit Card" は検出するが "クレジットカード" は検出しない</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>ダッシュボード表示と CloudWatch Events のトリガー</p>
+</li>
+<li>Ref. <a href="https://dev.classmethod.jp/cloud/aws/introduce-to-amazon-macie/">https://dev.classmethod.jp/cloud/aws/introduce-to-amazon-macie/</a></li>
+</ul>
+<p><img alt="" src="_attachment/image_443.png" /><img alt="" src="_attachment/image_444.png" /></p>
+<hr />
+<h1 id="_7"><br></h1>
+<hr />
+<h1 id="amazon-guardduty">Amazon GuardDuty</h1>
+<p>概要</p>
+<ul>
+<li>AWS アカウントの脅威検出サービス。</li>
+<li>CloudTrail ログ、VPC フローログ、DNS ログのイベントを分析。</li>
+<li><img alt="" src="_attachment/image_445.png" /></li>
+<li>IP レピュテーション、異常検知、機械学習などによる脅威検出。</li>
+<li>検出は CloudWatch Events で通知。Events 経由で Lambda によるレスポンス自動化。</li>
+</ul>
+<p><img alt="" src="_attachment/image_446.png" /></p>
+<p>サイバーキルチェーンによる脅威検出の分類:</p>
+<p><img alt="" src="_attachment/image_447.png" /></p>
+<ul>
+<li>ネットワーク (VPC), インスタンス, アカウントのレベルで不正検出</li>
+</ul>
+<p><img alt="" src="_attachment/image_448.png" /></p>
+<ul>
+<li>
+<p>脅威インテリジェンス</p>
+<ul>
+<li>既知の IP アドレスとドメイン名</li>
+<li>AWS Security に加え Proofpoint や CrowdStrike などのサードパーティープロバイダーに提供されるものを使用</li>
+<li>
+<p>独自の脅威インテリジェンスまたは IP セーフリストをアップロードすることも可能。</p>
+<ul>
+<li>IP レンジの指定とかはできないので NACL か WAF の Web ACL にルール投入する。</li>
+<li>セキュリティテストで意図的にポートスキャンを実施する場合にホストを IP セーフリストに登録するというユースケースがある。</li>
+</ul>
+</li>
+<li>
+<p>カスタムルールは投入できない。</p>
+</li>
+<li>フィルター<ul>
+<li>特定ホストで誤検知が頻発する場合はセーフリストに入れるよりもアラートのフィルタリングで自動アーカイブする。</li>
+<li><a href="https://dev.classmethod.jp/articles/guardduty-automatically-archive-findings/">https://dev.classmethod.jp/articles/guardduty-automatically-archive-findings/</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>異常検出</p>
+<ul>
+<li>機械学習による未知の脅威の検出</li>
+<li>7~14 日かけてベースラインを生成、学習モードからアクティブモードに切り替わる。</li>
+<li>脅威インテリジェンスによる既知脅威の検出はすぐに有効になる。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_449.png" /></p>
+<p><img alt="" src="_attachment/image_450.png" /></p>
+<p>FAQ</p>
+<p><a href="https://aws.amazon.com/jp/guardduty/faqs/">https://aws.amazon.com/jp/guardduty/faqs/</a></p>
+<p>料金形態: スキャンしたログの量</p>
+<p><img alt="" src="_attachment/image_451.png" /></p>
+<p>検出が上がるまでのタイムラグ</p>
+<ul>
+<li>GuardDuty は悪意のあるアクティビティや不正なアクティビティの分析をすぐに開始します。</li>
+<li>検出結果の受信が始まる時期はアカウントのアクティビティレベルによって異なります。</li>
+<li>GuardDuty は履歴データを調べず、有効後に開始するアクティビティのみを調べます。</li>
+</ul>
+<p>CloudTrail, VPC フローログ, DNS ログを有効にする必要はありますか?</p>
+<ul>
+<li>いいえ。GuardDuty は CloudTrail、VPC フローログ、DNS ログから独立したデータストリームを直接取得します。</li>
+<li>GuardDuty のアクセス許可は、サービスリンクのロールとして管理されます。</li>
+</ul>
+<p>複数アカウント</p>
+<ul>
+<li>複数アカウントを 1 つの管理者アカウントから管理できる複数アカウント機能があります。</li>
+<li>セキュリティ検出結果を管理者または  GuardDuty 管理者アカウントに集約し、レビューと修復を行うことができます。</li>
+<li>この設定を使用すると CloudWatch Events も GuardDuty 管理者アカウントに集約されます。</li>
+</ul>
+<p>GuardDuty の S3 Protection (2020/8 からの新機能)</p>
+<ul>
+<li>Macie で使用されていた S3 アクティビティの異常および脅威検知が GuardDuty の一部として強化されコストも 80% 以上削減された。</li>
+<li>通常と異なる地理的場所から来るリクエスト、S3 ブロックパブリックアクセスなどの予防的な制御の無効化、または誤設定されたバケットアクセス許可を発見する試みと一致する API コールパターンなどの疑わしいアクティビティを検知</li>
+<li>S3 の CloudTrail管理イベント(コントロールプレーン API) と CloudTrail S3 データイベント (データプレーンオペレーション) のモニタリングとプロファイリングを継続的に行う</li>
+</ul>
+<p>IDS 的な機能ではあるがブロックはしない</p>
+<ul>
+<li>IPS が欲しいなら AWS Network Firewall か AWS Marketplace でサードパーティーソリューションを探す。</li>
+</ul>
+<hr />
+<h1 id="aws-security-hub">AWS Security Hub</h1>
+<p>概要</p>
+<ul>
+<li>組織のアカウント横断で各種セキュリティサービスの検出結果を統合、優先順位づけしてダッシュボード表示。</li>
+<li>自動のコンプライアンススキャン。</li>
+<li>CloudWatch Events 通知とレスポンス自動化</li>
+<li>無料なので有効化して損はない</li>
+</ul>
+<p><img alt="" src="_attachment/image_452.png" /><img alt="" src="_attachment/image_453.png" /></p>
+<ul>
+<li>Firewall Manager 統合で4 種類の検出結果が Security Hub に送信される<ol>
+<li>AWS WAF ルールによって適切に保護されていないリソース</li>
+<li>AWS Shield Advanced によって適切に保護されていないリソース</li>
+<li>DDoS 攻撃が進行中であることを示す AWS Shield Advanced の検出結果</li>
+<li>正しく使用されていないセキュリティグループ</li>
+</ol>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_454.png" /></p>
+<ul>
+<li>AWS のセキュリティサービスとサードパーティの検出結果を集約・相関させて最優先の検出結果を特定。</li>
+<li>AWS ベストプラクティスや CIS, PCI-DSS 等、AWS Config のコンフォーマンスパックのコンプライアンスチェックを継続的に実施。</li>
+</ul>
+<p><img alt="" src="_attachment/image_455.png" /><img alt="" src="_attachment/image_456.png" /></p>
+<p><img alt="" src="_attachment/image_457.png" /><img alt="" src="_attachment/image_458.png" /><img alt="" src="_attachment/image_459.png" /></p>
+<hr />
+<h1 id="amazon-detective">Amazon Detective</h1>
+<p>概要</p>
+<ul>
+<li>インシデント調査のダッシュボード (SIEM 的なサービス)</li>
+<li>GrardDuty 検出イベントと関連する AWS リソース、CloudTrail や VPC Flow Logs を動作グラフに集約。</li>
+<li>マルチアカウントのアクティビティログを集約。</li>
+<li>GuardDuty 有効化が必要 (GuardDuty 有効化後 48 時間待つ)</li>
+</ul>
+<p><img alt="" src="_attachment/image_460.png" /><img alt="" src="_attachment/image_461.png" /><img alt="" src="_attachment/image_462.png" /></p>
+<p>アカウントの集約</p>
+<ul>
+<li>Detective を有効にしたアカウントが動作グラフのマスターアカウントとなる。</li>
+<li>メンバーアカウントを招待しデータを集約する。</li>
+</ul>
+<p><img alt="" src="_attachment/image_463.png" /><img alt="" src="_attachment/image_464.png" /><img alt="" src="_attachment/image_465.png" /></p>
+<p>Ref.</p>
+<ul>
+<li><a href="https://dev.classmethod.jp/articles/amazon-detective/">https://dev.classmethod.jp/articles/amazon-detective/</a></li>
+<li><a href="https://dev.classmethod.jp/articles/how-to-detective/">https://dev.classmethod.jp/articles/how-to-detective/</a></li>
+</ul>
+<hr />
+<p>Ref.  SIEM on Amazon Elasticsearch Service</p>
+<p><a href="https://aws.amazon.com/jp/blogs/news/siem-on-amazon-elasticsearch-service/">https://aws.amazon.com/jp/blogs/news/siem-on-amazon-elasticsearch-service/</a></p>
+<ul>
+<li>AWS から OSS で展開されている AWS サービスを対象とした ES/Kibana による SIEM の実現。</li>
+<li>CloudFormation で展開できる。</li>
+<li>ログの取り込みに対応するサービス: CloudTrail, VPC Flow Logs, GuardDuty, WAF, ELB, CloudFront, S3, Route 53 Resolver</li>
+<li>ログのフィールドを Lambda で正規化する</li>
+</ul>
+<p><img alt="" src="_attachment/image_466.png" /></p>
+<p>Ref. AWS 環境におけるセキュリティインシデントの調査・対応⽅法</p>
+<ul>
+<li><a href="https://d1.awsstatic.com/events/jp/2020/innovate/pdf/S-16AWSInnovate_Online_Conference_2020_Spring_SecurityIncidnetResponse.pdf">https://d1.awsstatic.com/events/jp/2020/innovate/pdf/S-16AWSInnovate_Online_Conference_2020_Spring_SecurityIncidnetResponse.pdf</a></li>
+</ul>
+<hr />
+<h1 id="_8">ペネトレーションテスト</h1>
+<h2 id="ddos">DDoS シミュレーションテストポリシー</h2>
+<p><a href="https://aws.amazon.com/jp/security/ddos-simulation-testing/">https://aws.amazon.com/jp/security/ddos-simulation-testing/</a></p>
+<p>承認された APN パートナー (AWS DDoS テストパートナー) に実行される必要がある</p>
+<ul>
+<li>APN: AWS パートナーネットワーク</li>
+</ul>
+<p>テスト対象</p>
+<ul>
+<li>Shield Advanced をサブスクライブするアカウントの保護対象リソース</li>
+<li>Shield Advanced をサブスクライブするアカウントの API Gateway エッジ最適化エンドポイント</li>
+</ul>
+<h2 id="aws">侵入テストの AWS カスタマーサポートポリシー</h2>
+<p><a href="https://aws.amazon.com/jp/premiumsupport/knowledge-center/penetration-testing/">https://aws.amazon.com/jp/premiumsupport/knowledge-center/penetration-testing/</a></p>
+<p>8 つのサービスは事前承認なくセキュリティ評価・侵入テストを許可されている</p>
+<ol>
+<li>EC2 インスタンス, NAT ゲートウェイ, ELB</li>
+<li>RDS</li>
+<li>Aurora</li>
+<li>CloudFront</li>
+<li>API Gateway</li>
+<li>Lambda 関数/Lambda Edge 関数</li>
+<li>Lightsail リソース</li>
+<li>Elastic Beanstalk 環境</li>
+</ol>
+<p>禁止行為</p>
+<ul>
+<li>
+<p>DoS/DDoS</p>
+<ul>
+<li>これらは <a href="https://aws.amazon.com/jp/security/ddos-simulation-testing/">DDoS シミュレーションテストポリシー</a>の対象</li>
+</ul>
+</li>
+<li>
+<p>ポートフラッディング</p>
+<ul>
+<li>ポートスキャンや脆弱性スキャンはOK</li>
+</ul>
+</li>
+<li>
+<p>プロトコルフラッディング</p>
+</li>
+<li>
+<p>リクエストフラッディング</p>
+<ul>
+<li>ログインリクエストフラッディング、API リクエストフラッディング)</li>
+</ul>
+</li>
+<li>
+<p>Route 53 ホストゾーン経由の DNS ゾーンウォーキング</p>
+</li>
+</ul>
+<p>AWS インフラやサービス自体のセキュリティ評価を実施することは許可されていない。</p>
+<p>VPC から別の VPC に対するテストも禁止されているので事前承認が必要。</p>
+<h2 id="_9">ネットワーク負荷テスト</h2>
+<p><a href="https://aws.amazon.com/jp/ec2/testing/">https://aws.amazon.com/jp/ec2/testing/</a></p>
+<p>EC2 インスタンスから、別の EC2 インスタンス、AWS サービス、外部エンドポイントなどの他のロケーションに向けて、ボリュームの大きなネットワークテストの実施する場合で、次のような条件に当てはまりそうな場合は テストの 14 営業日前までに EC2 ネットワーク負荷テストの受け入れフォームへ記入して AWS に確認する必要がある。</p>
+<ul>
+<li>1 分を越えて継続する場合</li>
+<li>1 Gbps または 1 Gpps を超える場合</li>
+<li>不正または悪意のあると見られるトラフィックが生成される</li>
+<li>テストターゲット以外のエンティティ (ルーティングや共有サービスインフラストラクチャ) に影響を与える可能性がある</li>
+</ul>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

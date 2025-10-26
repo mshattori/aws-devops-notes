@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS - DevSecOps, Configuration Management - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS - DevSecOps, Configuration Management</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <p>DevSecOps は DevOps 同様にセキュリティプラクティスをパイプラインで自動化する。</p>
+<p><img alt="" src="_attachment/image_376.png" /><img alt="" src="_attachment/image_377.png" /></p>
+<p>パイプライン自体のセキュリティ:</p>
+<ul>
+<li>
+<p>パイプラインへのアクセス権の管理:</p>
+<ul>
+<li>最小権限で許可するアクションとリソースを定義。</li>
+<li>IAM ロールを使用し、ユーザにポリシーを直接つけない。</li>
+<li>MFA を有効にする。</li>
+<li>IAM Policy Simulator によるポリシーのテスト。</li>
+</ul>
+</li>
+<li>
+<p>AWS Config により非準拠リソースを監査。</p>
+</li>
+<li>
+<p>認証情報の管理</p>
+<ul>
+<li>Secrets Manager, SSM Parameter Store を使う。</li>
+</ul>
+</li>
+<li>
+<p>Jenkins などのビルドーサーバを保護する。</p>
+</li>
+</ul>
+<p>パイブライン内のセキュリティ:</p>
+<ul>
+<li>セキュリティテストの実施。</li>
+</ul>
+<h1 id="_1">各フェーズでの実施内容の例</h1>
+<p><img alt="" src="_attachment/image_378.png" /></p>
+<ul>
+<li><a href="https://github.com/awslabs/git-secrets">git-secrets</a> などでレポジトリにコミットされたシークレットをスキャン。</li>
+<li>アーティファクトの S3 オブジェクトにタグ付け。</li>
+<li>キーポリシーなどのセキュリティコンポーネントをデプロイ。</li>
+<li>AWS Config ルールで展開されたリソースの監査。</li>
+</ul>
+<h1 id="_2">セキュリティテスト</h1>
+<p><img alt="" src="_attachment/image_379.png" /></p>
+<ul>
+<li>TestAMI Lambda で Amazon Inspector をトリガーして AMI をテストする例。</li>
+</ul>
+<p><img alt="" src="_attachment/image_380.png" /></p>
+<ul>
+<li>TriggerClair Lambda で docker コンテナの静的脆弱性スキャンツール Clair を実行する例。</li>
+<li>Clair は各コンテナレイヤーをスキャンし、CVE および Red Hat, Ubuntu, Debian の類似データベースに基づいて脆弱性を通知する。</li>
+<li><a href="https://github.com/quay/clair">https://github.com/quay/clair</a></li>
+<li><a href="https://www.redhat.com/ja/topics/containers/what-is-clair">https://www.redhat.com/ja/topics/containers/what-is-clair</a></li>
+</ul>
+<p><img alt="" src="_attachment/image_381.png" /></p>
+<ul>
+<li>Python の requirements.txt のモジュールのホワイトリストチェックを CodeBuild で行う例。</li>
+</ul>
+<p><img alt="" src="_attachment/image_382.png" /></p>
+<hr />
+<h1 id="_3">脅威検出</h1>
+<p>Ref. <a href="AWS/AWS%20Security%20Governance,%20Incident%20Response.html">AWS: Security: Governance, Incident Response</a></p>
+<h2 id="amazon-inspector">Amazon Inspector</h2>
+<p>起動中インスタンスの脆弱性チェックを実行。</p>
+<p>SNS 通知により Lambda 等で自動修復。</p>
+<p><img alt="" src="_attachment/image_383.png" /></p>
+<h2 id="amazon-macie">Amazon Macie</h2>
+<ul>
+<li>S3 オブジェクトと CloudTrail のアクセスパターンから機械学習で脅威検知。</li>
+</ul>
+<p><img alt="" src="_attachment/image_384.png" /></p>
+<h2 id="amazon-guardduty">Amazon GuardDuty</h2>
+<p>AWS アカウント全体での脅威を検出</p>
+<p><img alt="" src="_attachment/image_385.png" /></p>
+<h2 id="aws-security-hub">AWS Security Hub</h2>
+<p>各種セキュリティサービスの検出結果をダッシュボード表示。</p>
+<p>AWS ベストプラクティスや CIS, PCI-DSS 等、AWS Config のコンフォーマンスパックのコンプライアンスチェックを継続的に実施</p>
+<p><img alt="" src="_attachment/image_386.png" /></p>
+<hr />
+<h1 id="configuration-management">Configuration Management</h1>
+<h2 id="_4">構成管理</h2>
+<p>インフラストラクチャ、シス テム、製品の構成要素、設計に関する詳細、構築状態を、追跡・記録し、必要なときにアクセスできるようにする。</p>
+<p><img alt="" src="_attachment/image_387.png" /></p>
+<ul>
+<li>インフラは CloudFormation で構築・管理。</li>
+<li>インスタンス上へのデプロイは cfn-init を UserData に設定することで構築できる。</li>
+<li>Systems Manager やサードパーティーツールでもデプロイ・設定できる。</li>
+<li>サードパーティーツール: Chef, Puppet, Ansible, Salt</li>
+</ul>
+<h2 id="aws-config">AWS Config</h2>
+<p>Ref. <a href="AWS/AWS%20Security%20Governance,%20Incident%20Response.html">AWS: Security: Governance, Incident Response</a></p>
+<p>AWS リソースのインベントリの生成と管理: AWS リソースのスナップショットと変更履歴を S3 に記録する。</p>
+<p><img alt="" src="_attachment/image_388.png" /></p>
+<p><img alt="" src="_attachment/image_389.png" /></p>
+<h2 id="aws-service-catalog">AWS Service Catalog</h2>
+<p>Ref. <a href="AWS/AWS%20Security%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS: Security: CloudFormation, Service Catalog, Control Tower</a></p>
+<p>管理者が提供する CloudFormation テンプレート(=製品)を指定されたロールとパラメータ(=制約)で、エンドユーザが自身でプロビジョンする仕組み。</p>
+<p><img alt="" src="_attachment/image_390.png" /></p>
+<h2 id="compliance-as-code">Compliance-as-Code</h2>
+<ul>
+<li>コンプライアンス要件を AWS Config ルールのカスタムコードとして Lambda のコードとして定義。</li>
+<li>Service Catalog で製品をユーザに提供。展開された製品の CloudFormation スタックに対して AWS Config ルールによる監査を実行。</li>
+<li>AWS Config ルールの修復アクションとしてとして SSM Automation でドキュメント実行もできる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_391.png" /></p>
+<p><a href="https://aws.amazon.com/jp/blogs/apn/how-to-automate-cloud-governance-to-achieve-safety-at-speed/">https://aws.amazon.com/jp/blogs/apn/how-to-automate-cloud-governance-to-achieve-safety-at-speed/</a></p>
+<h2 id="_5"><br></h2>
+<hr />
+<h1 id="ami">カスタム AMI</h1>
+<h2 id="ami_1">AMI の構成要素</h2>
+<ul>
+<li>ルートボリュームのテンプレート (OS, アプリケーションなどを含む)</li>
+<li>起動許可: どのアカウントでその AMI からインスタンス実行できるかを管理する</li>
+<li>ブロックデバイスマッピング: インスタンス作成時にアタッチするボリュームを指定する</li>
+<li>ルートデバイス用ストレージ種類: EBS の Snapshot-Backed または Instance Store-Backed</li>
+<li>AMI はリージョンリソースで、リージョンに登録する。</li>
+</ul>
+<h2 id="ami_2">ゴールデン AMI</h2>
+<ul>
+<li>サーバのイメージをテンプレート化する事によって、デプロイ時間の短縮や再現性を高める</li>
+<li>カスタムしたソフトウェアや設定を事前にインストール・定義しておける</li>
+<li>最新のセキュリティパッチなど適用するため、AMI 構築は自動化する。</li>
+</ul>
+<p><img alt="" src="_attachment/image_392.png" /></p>
+<ul>
+<li>
+<p>完全ビルド</p>
+<ul>
+<li>全てを含む AMI</li>
+<li>デプロイが簡単で起動時間が高速</li>
+</ul>
+</li>
+<li>
+<p>JeOS (Just Enough Operating System)</p>
+<ul>
+<li>最小限の OS と構成管理エージェントのみを含み、残りは起動時にインストール</li>
+<li>柔軟性とポータビリティ</li>
+</ul>
+</li>
+<li>
+<p>ハイブリッド</p>
+<ul>
+<li>完全ビルドと JeOS との中間</li>
+<li>動的な変更の柔軟性と、起動速度を両立</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_393.png" /></p>
+<ul>
+<li>検証や承認のフローがある。</li>
+<li>自動化は SSM Automation, CodePipline/CodeBuid や EC2 Image Builder で実装。</li>
+</ul>
+<p>CI/CD パイプラインの中でゴールデン AMI を利用する例:</p>
+<p><img alt="" src="_attachment/image_394.png" /></p>
+<ul>
+<li>CodePipline 中の Lambda ステップによって SSM Automation を実行してゴールデン AMI をビルドしている。</li>
+</ul>
+<p>AMI 構築の SSM Automation ドキュメント (Runbook):</p>
+<p>AWS-UpdateLinuxAmi</p>
+<ul>
+<li>Amazon Linux、Red Hat、Ubuntu、CentOS AMI のディストリ ビューションパッケージおよび Amazon ソフトウェアをすべてアップ グレードします。</li>
+</ul>
+<p>AWS-UpdateWindowsAmi</p>
+<ul>
+<li>Windows アップデートをすべてインストールし、Amazon ソフト ウェアをアップグレードします</li>
+</ul>
+<p>Automation Runbook で Golden AMI 作成・検証・登録などの一連のプロセスを全て行う例:</p>
+<p><img alt="" src="_attachment/image_395.png" /></p>
+<p>Ref. <a href="https://d1.awsstatic.com/whitepapers/aws-building-ami-factory-process-using-ec2-ssm-marketplace-and-service-catalog.pdf">https://d1.awsstatic.com/whitepapers/aws-building-ami-factory-process-using-ec2-ssm-marketplace-and-service-catalog.pdf</a></p>
+<h2 id="ec2-image-builder">EC2 Image Builder</h2>
+<p>AWS,オンプレミス両方で使えるゴールデンイメージを作成できる。</p>
+<p><img alt="" src="_attachment/image_396.png" /></p>
+<ul>
+<li>Windows と Linux に対応。</li>
+<li>コード不要で GUI で自動化パイプラインを生成。</li>
+<li>AWS 提供の設定やカスタム設定でイメージのセキュリティ保護。</li>
+<li>AWS 提供のテストやカスタムテストを使用してイメージ をテスト。</li>
+<li>ソフトウェアの更新がある度に、自動でパイプラインが実行される。<ul>
+<li>ソフトウェアや設定をカスタマイズ</li>
+<li>テンプレートを使用してセキュアなイメージにする</li>
+<li>イメージのテストを行う</li>
+<li>選択したリージョン(複数可)にゴールデンイメージを配布する</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_397.png" /></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

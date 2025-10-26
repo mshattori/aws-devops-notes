@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS - Security - CloudFormation, Service Catalog, Control Tower - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS - Security - CloudFormation, Service Catalog, Control Tower</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="security-by-design">Security by Design</h1>
+<p><img alt="" src="_attachment/image_1191.png" /></p>
+<ul>
+<li>「設計によるセキュリティ (SbD)」で AWS アカウント設計の正式 化、セキュリティ制御の自動化、監査の簡素化を可能にする。</li>
+<li>基本的な構造を自動化して AWS 環境のセキュリティとコンプライアンスをコード化。</li>
+<li>セキュアで反復可能なアプローチを作成することで、インフラストラクチャの特定の制御要素をキャプチャ、保護、制御することができる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1192.png" /></p>
+<ul>
+<li>ステップ 4 の監査は AWS Config などで実現。その構成も CloudFormation で構築され、Service Catalog で強制される。</li>
+</ul>
+<hr />
+<h1 id="cloudformation">CloudFormation</h1>
+<p><img alt="" src="_attachment/image_1193.png" /></p>
+<ul>
+<li>Infrastructure as Code (IoC) でインフラの構成変更を追跡</li>
+</ul>
+<p><img alt="" src="_attachment/image_1194.png" /></p>
+<p>コンプライアンス準拠とガバナンスをレイヤー化したモジュラー設計を CloudFormation スタックで実現</p>
+<ol>
+<li>スタック 1: 各アカウントに適用される基本的なセキュリティテンプレート。共通の IAM ユーザー、ロール、グループ、関連付けられたポリシーがデプロイされます。CloudTrail 等のモニタリング設定もこのレイヤーで展開。</li>
+<li>スタック 2: VPC 構成をデプロイする一般的なユースケース向けのテンプレート。VPC ピア接続、 NAT インスタンス、IGW および VGW (Virtual Private Gateway) といった接続オプションを考慮して作成される。</li>
+<li>スタック 3: 特定のアプリケーションアーキテクチャ共通のテンプレート。ELB TLS 設定、共通セ キュリティグループ、共通 S3 バケットといった、複数のアプ リケーションに共通しているものの、ユースケースによって区別され るアプリケーション関連コンポーネントがこれらに含まれます。</li>
+<li>スタック 4: 個別アプリケーションのためのテンプレート。関連付けられた EC2 インスタンス、Auto Scaling グルー プ、その他インスタンスレベルのリソースをデプロイする。このスタックでは必要なユーザーデータや、アプリケーション専用セキュリティグループのようなその他のリソースによってブートストラップされたインスタンスを作成する。</li>
+</ol>
+<p>個別アプリケーションのテンプレートから下位レイヤーの基盤テンプレートをネストして「パッケージ」</p>
+<h2 id="stackset">StackSet</h2>
+<p>マルチリージョン、マルチアカウントでリソースをデプロイ。</p>
+<p><img alt="" src="_attachment/image_1195.png" /></p>
+<ul>
+<li>ターゲットアカウントにスタックを作成する前に、 管理者アカウントとターゲットアカウントの間に信頼関係をセットアップする必要がある。</li>
+<li>スタックセットはリージョンリソースなので、他のリージョンで表示や変更できない。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1196.png" /></p>
+<ul>
+<li>
+<p>動的リファレンス</p>
+<ul>
+<li>Systems Manager Parameter Store や Secrets Manager 等で管理されている外部値を参照する。</li>
+<li>テンプレートに機密情報を埋め込まずに済む。</li>
+</ul>
+</li>
+<li>
+<p>ドリフト検出</p>
+<ul>
+<li>CloudFormation 外部でスタックのリソースに直接変更が行われたか検出できる。</li>
+</ul>
+</li>
+<li>
+<p>スタックの削除保護</p>
+<ul>
+<li>スタック作成時に有効にできる。スタックの削除が失敗する。</li>
+</ul>
+</li>
+<li>
+<p>スタックポリシー</p>
+<ul>
+<li>重要なスタックリソースを意図しない更新から保護。</li>
+<li>指定リソースに対して実行できる更新アク ションを記述した ポリシードキュメント。</li>
+</ul>
+</li>
+<li>
+<p>DeletionPolicy 属性</p>
+<ul>
+<li>スタックが削除される時にリソースを保持または (場合によっては)バックアップできる。</li>
+<li>制御する各リソースに対して DeletionPolicy 属性を指定する。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1197.png" /></p>
+<p>Ref. <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/protect-stack-resources.html">https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/protect-stack-resources.html</a></p>
+<hr />
+<h1 id="aws-service-catalog">AWS Service Catalog</h1>
+<p>ガバナンス・コンプライアンス適合した CloudFormation テンプレート群をサービスカタログとしてユーザに提供する仕組み。</p>
+<p><img alt="" src="_attachment/image_1198.png" /></p>
+<ul>
+<li>セキュリティ管理者が提供する CloudFormation テンプレートを指定されたロールでエンドユーザが自身でプロビジョンする。</li>
+<li>ポリシーの集中管理を必要とするマネージドサービスオーガニゼーション (MSO) やマネージドサービスプロバイダー (MSP) 向けに開発された。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1199.png" /></p>
+<ul>
+<li>ユーザはサービスカタログから製品(=テンプレート)を選んでセルフサービスでプロビジョンする。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1200.png" /></p>
+<p>サービスカタログの要素</p>
+<p><img alt="" src="_attachment/image_1201.png" /></p>
+<p>ポートフォリオ</p>
+<ul>
+<li>複数の製品をまとめて管理する単位。(ユーザからは製品しか見えない)</li>
+<li>ここで製品ごとの制約やポートフォリオにアクセスできるユーザ・グループを指定する。</li>
+</ul>
+<p>製品</p>
+<ul>
+<li>CloudFormation テンプレートをインポートして作成する</li>
+<li>複数の AWS リソー スで構成される IT サービス。</li>
+<li>EC2 インスタンス, EBS, RDB, モニタリング設定など。</li>
+</ul>
+<p>制約</p>
+<ul>
+<li>製品に対してリソースをデプロイするための方法を制限するもの。</li>
+<li>
+<p>テンプレート制約</p>
+<ul>
+<li>CloudFormation テンプレートのパラメータ (EC2 インスタンスタイプ, IP 範囲等) を制限する。</li>
+<li>テンプレートを製品にインポートする際にパラメータの制限を適用する。</li>
+</ul>
+</li>
+<li>
+<p>起動制約</p>
+<ul>
+<li>製品からリソースをプロビジョニングする際に使用するロールを指定。</li>
+<li>ユーザが製品をプロビジョニングする機能に影響を与えずにユーザの権限を制限できる。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1202.png" /></p>
+<p>コンプライアンス要件を AWS Config ルールのカスタムコードとして Lambda のコードとして定義。Service Catalog で製品をユーザに提供。</p>
+<ol>
+<li>まず、さまざまなステークホルダーから要件を取得します。これには、エ ンドユーザーや組織内のその他のサポート機能 (セキュリティなど) が含 まれる場合があります。</li>
+<li>次に、これらの要件をコードで定義して  AWS Config ルールとして Lambda で実装する。この要件を製品に対して実行して、要件が満たされているかどうかを検証します。</li>
+<li>製品を開発し、AWS Service Catalog に公開して使用可能にします。</li>
+<li>デベロッパーは、この製品をより大規模なアプリケーションのコンポーネ ントとして使用します。</li>
+<li>製品のすべてのインスタンスに対してルールの実行を続けて、将来 もビジネス要件が満たされていることを保証します。</li>
+</ol>
+<p>Ref. <a href="https://aws.amazon.com/jp/blogs/apn/how-to-automate-cloud-governance-to-achieve-safety-at-speed/">https://aws.amazon.com/jp/blogs/apn/how-to-automate-cloud-governance-to-achieve-safety-at-speed/</a></p>
+<p>Ref. <a href="AWS/Security%20Engineering%20on%20AWS%20Lab6%20AWS%20Service%20Catalog%20%E3%81%AE%E4%BD%BF%E7%94%A8.html">Security Engineering on AWS: Lab6 AWS Service Catalog の使用</a></p>
+<p><img alt="" src="_attachment/image_1203.png" /></p>
+<hr />
+<h1 id="aws-control-tower">AWS Control Tower</h1>
+<p>マルチアカウント管理の問題を解決する Landing Zone を適用するサービス。</p>
+<p>アカウントの各種設定、監査ログ集約、ガードレールなどのデプロイを自動化。</p>
+<p>SCP (予防的ガードレール) と Config Rules (発見的ガードレール)。</p>
+<p><img alt="" src="_attachment/image_1204.png" /></p>
+<h2 id="landing-zone">Landing Zone</h2>
+<p>ベストプラクティスに基づいて構成したアカウントをガバナンスを効かせてスケーラブルに自動展開する仕組み。</p>
+<p>マスター、ログアーカイブ、監査アカウントを使用する。</p>
+<p><img alt="" src="_attachment/image_1205.png" /></p>
+<p>アカウントの発行・管理</p>
+<ul>
+<li>Organizations を使用してマルチアカウント環境を作成</li>
+</ul>
+<p>サインオンの構成</p>
+<ul>
+<li>AWS SSO を使用して ID 管理、フェデレーティッドアクセスを提供する</li>
+</ul>
+<p>監査用ログの集約</p>
+<ul>
+<li>CloudTrail ログや S3 に保存される AWS Config のログを集中管理</li>
+<li>IAM および AWS SSO を使用してクロスアカウントセキュリティ監査を有効化</li>
+<li>CloudWatch によるアラート</li>
+</ul>
+<p>ガードレールの設置</p>
+<ul>
+<li>実施してはいけない操作の禁止 (必須のガードレール)</li>
+<li>危険な設定の監視 (強く推奨されるガードレール、推奨のガードレール)</li>
+<li>Organization, AWS Config で実装。</li>
+</ul>
+<h2 id="_1">仕組み</h2>
+<p><img alt="" src="_attachment/image_1206.png" /></p>
+<ul>
+<li>Root, Core, Custom の 3つの OU が作成される。</li>
+<li>Core OU に属する Audito, Log Archive の2つの共有アカウントが作成される。</li>
+</ul>
+<p>4つの役割のアカウント</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>マネジメント</td>
+<td>- Control Towerを管理するアカウント<br>- Organizationsのマネジメントアカウントにもなります<br>- AWS SSOやService Catalogなどの機能が展開されます<br>- AWS SSOはADなどと連携が可能です<br>- CloudFormationのStackSetsでアカウントのベースラインをもっていて各アカウントへ展開します</td>
+</tr>
+<tr>
+<td>Audit</td>
+<td>- CoreOU配下でControl Tower管理下のアカウントを監査するアカウント<br>- Configの情報が集約されるので各アカウントの状況をチェックしたり是正したりします<br>- アカウントのベースラインが適用されます</td>
+</tr>
+<tr>
+<td>Log Archive</td>
+<td>- CoreOU配下でログを集約するアカウント<br>- CloudTrail / Configのログが集約されます<br>- アカウントのベースラインが適用されます</td>
+</tr>
+<tr>
+<td>Custom</td>
+<td>- Control Tower配下で一般利用のためにアカウントを発行します<br>- アカウントファクトリーという機能を使います<br>- 任意のOUを作成してその配下に追加できます<br>- アカウントのベースラインの他に、ネットワークのベースラインも展開されます</td>
+</tr>
+</tbody>
+</table>
+<p>Account Factory</p>
+<ul>
+<li>新規のAWSアカウントのプロビジョニングを自動化。</li>
+<li>ネットワーク構成とリージョンを指定し、どの OU に所属するか指定してアカウントを作成。</li>
+<li>Service Catalog からリソースが展開される。Network Baseline となる VPC など。</li>
+<li><img alt="" src="_attachment/image_1207.png" /></li>
+<li><br></li>
+</ul>
+<p>セキュリティ機能として CloudTrail と Config が展開される</p>
+<p>他のセキュリティ機能も別途設定</p>
+<ul>
+<li>GuardDuty</li>
+<li>Security Hub</li>
+<li>IAM Access Analyzer</li>
+<li>Detective</li>
+</ul>
+<h2 id="_2">ガードレール</h2>
+<p>OU 単位で適用される。</p>
+<p>SCP (予防的ガードレール)</p>
+<ul>
+<li>Organizationsを使ってOU/アカウント全体に強制的に適用するポリシー</li>
+<li>展開したガードレールやベースラインを削除できないようにできる</li>
+</ul>
+<p>Config Rules (発見的ガードレール)</p>
+<ul>
+<li>ポリシーに違反する設定を検知・自動修復できる。</li>
+<li>Aggregatorによりマルチアカウントの集約ができる。</li>
+</ul>
+<p>必須ガードレール例 (=デフォルト有効)</p>
+<ul>
+<li>ログアーカイブの削除を許可しない</li>
+<li>ログアーカイブの保管時に暗号化を有効にする</li>
+<li>ログアーカイブへのパブリック書き込みアクセスを許可しない</li>
+<li>利用可能なすべてのリージョンで AWS Config を有効にする</li>
+<li>AWS Config への設定変更を不許可にします</li>
+<li>利用可能なすべてのリージョンで CloudTrail を有効にする</li>
+<li>CloudTrail の設定変更を許可しない</li>
+<li>CloudTrail イベントを CloudWatch Logs と統合する</li>
+</ul>
+<p>強く推奨のガードレール例</p>
+<ul>
+<li>SSH を介したインターネット接続を許可しない</li>
+<li>ルートユーザーのアクセスキーの作成を許可しない</li>
+</ul>
+<p>選択的ガードレール例</p>
+<ul>
+<li>MFA を使用しない IAM ユーザーへのアクセスを許可しない</li>
+<li>バージョンが有効化されていない S3 バケットを許可しない</li>
+<li>MFA なしで S3 バケットでの削除アクションを許可しない</li>
+</ul>
+<p><img alt="" src="_attachment/image_1208.png" /><img alt="" src="_attachment/image_1209.png" /></p>
+<p>References</p>
+<p><a href="https://dev.classmethod.jp/articles/jaws-days-2021-control-tower/">https://dev.classmethod.jp/articles/jaws-days-2021-control-tower/</a></p>
+<p><a href="https://tech.nri-net.com/entry/2021/04/09/092400">https://tech.nri-net.com/entry/2021/04/09/092400</a></p>
+<p>Ref. AWS マルチアカウント管理を実現するベストプラクティスとは ?</p>
+<p><a href="https://aws.amazon.com/jp/builders-flash/202007/multi-accounts-best-practice">https://aws.amazon.com/jp/builders-flash/202007/multi-accounts-best-practice</a></p>
+<p><img alt="" src="_attachment/image_1210.png" /><img alt="" src="_attachment/image_1211.png" /></p>
+<ul>
+<li>内部統制のため、開発者による本番環境アクセスの禁止。</li>
+<li>本番環境と開発環境が明示的に分かれることによって、オペレーションミスなどのリスク対策</li>
+</ul>
+<p><img alt="" src="_attachment/image_1212.png" /></p>
+<p><img alt="" src="_attachment/image_1213.png" /></p>
+<p>Landing Zone</p>
+<ul>
+<li>Well-Architected Framework を始めとした AWS のベストプラクティスに基づいて構成したアカウントをスケーラブルに展開していくための仕組みの総称。</li>
+<li>ガバナンスを効かせた形でアカウントを自動展開。</li>
+</ul>
+<p>Landing Zone の構成要素</p>
+<ol>
+<li>
+<p>アカウントの発行</p>
+<ul>
+<li>必要な初期設定の済んだアカウントを作成</li>
+</ul>
+</li>
+<li>
+<p>管理用権限の発行</p>
+<ul>
+<li>対象アカウントを管理するための権限を作成</li>
+</ul>
+</li>
+<li>
+<p>共有サービスへのアクセス (ユーザー環境に合わせて個別に実装する)</p>
+<ul>
+<li>AD やファイルサーバー等の共有サービスや運用拠点への接続経路の確保</li>
+</ul>
+</li>
+<li>
+<p>AWS ログの集約</p>
+<ul>
+<li>監査用ログをセキュアに一元保存</li>
+</ul>
+</li>
+<li>
+<p>ガードレールの設置　</p>
+<ul>
+<li>実施してはいけない操作の禁止 (必須のガードレール)</li>
+<li>危険な設定の監視 (強く推奨されるガードレール、推奨のガードレール)</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h1 id="aws-artifact">AWS Artifact</h1>
+<p>使用する AWS インフラストラクチャとサービスのコンプライアンスレポートをダウンロードするサービス。</p>
+<p>ISO、PCI、SOCなどの第三者による監査レポートをダウンロードできる。</p>
+<ul>
+<li>Global Financial Services Regulatory Principles</li>
+<li>ISO</li>
+<li>Payment Card Industry(PCI)</li>
+<li>Service Organization Control(SOC)</li>
+<li>Quality Management System Overview</li>
+</ul>
+<p>コンプライアンスドキュメント (_監査アーティファクト_とも呼ばれます) を監査人や規制機関に送信し、使用中の AWS インフラストラクチャとサービスのセキュリティとコンプライアンスを示すことができます。</p>
+<p>Ref. <a href="https://aws.amazon.com/jp/artifact/faq/">https://aws.amazon.com/jp/artifact/faq/</a></p>
+<hr />
+<h1 id="aws-audit-manager">AWS Audit Manager</h1>
+<p>監査証跡を自動収集。</p>
+<p><img alt="" src="_attachment/image_1214.png" /><img alt="" src="_attachment/image_1215.png" /><img alt="" src="_attachment/image_1216.png" /></p>
+<p>Ref. <a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20210309_AWSblackbelt_AWSAuditManager.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20210309_AWSblackbelt_AWSAuditManager.pdf</a></p>
+<p><br></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

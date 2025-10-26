@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS - Security - EC2, ELB, VPC - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS - Security - EC2, ELB, VPC</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="ec2">EC2 のセキュリティ</h1>
+<p>キーペア</p>
+<ul>
+<li>キーペアは作成したものをインポートすることも可能。</li>
+<li>キーペアを使用するよりインスタンスをディレクトリドメイン (AD, LDAP) に参加させ SSO することを推奨。ログインのトラッキングのため。</li>
+<li>漏洩したキーを使用しているインスタンスは次のコマンドで探せる。<ul>
+<li>aws ec2 describe-instances --filters "Name=key-name,Values=KEY_NAME"</li>
+</ul>
+</li>
+</ul>
+<p>インスタンスメタデータサービス (IMDS)</p>
+<ul>
+<li>アタッチしたロールの一時クリデンシャルはメタデータに格納される。</li>
+<li>リンクローカルアドレス 169.254.169.254 でアクセスされる。</li>
+</ul>
+<p>OP25B</p>
+<ul>
+<li>AWS はデフォルトで EC2 インスタンスや Lambda 関数についてポート25の送信トラフィックをブロックしている。</li>
+<li>別のポート番号か SES (Simple Email Service) の VPC エンドポイントを使用する。</li>
+<li>SES SMTP エンドポイントはサブミッションポート 587 と2587 をサポートしている</li>
+<li>AWS に制限解除をリクエストすることもできる。</li>
+<li><a href="https://aws.amazon.com/jp/premiumsupport/knowledge-center/ec2-port-25-throttle/">https://aws.amazon.com/jp/premiumsupport/knowledge-center/ec2-port-25-throttle/</a></li>
+</ul>
+<p>メモリ・EBS のクリーンナップ</p>
+<ul>
+<li>ホストにメモリが割り当てられなくなると、ハイパーバイザによって直ちにスクラブクリーン(ゼロ設定)され、空きメモリプールに戻される。</li>
+<li>EBS ボリュームは削除直後にはスクラブクリーンされない。再利用の直前にスクラブクリーンされる。</li>
+<li>メモリもEBSボリュームもクリーンな状態でインスタンスに提供される。</li>
+</ul>
+<hr />
+<h1 id="amazon-inspector">Amazon Inspector</h1>
+<ul>
+<li>起動中インスタンスの脆弱性チェックを実行してレポート生成。</li>
+<li>エージェントをインストールする。</li>
+</ul>
+<p>Ref. <a href="AWS/AWS%20Security%20Governance,%20Incident%20Response.html">AWS: Security: Governance, Incident Response</a></p>
+<hr />
+<h1 id="aws-systems-manager-asm">AWS Systems Manager (ASM)</h1>
+<ul>
+<li>インスタンス運用の半自動化。パッチ適用などの自動化が可能。</li>
+<li>Systems Manager エージェントをインストールする。</li>
+</ul>
+<p>Ref. <a href="AWS/AWS%20Security%20Governance,%20Incident%20Response.html">AWS: Security: Governance, Incident Response</a></p>
+<p><img alt="" src="_attachment/image_1390.png" /><img alt="" src="_attachment/image_1391.png" /></p>
+<hr />
+<h1 id="elb">ELB</h1>
+<p>インスタンスへのアクセスの前線防御 (さらに最前線に CloudFront でも防御できる)</p>
+<p><img alt="" src="_attachment/image_1392.png" /></p>
+<ul>
+<li>ALB は HTTP プロキシ、NLB は NAT ロードバランサ。</li>
+<li>
+<p>ヘルスチェック</p>
+<ul>
+<li>TCP/HTTP/HTTPS でキープアライブ。Healthy なターゲットにリクエストを転送。</li>
+<li>Unhealthy 遷移時に CloudWatch Events で通知可能。</li>
+</ul>
+</li>
+<li>
+<p>TLS オフロード (TLS Termination)</p>
+<ul>
+<li>ELB が TLS を終端しターゲット側は TLS 対応せずに済む</li>
+<li>証明書や SSL ライブラリ脆弱性などの管理を軽減。</li>
+<li>
+<p>E2E 通信暗号化のため NLB/CLB で TCP pass through するという逆のユースケースも。</p>
+<ul>
+<li>ALB は HTTP プロキシなので TCP pass through ではない。</li>
+</ul>
+</li>
+<li>
+<p>ELB とターゲット間の HTTPS 通信</p>
+<ul>
+<li>オフロードにより ELB で終端してターゲットグループ設定で HTTPS を使用。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>スティッキーセッション (Sticky session)</p>
+<ul>
+<li>同一ターゲットにセッションを転送する機能。デフォルト無効。</li>
+<li>ロードバランサーが設定した Cookie により維持する。<ul>
+<li>設定された有効期限の間、同一ターゲットとセッションを維持する。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>静的 IP アドレスのサポート (NLB)</p>
+<ul>
+<li>NLB はサブネット毎に1つ EIP を割り当てて固定 IP を設定できる。</li>
+<li>FW などの制約で宛先を IP 指定しなければいけない場合などに利用。</li>
+</ul>
+</li>
+<li>
+<p>ユーザ認証</p>
+<ul>
+<li>
+<p>ALB の Cognito ユーザープール統合 。</p>
+<ul>
+<li>ALB がユーザープールの Hosted UI にリダイレクトする。</li>
+</ul>
+</li>
+<li>
+<p>OpenID Connect (OIDC) 準拠 IdP 連携による認証。(Cognito 使わない ALB の機能)</p>
+</li>
+<li>ALB で認証することでインスタンス上の Web アプリを改修せず認証を追加できる。</li>
+</ul>
+</li>
+<li>
+<p>NLB はピアリングされた VPC の IP ベースのターゲットにも転送可能</p>
+<ul>
+<li><a href="https://dev.classmethod.jp/articles/nlb-access-via-inter-region-vpc-peering/">https://dev.classmethod.jp/articles/nlb-access-via-inter-region-vpc-peering/</a></li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1393.png" /></p>
+<p>ALB</p>
+<ul>
+<li>スケーリングとともに不正リクエストに対処するため DDoS 緩和にもなる。</li>
+<li>
+<p>HTTP Desync 緩和モードがデフォルトで機能している。</p>
+<ul>
+<li>フロントエンドの ALB とバックエンドのターゲットでの HTTP の解釈の違いを利用して悪意のあるリクエストを送り込む攻撃。</li>
+<li>RFC 7230 に準拠していないリクエストをブロックできる。</li>
+<li><a href="https://dev.classmethod.jp/articles/alb-and-clb-adding-support-desync-mitigation-mode/">https://dev.classmethod.jp/articles/alb-and-clb-adding-support-desync-mitigation-mode/</a></li>
+</ul>
+</li>
+<li>
+<p>無効なヘッダフィールドが削除できる。</p>
+</li>
+<li>レガシーアプリケーションを動かすインスタンスの前に ALB+WAF を置いて、アプリを改修せずに保護するというユースケースがある。</li>
+</ul>
+<p>PFS (Perfect Forward Secrecy)</p>
+<ul>
+<li>一時的なセッションキーを利用することで、キャプチャされた通信データと秘密鍵が両方漏洩しても復号できないという鍵交換に関する概念。</li>
+<li>PFS は全サービスで利用可能だが、ELB とCloudFront についてはユーザ側で HTTPS に設定できる。</li>
+<li>証明書の秘密鍵が流出しても過去の TLS トラフィックが安全に保たれるようするため、ELB の HTTPS リスナーで Forward Secrecy ポリシーを設定できる。</li>
+</ul>
+<p>ELB にも適切にセキュリティグループを設定する！</p>
+<p><img alt="" src="_attachment/image_1394.png" /></p>
+<p>ELB とサブネット</p>
+<ul>
+<li>ELB はサブネットに配置される。</li>
+<li>ELB の設定で AZ 毎に配置先のサブネットを 1 つ指定する。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1395.png" /></p>
+<ul>
+<li><a href="https://blog.serverworks.co.jp/alb-private-subnet">https://blog.serverworks.co.jp/alb-private-subnet</a></li>
+</ul>
+<h2 id="https">HTTPS の使用</h2>
+<p>HTTPS (443) リスナーを追加して証明書を設定する。</p>
+<p><img alt="" src="_attachment/image_1396.png" /></p>
+<p>HTTP to HTTPS リダイレクション:</p>
+<ul>
+<li>HTTP (80) リスナーでターゲットグループへのフォワードアクションを削除し、代わりに 443 へのリダイレクトアクションを追加する。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1397.png" /></p>
+<hr />
+<h1 id="vpc-virtual-private-cloud">VPC: Virtual Private Cloud</h1>
+<p><img alt="" src="_attachment/image_1398.png" /></p>
+<ul>
+<li>マルチ AZ の VPC で可用性確保。</li>
+<li>
+<p>パブリックとプライベートのサブネットに分離。</p>
+<ul>
+<li>プライベートサブネットはさらに三層で分離。</li>
+<li>保護されたサブネットは Outbound のインターネットアクセスも許さない。</li>
+</ul>
+</li>
+<li>
+<p>パブリックサブネットは ELB と NAT ゲートウェイを配置</p>
+<ul>
+<li>Inbound アクセスは ELB で受付・負荷分散。ACM で ELB の証明書管理。</li>
+<li>Outbound アクセスは NAT ゲートウェイ経由</li>
+</ul>
+</li>
+<li>
+<p>Web サーバと AP サーバ間はプライベート IP の内部 ELB で負荷分散。</p>
+</li>
+<li>
+<p>RDS もマルチ AZ 構成のプライマリ/スタンバイ・リードレプリカを構成。</p>
+<ul>
+<li>リードレプリカがスタンバイインスタンスも兼ねる</li>
+<li>Ref. <a href="AWS/AWS%20SAA%20RDS,%20Aurora,%20DynamoDB,%20ElastiCache.html">AWS SAA: RDS, Aurora, DynamoDB, ElastiCache</a></li>
+</ul>
+</li>
+<li>
+<p>S3 はファイルの置き場所</p>
+<ul>
+<li>Glacier でバックアップ</li>
+</ul>
+</li>
+<li>
+<p>DyamoDB でセッション管理</p>
+</li>
+<li>最近は SPA で AP サーバが省略される場合も</li>
+</ul>
+<p>こちらの図では各層でのセキュリティグループの分割についても表示</p>
+<p><img alt="" src="_attachment/image_1399.png" /></p>
+<p>マルチ AZ とサブネット</p>
+<ul>
+<li>リージョン内の複数の AZ にサブネットを作成できる。</li>
+<li>AZ 内に複数サブネットを置けるが、1つのサブネットは複数 AZ (=データセンター)にまたがることはできない。</li>
+</ul>
+<p>ルートテーブル</p>
+<ul>
+<li>
+<p>サブネット毎にアタッチする仮想ルーティングテーブル。</p>
+<ul>
+<li>デフォルトではデフォルトルート (IGW) とローカルルートだけの同じルートテーブルが複数サブネットに割り当てられていた</li>
+</ul>
+</li>
+<li>
+<p>各種ゲートウェイ (IGW, NAT GW, VGW) へのルートを登録する。</p>
+</li>
+</ul>
+<p>ゲートウェイ</p>
+<ul>
+<li>
+<p>IGW (Internet Gateway)</p>
+<ul>
+<li>プライベート/パブリックIP 1対1の Static NAT でインターネットに出て行くゲートウェイ</li>
+<li>送信先を 0.0.0.0/0 としたデフォルトルートとして設定される</li>
+</ul>
+</li>
+<li>
+<p>NAT Gateway</p>
+<ul>
+<li>プライベートサブネットからインターネットへ NAPT でアクセスさせたい時に使う。</li>
+<li>パブリックサブネットに配置する。サブネットのルートテーブルでインスタンスからのトラフィックを誘導するので、そもそもサブネットは分かれている必要がある。</li>
+</ul>
+</li>
+<li>
+<p>VGW (Virtual Private Gateway)</p>
+<ul>
+<li>VPC からインターネット VPN または専用線 (Direct Connect) で外部拠点と接続するGW。</li>
+<li>対向側は CGW (Customer Gateway) と呼ばれる。</li>
+<li>IGW 同様サブネットの外にある。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1400.png" /></p>
+<p>NAT インスタンス</p>
+<ul>
+<li>
+<p>Amazon Linux に NAT を構成した AMI (amzn-ami-vpc-nat) で立てるインスタンス。 </p>
+<ul>
+<li>NAT GW と異なりユーザが管理する。</li>
+</ul>
+</li>
+<li>
+<p>EIP またはパブリック IP アドレスを使用する。(NAT GW は EIP)</p>
+</li>
+<li>
+<p>セキュリティグループを関連づけトラフィックをコントロールできる。</p>
+<ul>
+<li>NAT GW は SG 関連づけ出来ない。インスタンスの SG か NACL で制御。</li>
+</ul>
+</li>
+<li>
+<p>ポート転送や踏み台サーバとしての使用ができる。(NAT GW はできない)</p>
+</li>
+<li>送信元/送信先チェック (Source/Destination Checks) の無効化が必要。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/vpc-nat-comparison.html">https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/vpc-nat-comparison.html</a></li>
+</ul>
+<p>セキュリティグループ</p>
+<ul>
+<li>ENI にアタッチされるホワイトリストベースの仮想 FW ルール。(評価順序はない)</li>
+<li>ステートフルなので送受信で個別に指定する必要はない。</li>
+<li>プロトコル、ポート、インバウンド/アウトバウンド (Ingress/Egress)</li>
+<li>デフォルトはアウトバウンド全許可のルールのみ (インバウンドは空=全拒否)</li>
+<li>Peer は IP だけでなく別のセキュリティグループも指定できる。</li>
+</ul>
+<p>Network ACL (NACL)</p>
+<ul>
+<li>サブネットにつく仮想 FW ルール。サブネット単位で制御するような場合に使う。</li>
+<li>ブラックリストベースでデフォルト Allow で素通しになっている。(評価順序がある)</li>
+<li>ステートレスなのでインバウンド・アウトバウンドのパケットで個別設定する。<ul>
+<li>クライアントへのレスポンスには一時ポート(Ephemeral ports) の 1024-65535 とかのポートレンジでルールが必要となる。</li>
+</ul>
+</li>
+</ul>
+<p>ちなみにインスタンス同士がパブリック IP で通信するには同じサブネットにいても一度 IGW の Static NAT でインターネットに出るので、セキュリティグループで互いのパブリック IP からのインバウンド通信を許可する必要がある。</p>
+<p><img alt="" src="_attachment/image_1401.png" /><img alt="" src="_attachment/image_1402.png" /></p>
+<ul>
+<li>特定 IP 範囲のブロックをインスタンスに負荷をかけず行うには ACL/WAF を使う。<ul>
+<li>セキュリティグループではハイパーバイザーに負荷がかかる。</li>
+<li>そもそもセキュリティグループは許可ルールしか書けない。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1403.png" /></p>
+<p>VPC Reachability Analyzer</p>
+<ul>
+<li>VPC 内または VPC 間のリソースの到達性を確認できる。(セキュリティ機能ではない)</li>
+<li><a href="https://aws.amazon.com/jp/blogs/news/new-vpc-insights-analyzes-reachability-and-visibility-in-vpcs/">https://aws.amazon.com/jp/blogs/news/new-vpc-insights-analyzes-reachability-and-visibility-in-vpcs/</a></li>
+</ul>
+<p><img alt="" src="_attachment/image_1404.png" /><img alt="" src="_attachment/image_1405.png" /></p>
+<p>(参考) <a href="http://aws.clouddesignpattern.org/index.php/CDP:Backnet%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3">Backnet</a> パターン</p>
+<ul>
+<li>Web アクセスを受けるパブリックサブネットと管理用 (SSH) のプライベートサブネットに分け、インスタンスからそれぞれに ENI を生やす。</li>
+<li>管理用のプライベートサブネットは VPN 経由でのみ接続できるようにする。</li>
+<li>各 ENI に異なるセキュリティグループを設定する。</li>
+</ul>
+<p><img alt="" src="_attachment/File_64.png" /></p>
+<p>VPC の DNS (Route 53 Resolver)</p>
+<ul>
+<li>外部のパブリック IP および VPC のプライベート IP の名前解決。</li>
+<li>デフォルトで有効。</li>
+<li>enableDnsSupport: DNS 名前解決の有効化。</li>
+<li>enableDnsHostnames: インスタンスのパブリック IP へのパブリックホスト名の割り当て。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/vpc-dns.htm">https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/vpc-dns.htm</a></li>
+</ul>
+<p>独自 DNS サーバの使用</p>
+<ul>
+<li>
+<p>VPC の DHCP オプションセットで次のような設定が可能。</p>
+<ul>
+<li>domain-name-servers: 最大 4 つの DNS サーバの IP アドレス</li>
+<li>domain-name: インスタンスのカスタムドメイン名。</li>
+<li>ntp-servers:  最大 4 つまでの NTP サーバの IP アドレス</li>
+<li>netbios-name-servers: 最大 4 つまでの NetBIOS ネームサーバの IP アドレス。</li>
+</ul>
+</li>
+<li>
+<p>DHCP オプションセットを 新たに作成して VPC に関連づけて使用する。</p>
+</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/VPC_DHCP_Options.html">https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/VPC_DHCP_Options.html</a></li>
+</ul>
+<p>VPC フローログ</p>
+<ul>
+<li>VPC, サブネット, ENI 単位で設定にしてトラフィック情報を取得できる。</li>
+<li>パケットは見られない。IP/TCP/UDP ヘッダレベルのフロー情報。</li>
+<li>CloudWatch Logs, S3 に送信する。</li>
+<li>ミラーポートによる取得なのでスループットには影響しない。</li>
+</ul>
+<p>ENI の送信元/送信先チェック (source &amp; destination check)</p>
+<ul>
+<li>ENI の IP アドレスか送信元/送信先なのかチェックしてどちらでもないパケットを破棄するENI の設定。</li>
+<li>自分宛でない通信を受け付ける NAT, ルーティング, ファイアウォールなどを実行するインスタンスでは無効にする必要がある。(透過プロキシも)</li>
+</ul>
+<h2 id="vpc">VPC トラフィックミラーリング</h2>
+<ul>
+<li>ENI のトラフィックを EC2 インスタンスにミラーリングするサービス。</li>
+<li>パケットのペイロードを含めて取得できる。</li>
+</ul>
+<p>VXLAN (Virtual eXtensible Local Area Network) がベース</p>
+<ul>
+<li>L3ネットワーク上に論理的なL2ネットワークを構築するトンネリングプロトコル。</li>
+<li>パケットは VXLAN ヘッダでカプセル化されて UDP 4789 ポートに転送されてくる。</li>
+<li>ターゲットは ENI か UDP リスナーを設定した NLB を指定できる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1406.png" /></p>
+<ul>
+<li>ターゲットは別 AZ でも、VPC ピア接続またはトランジットゲー トウェイで接続された異なる VPC でも構わない。クロスアカウントも可能。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1407.png" /></p>
+<ul>
+<li>2番目のケースはルール指定で TCP と UDP でターゲットを分けている。</li>
+<li>3番目はケースはルール指定で VPC 外部と通信するトラフィックのみをミラーリング。</li>
+</ul>
+<h2 id="_1">フォレンジック</h2>
+<p><img alt="" src="_attachment/image_1408.png" /></p>
+<p>Step-1. 隔離対象のインスタンスに目印のタグを付ける</p>
+<pre><code>aws ec2 describe-instances --filters &quot;Name=ip-address,Values=52.91.119.105”
+aws ec2 create-tags --resources i-a123 --tags Key=Environment,Value=Quarantine:REFERENCE-ID
+</code></pre>
+<p>Step-2. Auto Scaling グループと ALB からインスタンスを切り離す</p>
+<pre><code>aws autoscaling detach-instances --instance-ids i-a123 --auto-scaling-group-name web-asg
+aws elb deregister-instances-from-load-balancer --instances i-a123 --load-balancer-name myELB1
+</code></pre>
+<p>Stap-4. 隔離用のセキュリティグループに移動し、誤ってインスタンスが終了 (Terminate) されないよう設定する</p>
+<pre><code>aws ec2 modify-instance-attribute --instance-id i-a123 --groups sg-isolated
+aws ec2 modify-instance-attribute --instance-id i-a123 --attribute disableApiTermination --value true
+</code></pre>
+<p>Step-4. フォレンジック調査用に EBS ボリュームをスナップショットにコピーする</p>
+<pre><code>aws ec2 create-snapshot --volume vol-12xxxx78 --description ”ResponderName-Date-REFERENCE-ID”
+</code></pre>
+<ul>
+<li>スナップショットをとる際は本来インスタンスを Stop したほうがいいが、メモリダンプが取れなくなる。</li>
+</ul>
+<p>Step-5. フォレンジックツールを含んだフォレンジックインスタンスを作成する</p>
+<ul>
+<li>同じ AMI からインスタンスを作成してフォレンジックツールをインストールする。</li>
+<li>フォレンジッグ用のセキュリティグループをアタッチする。</li>
+</ul>
+<p>Step-6. スナップショットから新しい EBS ボリュームを作成しフォレンジックインスタンスにアタッチする</p>
+<pre><code>aws ec2 create-volume --region us-east-1 --availability-zone us-east-1a --snapshot-id snap-a123 --volume-type io1 --iops 10000
+aws ec2 attach-volume --volume-id vol-123a --instance-id i-new4n6x --device /dev/sdf
+</code></pre>
+<p>Step-8. メモリダンプの取得等で元のインスタンスにアクセスする必要があれば隔離用 SG とフォレンジック SG 間の通信を通す</p>
+<pre><code>aws ec2 authorize-security-group-ingress --group-id sg-isolated --protocol tcp --port 0-65535 --source-group sg-forensic
+</code></pre>
+<p>タグ付けした隔離対象インスタンスにこれらの処理を自動化することも考慮する。</p>
+<p>Systems Manager が使える。</p>
+<p>EC2Rescure</p>
+<ul>
+<li>ログ収集やメモリダンプなどのトラブルシューティングができる。Linux/Windows 用がある。</li>
+<li>
+<p>AWSSupport-ExecuteEC2Rescue</p>
+<ul>
+<li>EC2Rescure を実行する SSM Automation ドキュメント。</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/AWSEC2/latest/WindowsGuide/Windows-Server-EC2Rescue.html">https://docs.aws.amazon.com/ja_jp/AWSEC2/latest/WindowsGuide/Windows-Server-EC2Rescue.html</a></p>
+</li>
+<li><a href="https://dev.classmethod.jp/articles/amazon-ec2-windows-ec2rescue/">https://dev.classmethod.jp/articles/amazon-ec2-windows-ec2rescue/</a></li>
+</ul>
+<h2 id="vpc_1">VPC エンドポイント</h2>
+<p>VPC からインターネットを経由せずパブリック IP 空間の AWS サービスにアクセスする。</p>
+<p><img alt="" src="_attachment/image_1409.png" /></p>
+<p>ゲートウェイエンドポイント</p>
+<ul>
+<li>サービスのゲートウェイをルートテーブルに指定する。S3 と DynamoDB のみ。</li>
+</ul>
+<p>インターフェイスエンドポイント (PrivateLink)</p>
+<ul>
+<li>
+<p>ENI としてサブネット内のプライベート IP アドレスを持つエンドポイントが現れる。</p>
+<ul>
+<li>サービスのエンドポイントと ENI が PrivateLink でリンクされる。</li>
+</ul>
+</li>
+<li>
+<p>VPC の DNS にサービスのデフォルトのホスト名が登録される</p>
+<ul>
+<li>&lt;サービス名&gt;.&lt;リージョン&gt;.amazonaws.com の A レコード</li>
+</ul>
+</li>
+<li>
+<p>ENI に関連付けたセキュリティグループでアクセス制御が可能</p>
+<ul>
+<li>インバウンドの制限</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1410.png" /><img alt="" src="_attachment/image_1411.png" /><img alt="" src="_attachment/image_1412.png" /></p>
+<p>エンドポイントポリシー</p>
+<ul>
+<li>VPC エンドポイントにアタッチされるポリシー。VPC から接続先 AWS サービスへのアクセス権を設定。</li>
+<li>ゲートウェイエンドポイント・インターフェイスエンドポイント両方にある。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1413.png" /><img alt="" src="_attachment/image_1414.png" /></p>
+<ul>
+<li>ゲートウェイエンドポイントポリシーではプリンシパルを制限できない。</li>
+</ul>
+<p>リソースベースポリシーも特定 VPC エンドポイントからのアクセスを制御できる。</p>
+<p><img alt="" src="_attachment/image_1415.png" /></p>
+<p>VPC PrivateLink によるサービスのプライベート公開</p>
+<ul>
+<li>NLB を別 VPC のインターフェースエンドポイントとすることで NLB 背後のサービスをその VPC にプライベート公開できる。</li>
+<li><img alt="" src="_attachment/image_1416.png" /></li>
+<li><br></li>
+<li><a href="https://dev.classmethod.jp/articles/aws-reinvent-vpc-privatelink-endpoint/">https://dev.classmethod.jp/articles/aws-reinvent-vpc-privatelink-endpoint/</a></li>
+</ul>
+<h2 id="vpc-vpc">VPC ピア接続 (VPC ピアリング)</h2>
+<p>概要</p>
+<ul>
+<li>2つの VPC ルーター同士を接続する。</li>
+<li>
+<p>VPC ルートテーブルにお互いのプライベートアドレスへのルーティングを設定。</p>
+<ul>
+<li>サブネットの CIDR ブロックがかぶらないように設計する必要がある。</li>
+</ul>
+</li>
+<li>
+<p>クロスリージョン・クロスアカウントの VPC も接続可能。</p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1417.png" /></p>
+<p>推移的なピア接続は不可</p>
+<p><img alt="" src="_attachment/image_1418.png" /></p>
+<ul>
+<li>A から C には到達できないので、フルメッシュ型で VPC ピア接続を設定する必要がある。</li>
+<li>VPC が多くなる場合はトランジットゲートウェイを使う。</li>
+<li>Direct Connect や VPN でオンプレから VPC に接続する場合も同様に推移的なルーティングはできない。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1419.png" /></p>
+<ul>
+<li>VGW (Virtual Private Gateway) と CGW (Customer Gateway) 間を VPN または Direct Connect の専用線で接続。</li>
+<li>Transit Gateway で VPC 間およびオンプレ (CGW) をスター型接続。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1420.png" /></p>
+<p><a href="https://docs.aws.amazon.com/whitepapers/latest/aws-vpc-connectivity-options/network-to-amazon-vpc-connectivity-options.html">https://docs.aws.amazon.com/whitepapers/latest/aws-vpc-connectivity-options/network-to-amazon-vpc-connectivity-options.html</a></p>
+<p><img alt="" src="Pasted%20image%2020250611155159.png" /></p>
+<p>AWS Managed VPN</p>
+<ul>
+<li>VGW と CGW によるサイト間 VPN 接続。</li>
+<li>トンネ ルあたり最大 1.25 Gbps のスループット。</li>
+<li>CloudWatch メトリクスなども取れる。
+<br>
+ソフトウェア VPN (アンマネージド)</li>
+<li>
+<p>OpenVPN 等を EC2 インスタンス上に立てる。パブリックサブネットに配置。
+<img alt="" src="_attachment/image_1422.png" /></p>
+</li>
+<li>
+<p>OSPF 等のルーティングプロトコルとか VGW がサポートしない機能を使いたい場合。</p>
+</li>
+<li>VGW のキャパシティ制限 (トンネル数 10本, スループット 1.25ギガ 等) がミートしない場合。</li>
+</ul>
+<p>AWS Client VPN</p>
+<ul>
+<li>クライアント VPN 接続。リモートアクセス VPN。</li>
+<li>OpenVPN や AWS 製のクライアントを使う。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1421.png" /></p>
+<ul>
+<li>リージョンに Client VPN エンドポイントを作成してサブネットに関連づける。</li>
+<li>サブネットに Client VPN ネットワークインターフェースができる。</li>
+<li>認証は AD 認証 (SAML)とあらかじめ証明書を配布しておくクライアント認証がある。<ul>
+<li>AWS IAM Identity Center 統合で SAM+</li>
+</ul>
+</li>
+<li>図ではパブリックサブネットとあるがプライベートサブネットも可能。</li>
+</ul>
+<p><img alt="" src="Pasted%20image%2020250611154704.png" />
+br&gt;</p>
+<h2 id="direct-connect">Direct Connect</h2>
+<p><img alt="" src="_attachment/image_1423.png" /></p>
+<ul>
+<li>リージョンに接続された Direct Connect ロケーションに自社ルータをハウジング</li>
+<li>
+<p>専用接続 (Dedicated Connections)</p>
+<ul>
+<li>Direct Connect ロケーションの AWS ルータと VPC 間の接続を専有するプラン。</li>
+<li>1Gbps/10Gbps の2種類。</li>
+</ul>
+</li>
+<li>
+<p>ホスト型接続 (Hosted Connections)</p>
+<ul>
+<li>他のユーザと接続を共有する。</li>
+<li>50Mbps~10Gbps</li>
+</ul>
+</li>
+<li>
+<p>図で VGW/CGW が登場しているのは VPN over Direct Connect のユースケース？</p>
+</li>
+</ul>
+<p>論理接続</p>
+<p><img alt="" src="_attachment/AWS_Black_Belt_Techシリーズ_AWS_Direct_Connect.png" /></p>
+<ul>
+<li>VPC (=VGW) とのトラッフィックは VLAN で論理接続される。</li>
+<li>カスタマールータでは各 VPC の VLAN 毎に VIF (Virtual Interface) をアタッチする。</li>
+</ul>
+<p>オンプレから VPC へのルーティング情報</p>
+<ul>
+<li>BGP で VPC へのルーティング情報が経路広報される。</li>
+</ul>
+<p>VPC からオンプレへのルーティング情報</p>
+<ul>
+<li><img alt="" src="_attachment/image_1424.png" /></li>
+</ul>
+<p>パブリック接続</p>
+<ul>
+<li>
+<p>AWS のパブリック空間に接続するパブリック VIF で AWS サービスに接続する。</p>
+<ul>
+<li>カスタマールータでパブリック IP と NAT が必要。</li>
+</ul>
+</li>
+<li>
+<p>AWS のグローバルサービスへのルートを BGP でカスタマーゲートウェイに経路広報する。</p>
+</li>
+<li>アウトバウンド通信はギガバイト単価で Direct Connect のほうが安く設定されているので Direct Connect 経由のほうがコスト面で有利な場合も。</li>
+</ul>
+<p><img alt="" src="_attachment/SAA_2.png" /></p>
+<p>VPN over Direct Connect (専用線)</p>
+<ul>
+<li>要件でトラフィック暗号化とネットワークの低レイテンシ・安定性が必要な場合に用いる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1425.png" /></p>
+<ul>
+<li>Direct Connect はパブリック接続で AWS のネットワークと接続。</li>
+<li>その上で VGW と CGW で VPC に VPN 接続する。</li>
+<li>Direct Connect は専用線だから安全では？<ul>
+<li>通信事業者・AWS の VPC までのネットワーク環境内でも保護を保証したい場合</li>
+</ul>
+</li>
+</ul>
+<p>Direct Connect Gateway
+- Direct Connect ロケーションからは同じリージョンの VIF にしか接続できない。
+- 別リージョンの VPC に接続するためのゲートウェイとして Direct Connect Gateway を用いる。
+- Direct Connect Gateway 経由で VPC 同士は通信できない。
+- Direct Connect Gateway 経由でユーザ拠点同士は通信できない。
+- <img alt="" src="_attachment/image_1426.png" />
+- Direct Connect Gateway のリージョン間通信は AWS のプライベートネットワークを経由するので、高速でセキュアな通信環境が期待できる。
+- <a href="https://dev.classmethod.jp/articles/direct-connect-gateway/">https://dev.classmethod.jp/articles/direct-connect-gateway/</a></p>
+<h2 id="transit-gateway">Transit Gateway</h2>
+<ul>
+<li>VPC 同士やオンプレからの Direct Connect や VPN 接続を中継する HUB となるゲートウェイ。</li>
+<li>スター型ネットワークでルートテーブルを Transit Gateway で集中管理。</li>
+<li>リージョンの中に大きなルータがあるイメージ。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1427.png" /></p>
+<p>VPC 側のルートテーブルを VPN 側のルートテーブルの設定で VPN とは通信できるが VPN 間の通信を禁止している例？</p>
+<p><img alt="" src="_attachment/image_1428.png" /></p>
+<p>Q. S3 上に静的ホストされた Web サイトを DirectConect 接続された社内のみに公開する場合、どのような制限すればよい？</p>
+<p>A. バケットポリシーで特定の IP 領域からのアクセスだけ許可。さらに S3 オリジンの CloudFront で手前に認証の追加などもできる。</p>
+<hr />
+<h1 id="aws-network-firewall">AWS Network Firewall</h1>
+<p><img alt="" src="_attachment/image_1429.png" /></p>
+<p>Ref. <a href="AWS/AWS%20Security%20WAF,%20Shield,%20CloudFront,%20Route%2053.html">AWS: Security: WAF, Shield, CloudFront, Route 53</a></p>
+<hr />
+<h1 id="aws-gateway-load-balancer">AWS Gateway Load Balancer</h1>
+<p>サードパーティーのセキュリティアプライアンスの負荷分散。</p>
+<p><img alt="" src="_attachment/image_1430.png" /></p>
+<p>ゲートウェイLoad Balancer エンドポイント</p>
+<ul>
+<li>保護対象の VPC には VPC インターフェースエンドポイント (PrivateLink) で接続される。</li>
+<li>ルートテーブル設定でエンドポイントにトラフィックを通過させる。(AWS Network Firewall も同様)</li>
+<li>VPC 同士は直接接続されないので CIDRが重複してもOK。</li>
+</ul>
+<p><a href="https://dev.classmethod.jp/articles/introducing-aws-gateway-load-balancer/">https://dev.classmethod.jp/articles/introducing-aws-gateway-load-balancer/</a></p>
+<p><br></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

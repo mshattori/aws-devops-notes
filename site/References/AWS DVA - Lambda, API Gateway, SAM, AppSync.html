@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS DVA - Lambda, API Gateway, SAM, AppSync - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS DVA - Lambda, API Gateway, SAM, AppSync</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <p><br></p>
+<h1 id="aws-lambda">AWS Lambda</h1>
+<p>関数</p>
+<ul>
+<li>
+<p>ZIP 形式でパッケージング。</p>
+<ul>
+<li>Java はスタンドアロン .jar、.Net はスタンドアロン .dll でのデプロイも可能。</li>
+</ul>
+</li>
+<li>
+<p>S3 に保存され実行時以外は暗号化される。</p>
+</li>
+<li>関数はそれぞれ個別のコンテナで隔離されて実行される。</li>
+</ul>
+<p>ランタイム</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/lambda-runtimes.html">https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/lambda-runtimes.html</a></li>
+<li>Python 2.7, 3.6, 3.7, 3.8</li>
+<li>Node.js 10.x, 12.x</li>
+<li>Ruby 2.5, 2.7</li>
+<li>Java 8, 11</li>
+<li>.NET Core 2,1, 3.1 (C#/PowerShell 6.0)</li>
+<li>Go 1.x</li>
+<li>ランタイムはバージョンに応じて Amazon Linux, Amazon Linux 2 で実行される。 </li>
+<li>カスタムランタイム: サポートされていない言語のランタイムをセットアップ<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/runtimes-custom.html">https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/runtimes-custom.html</a></li>
+<li>関数のランタイム設定で provided を選択。</li>
+<li>bootstrap という名前の実行可能ファイルを ZIP に含める。</li>
+</ul>
+</li>
+</ul>
+<p>基本設定</p>
+<ul>
+<li>
+<p>メモリ</p>
+<ul>
+<li>デフォルトの 128 MB から 約 3 GB (3,008 MB) の範囲で設定 (64 MB 単位) 。</li>
+<li>
+<p>メモリ量に比例して CPU 容量が割り当てられる。</p>
+<ul>
+<li>例: 1,792 MB で 1 つのフル vCPU に相当。</li>
+<li>メモリ量が一定を超えるとコア数も増えるためマルチコア対応でコードを実装するとパフォーマンスが上がる。</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/image_1813.png" /></p>
+</li>
+<li>タイムアウト</li>
+<li>デフォルト 3 秒。最大 15 分 (900 秒)</li>
+</ul>
+</li>
+<li>
+<p>実行ロール</p>
+<ul>
+<li>関数が AWS リソースにアクセスする際の IAM ロール。</li>
+</ul>
+</li>
+</ul>
+<p>他の主な設定項目</p>
+<ul>
+<li>環境変数</li>
+<li>VPC アクセス</li>
+<li>同時実行数の予約</li>
+<li>非同期呼び出しのエラー処理動作の設定<ul>
+<li>再試行数・未処理イベントがキューに残る時間を減らす。</li>
+<li>DeadLetterConfig の設定。</li>
+</ul>
+</li>
+</ul>
+<p>制限</p>
+<ul>
+<li>インバウンド接続: ブロック</li>
+<li>
+<p>アウトバウンド接続</p>
+<ul>
+<li>TCP, UDP ソケットのみ</li>
+<li>TCP 25 番ポート (SMTP) はブロック (OP25B)</li>
+</ul>
+</li>
+<li>
+<p>ptrace システムコールはブロック</p>
+</li>
+<li>
+<p>呼び出しペイロードサイズ (リクエスト/レスポンス)</p>
+<ul>
+<li>6 MB (同期)</li>
+<li>256 KB (非同期)</li>
+</ul>
+</li>
+<li>
+<p>同時実行数 (上限緩和申請可能)</p>
+<ul>
+<li>1000</li>
+<li>同一アカウントでリージョンごと。</li>
+</ul>
+</li>
+<li>
+<p>デプロイパッケージサイズ (Layer 含む)</p>
+<ul>
+<li>256 MB</li>
+<li>上限緩和不可なので、超える場合は依存関係を動的に /tmp にダウンロードして参照。</li>
+</ul>
+</li>
+<li>
+<p>/tmp</p>
+<ul>
+<li>512 MB</li>
+<li>EFS も使えるようになった</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_145.png" /></p>
+<p>従量課金</p>
+<ul>
+<li>リクエスト数</li>
+<li>割り当てメモリ x 実行時間 (100ms単位)</li>
+</ul>
+<p>トリガーとユースケース</p>
+<ul>
+<li>
+<p>API Gateway</p>
+<ul>
+<li>サーバレス API</li>
+</ul>
+</li>
+<li>
+<p>ALB</p>
+<ul>
+<li>API Gateway 使わなくても HTTP インターフェース付与できる</li>
+</ul>
+</li>
+<li>
+<p>CloudWatch Events</p>
+<ul>
+<li>任意のイベントの処理</li>
+<li>スケジュール処理</li>
+</ul>
+</li>
+<li>
+<p>CloudWatch Logs</p>
+<ul>
+<li>ログの分析</li>
+</ul>
+</li>
+<li>
+<p>CodeCommit</p>
+<ul>
+<li>コードの検証。クリデンシャルが入ってないかとか。</li>
+</ul>
+</li>
+<li>
+<p>DynamoDB</p>
+<ul>
+<li>DynamoDB ストリーム。</li>
+</ul>
+</li>
+<li>
+<p>Kinesis</p>
+<ul>
+<li>リアルタイム分析。</li>
+</ul>
+</li>
+<li>
+<p>S3</p>
+<ul>
+<li>S3 イベント。</li>
+</ul>
+</li>
+<li>
+<p>SNS/SQS</p>
+<ul>
+<li>ファンアウト。</li>
+</ul>
+</li>
+</ul>
+<p>呼び出しタイプ</p>
+<p><img alt="" src="_attachment/image_1814.png" /></p>
+<ul>
+<li>
+<p>同期</p>
+<ul>
+<li>InvocationType = RequestResponse</li>
+<li>関数が返したデータがレスポンスで返る。</li>
+<li>ポーリングベースは同期。処理成功したレコードを削除するため。</li>
+</ul>
+</li>
+<li>
+<p>非同期 (イベント)</p>
+<ul>
+<li>InvocationType = Event</li>
+<li>レスポンスはリクエストが正常に受け付けられたかのみ。２回の自動リトライがある。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_146.png" /></p>
+<ul>
+<li>InvocationType = DryRun … 関数を実行せず必要な権限があるか確認する</li>
+</ul>
+<p>プッシュ (同期)とイベント (非同期)  はイベントソース側が Lambda をトリガー</p>
+<ul>
+<li>イベントは Lambda のからのレスポンスデータを必要としないため非同期。</li>
+<li>Lambda のリソースベースのポリシーで呼び出し側が Lambda を呼べるよう許可する (呼び出し権限)</li>
+</ul>
+<p><img alt="" src="_attachment/image_1815.png" /></p>
+<p>ストリームベース (Pull モデル)</p>
+<ul>
+<li>内部的な Lambda 関数が自動にできてポーリング。</li>
+<li>
+<p>ストリームベース</p>
+<ul>
+<li>DynamoDB Streams, Kinesis Data Streams</li>
+</ul>
+</li>
+<li>
+<p>非ストリーム: SQS</p>
+<ul>
+<li>SQS は成功時のキューのメッセージ削除も自動でやってくれる</li>
+</ul>
+</li>
+<li>
+<p>Lambda 実行ロールにイベントソースを読み込む権限が必要</p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1816.png" /></p>
+<p>イベントソースマッピング</p>
+<ul>
+<li>Pull モデルのイベントソースで使用。</li>
+<li>対象のキュー/ストリームと関数を指定して CreateEventSourceMapping API で作成。</li>
+<li>イベントソースマッピングがバッチでソースからデータを取って関数に渡す。</li>
+<li><img alt="" src="_attachment/File_147.png" /></li>
+<li>Ref. <a href="https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/invocation-eventsourcemapping.html">https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/invocation-eventsourcemapping.html</a></li>
+</ul>
+<p><img alt="" src="_attachment/image_1817.png" /></p>
+<ul>
+<li>結果整合性=少なくとも1回呼ばれる</li>
+</ul>
+<p><img alt="" src="_attachment/image_1818.png" /></p>
+<ul>
+<li>Lambda 関数のリソースベースのアクセスポリシーを更新する AddPermission API がある。</li>
+</ul>
+<p>IAM 実行ロールの例</p>
+<p><img alt="" src="_attachment/image_1819.png" /></p>
+<ul>
+<li>信頼ポリシーで Lambda サービスへロールへの AssumeRole を許可。</li>
+<li>アクセスポリシーで関数が他の AWS サービスにアクセスするのに必要なポリシーを指定。</li>
+</ul>
+<p>リトライの挙動</p>
+<ul>
+<li>
+<p>ポーリングベース: ストリームベース (DynamoDB Streams, Kinesis Data Streams)</p>
+<ul>
+<li>データレコードの有効期限が切れるまでリトライを行う。</li>
+<li>失敗したレコードの有効期限が切れるか成功するまでシャードから新しいレコードを読み込まない。</li>
+</ul>
+</li>
+<li>
+<p>ポーリングベース: 非ストリームベース (SQS)</p>
+<ul>
+<li>バッチのメッセージが全てキューに残り、VisibilityTimeout が過ぎればまた処理される。</li>
+<li>新しいメッセージがあれば次回バッチに入ってきて処理される？FIFOキューだとバッチ数を超えたらずっと処理されない？</li>
+</ul>
+</li>
+<li>
+<p>非ポーリングベース: 同期</p>
+<ul>
+<li>エラー発生時にはレスポンスヘッダに X-Amz-Funciton-Error が含まれる。</li>
+<li>イベントソースが AWS サービスの場合、リトライは呼び出し側サービスで設定。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/API_Invoke.html#API_Invoke_Errors">https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/API_Invoke.html#API_Invoke_Errors</a></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/API_Invoke.html#API_Invoke_ResponseSyntax">https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/API_Invoke.html#API_Invoke_ResponseSyntax</a></li>
+</ul>
+</li>
+<li>
+<p>非ポーリングベース: 非同期 (イベント)</p>
+<ul>
+<li>自動的に２回リトライ (全３回コール)。インターバル: 1回目のリトライまで 1分間、2回目まで 2分間。</li>
+<li>DeadLetterConfig: エラーで処理されなかったイベントを ARN で指定された SQS キュー/SNS トピックに送信。</li>
+<li><img alt="" src="_attachment/image_1820.png" /></li>
+</ul>
+</li>
+</ul>
+<p>同時実行数</p>
+<ul>
+<li>
+<p>最大 1000</p>
+<ul>
+<li>実績に応じて上限緩和申請可能</li>
+<li>超過した場合はスロットリングエラー (429 Too Many Requests) が返る。</li>
+<li>非同期呼び出しの場合 15~30 分程度はバーストが許容される。</li>
+<li>ConcurrentExecutions / UnreservedConcurrentExecutions のメトリクスで確認できる。</li>
+<li><img alt="" src="_attachment/File_148.png" /></li>
+<li>1 つのイベントに対して複数回の呼び出し、または呼び出しが発生しないことはあり得る。</li>
+</ul>
+</li>
+<li>
+<p>予約同時実行数: Reserved concurrency</p>
+<ul>
+<li>
+<p>全体の同時実行数から特定の関数に予約する。</p>
+<ul>
+<li>その関数に予約された分は他の関数に使用されない。</li>
+<li>その関数は予約された以上には同時実行されない。</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/File_149.png" /></p>
+</li>
+<li>全てを予約することはできず、100 個は残しておく必要がある。</li>
+</ul>
+</li>
+<li>
+<p>プロビジョニング済み同時実行数: Provisioned concurrency</p>
+<ul>
+<li>スケールアップ時のレイテンシーを下げるためあらかじめコンテナがプロビジョンされる。</li>
+<li>AWS Auto Scaling でプロビジョニングされた同時実行数をスケーリングすることもできる。</li>
+<li>Ref. <a href="https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/configuration-concurrency.html">https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/configuration-concurrency.html</a></li>
+<li>Ref. <a href="https://docs.aws.amazon.com/autoscaling/application/userguide/what-is-application-auto-scaling.html">https://docs.aws.amazon.com/autoscaling/application/userguide/what-is-application-auto-scaling.html</a></li>
+</ul>
+</li>
+<li>
+<p>参考: リージョンごとの同時実行数制限</p>
+<ul>
+<li>3000 – 米国西部 (オレゴン)、米国東部（バージニア北部）、欧州 (アイルランド)</li>
+<li>1000 – アジアパシフィック (東京)、欧州 (フランクフルト)</li>
+<li>500 – その他のリージョン</li>
+</ul>
+</li>
+</ul>
+<p>VPC lambda</p>
+<ul>
+<li>関数から VPC 内のリソースにインターネットを経由せずにアクセスさせたい場合。</li>
+<li>
+<p>関数に VPC サブネット(複数可) とセキュリティグループ(1つ)を設定する。</p>
+<ul>
+<li>AZ ごとにサブネットを指定してそれらを関数に設定することでマルチ AZ で可用性確保できる。</li>
+</ul>
+</li>
+<li>
+<p>ENI により実現される</p>
+<ul>
+<li>サブネットごとに指定したセキュリティグループが設定された ENI が作成される。</li>
+<li>AWS Hyperplane を利用したクロスアカウントの VPC 間 NAT でカスタマー VPC 内の ENI に接続される。</li>
+<li><img alt="" src="_attachment/3EF3472F-9560-4EF0-9301-5B52B96AA8B2_3.png" /></li>
+<li>実行ロールに AWSLambdaVPCAccessExecutionRole という管理ポリシーが必要。</li>
+<li>Ref. Lambda 関数が VPC 環境で改善されます<ul>
+<li><a href="https://aws.amazon.com/jp/blogs/news/announcing-improved-vpc-networking-for-aws-lambda-functions/">https://aws.amazon.com/jp/blogs/news/announcing-improved-vpc-networking-for-aws-lambda-functions/</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>VPC を設定したタイミングから関数からのインターネットアクセスは不可</p>
+<ul>
+<li>
+<p>パブリック IP は割り当てられない (=IGW でパブリック IP への NAT が登録されない)</p>
+<ul>
+<li>ENI にサブネットのプライベート IP が DHCP で割り当てられる。</li>
+</ul>
+</li>
+<li>
+<p>インターネットアクセスするにはパブリックサブネットに NAT GW を置いてやる必要がある。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_150.png" /></p>
+<ul>
+<li>
+<p>ENI 作成</p>
+<ul>
+<li>VPC 利用する場合だけ。1 分ほどかかることがある。</li>
+</ul>
+</li>
+<li>
+<p>コンテナ作成</p>
+<ul>
+<li>Amazon Linux のコンテナが作成される。</li>
+</ul>
+</li>
+<li>
+<p>デプロイパッケージのロード・展開</p>
+<ul>
+<li>S3 からデプロイパッケージがコンテナにダウンロードされファイルシステムに展開される。</li>
+</ul>
+</li>
+<li>
+<p>コールドスタート</p>
+<ul>
+<li>1〜6 全てが実行される。(AWS Hyperplane が利用されるようになってからは ENI 作成は毎回でないかも)</li>
+<li>1つもコンテナがない初期状態、利用可能コンテナ数以上の同時実行、コード/設定の変更時に発生。</li>
+</ul>
+</li>
+<li>
+<p>ウォームスタート</p>
+<ul>
+<li>作成したコンテナを再利用。</li>
+</ul>
+</li>
+<li>
+<p>/tmp の再利用</p>
+<ul>
+<li>前の呼び出しで /tmp に保存したファイルは残るので、注意しないと次の呼び出しで意図しない動作になる。</li>
+<li>512MB はコンテナの制限。以前のファイルが残ったまま新規に作ると容量オーバーしてしまうことも。</li>
+</ul>
+</li>
+<li>
+<p>バックグラウンドプロセス</p>
+<ul>
+<li>関数終了時にバックグラウンドプロセスがある場合、そのプロセスは freeze させる。</li>
+<li>次回の関数呼び出しで再開されるため、プロセス再作成のオーバーヘッドを減らせる。</li>
+<li>ただし、コンテナが再利用される場合だけなので保証はされない。</li>
+</ul>
+</li>
+</ul>
+<p>プログラミングモデル</p>
+<p><img alt="" src="_attachment/File_151.png" /><img alt="" src="_attachment/File_152.png" /></p>
+<ul>
+<li>ロググループ内に複数のログストリームができる。</li>
+<li>ログストリームはランタイム(実行コンテキスト) ごとにできる。</li>
+<li>コンテキストには logStreamName や RequestIID、タイムアウトの情報が含まれる。</li>
+</ul>
+<p>環境変数</p>
+<ul>
+<li>すべての環境変数の合計サイズ(キーと値を合わせて)は 4KB まで。</li>
+<li>DB のキー等の受け渡しは Secrets Manager 推奨。</li>
+</ul>
+<p>環境変数の暗号化</p>
+<ul>
+<li>
+<p>保管時はデフォルトで AWS managed CMK で暗号化され、関数が呼び出されると復号される</p>
+<ul>
+<li>Customer managed CMK も利用可能。</li>
+</ul>
+</li>
+<li>
+<p>伝送中の暗号化のためのヘルパー</p>
+<ul>
+<li>管理コンソールで登録時にブラウザ側 KMS Encrypt で環境変数を暗号化。(「暗号化」ボタンをクリック)</li>
+<li>復号用のサンプルコードが表示されるので Lambda 関数でそのコードで復号する。</li>
+<li>「伝送中に暗号化する AWS KMS キー」で Customer managed key を指定する必要がある。</li>
+<li>実行ロールで KMS Decrypt 権限も必要。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_153.png" /></p>
+<p><img alt="" src="_attachment/File_154.png" /></p>
+<p>バージョン</p>
+<ul>
+<li>
+<p>関数の公開時に「バージョン」を発行する。</p>
+<ol>
+<li>コンソールで Publish new version を実行。</li>
+<li>PublishVersion API で明示的に発行。</li>
+</ol>
+</li>
+<li>
+<p>バージョンが発行されるまでは $LATEST のみ。</p>
+</li>
+<li>バージョンはイミュータブル。$LATEST でコード・設定を変更して新たなバージョンを発行。</li>
+<li>バージョンは一意の ARN を持つ<ul>
+<li>arn:aws:lambda:us-west-2:123458298765:function:TestFunc:3</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1821.png" /></p>
+<p>エイリアス</p>
+<ul>
+<li><img alt="" src="_attachment/File_155.png" /></li>
+<li>エイリアスが別バージョンを指すよう更新されるとトラフィック転送先も更新後バージョンにすぐ切り替わる。</li>
+<li>
+<p>エイリアスにも一意の ARN がつく。</p>
+<ul>
+<li>arn:aws:lambda:us-west-2:123458298765:function:TestFunc:Prod</li>
+</ul>
+</li>
+<li>
+<p>旧バージョンへのロールバックにも使える。</p>
+</li>
+</ul>
+<p>加重エイリアス</p>
+<ul>
+<li>２つのバージョンに比率指定で紐づけられる (Blue/Green)</li>
+<li><img alt="" src="_attachment/image_1822.png" /></li>
+<li>routing-config パラメータでバージョンの比率を指定</li>
+<li><img alt="" src="_attachment/File_156.png" /></li>
+</ul>
+<p>Lambda Layers</p>
+<ul>
+<li>ライブラリ的な ZIP ファイル。カスタムランタイムの本体も Layer に含められる。</li>
+<li>１つの関数から使用できる Layers は 5 つまで。</li>
+<li>関数と全 Layers の合計サイズは、デプロイパッケージの解凍後サイズ制限の 250 MB まで。</li>
+<li>
+<p>バージョニング</p>
+<ul>
+<li>同じ名前の Layer を追加で上げていくとバージョン番号が上がる。</li>
+<li>関数にはバージョン番号も指定して Layer を登録する。</li>
+</ul>
+</li>
+<li>
+<p>/opt 下に指定した順番で展開される</p>
+<ul>
+<li>各ランタイムの参照パスが決まっている</li>
+</ul>
+</li>
+<li>
+<p>Layers もリソースベースのポリシーでアクセス制御できる。</p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1823.png" /></p>
+<ul>
+<li>
+<p>実行コンテキスト再利用</p>
+<ul>
+<li>ランタイム毎に初期化処理を毎回やらないようにグローバル変数やシングルトンに保存する。</li>
+</ul>
+</li>
+<li>
+<p>環境変数の使用</p>
+<ul>
+<li>ハードコードを避けてコンフィグレーションの柔軟性</li>
+</ul>
+</li>
+<li>
+<p>再帰を避ける</p>
+<ul>
+<li>イベントソース経由で自身が再度呼ばれるような依存性つくらないように。コストやばい！</li>
+</ul>
+</li>
+</ul>
+<p>CloudWatch メトリクス</p>
+<p><img alt="" src="_attachment/File_157.png" /><img alt="" src="_attachment/File_158.png" /></p>
+<ul>
+<li>関数のメモリ使用状況は CloudWatch Logs に記録される</li>
+</ul>
+<p><img alt="" src="_attachment/File_159.png" /><img alt="" src="_attachment/File_160.png" /><img alt="" src="_attachment/File_161.png" /></p>
+<p>Lambda@Edge</p>
+<ul>
+<li>
+<p>CloudFront の機能。エッジロケーションで Lambda でリクエスト/レスポンスをハンドルできる。</p>
+<ul>
+<li>エッジでの認証処理など。</li>
+</ul>
+</li>
+<li>
+<p>Lambda 関数をグローバルにデプロイできる。</p>
+</li>
+<li>キャッシュがある場合にリクエストを処理したくない場合はオリジンリクエストに設定する。</li>
+<li><img alt="" src="_attachment/File_162.png" /></li>
+</ul>
+<hr />
+<h1 id="amazon-api-gateway">Amazon API Gateway</h1>
+<p>Ref</p>
+<ul>
+<li>
+<p>開発者ガイド</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/welcome.html">https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/welcome.html</a></li>
+</ul>
+</li>
+<li>
+<p>概念</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/api-gateway-basic-concept.html">https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/api-gateway-basic-concept.html</a></li>
+</ul>
+</li>
+<li>
+<p>BB</p>
+<ul>
+<li><a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20190514_AWS-Blackbelt_APIGateway_rev.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20190514_AWS-Blackbelt_APIGateway_rev.pdf</a></li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_163.png" /></p>
+<p>API のタイプ</p>
+<ul>
+<li>REST API</li>
+<li>HTTP API</li>
+<li>WebSocket API</li>
+<li>いずれもセキュア接続 (TLS) のみサポート。非暗号化エンドポイントをサポートしない。</li>
+</ul>
+<p>REST API</p>
+<p>API エンドポイントタイプ ３種</p>
+<ul>
+<li>
+<p>API エンドポイント := API の URL のこと。</p>
+<ul>
+<li>形式: {api-id}.execute-api.{region}.amazonaws.com</li>
+</ul>
+</li>
+<li>
+<p>エンドポイントタイプ := URL のデプロイ方法。</p>
+</li>
+<li><img alt="" src="_attachment/File_164.png" /></li>
+<li>
+<p>エッジ最適化 API エンドポイント:</p>
+<ul>
+<li>CloudFront に API エンドポイントをデプロイ。</li>
+<li>地理的に分散したクライアントのレイテンシーが改善。</li>
+</ul>
+</li>
+<li>
+<p>リージョン API エンドポイント (標準のオプション):</p>
+<ul>
+<li>リージョンにデプロイされる。同一リージョンの EC2 インスタンス等から使用する場合は低レイテンシ。</li>
+<li>Route 53 のレイテンシールーティングを使って、パブリック API をレーテンシーに応じてリージョンに振り分ける際にも利用できる。</li>
+</ul>
+</li>
+<li>
+<p>プライベート API エンドポイント:</p>
+<ul>
+<li>インターフェイス VPC エンドポイント (AWS PrivateLink) としてデプロイ。</li>
+<li>VPC 内からのみアクセスできる。</li>
+<li><img alt="" src="_attachment/image_1824.png" /></li>
+<li><a href="https://aws.amazon.com/jp/blogs/compute/introducing-amazon-api-gateway-private-endpoints/">https://aws.amazon.com/jp/blogs/compute/introducing-amazon-api-gateway-private-endpoints/</a></li>
+</ul>
+</li>
+</ul>
+<p>API のドキュメント化</p>
+<ul>
+<li>OpenAPI / Swagger 定義ファイル (JSON/YAML) として API 定義のインポート・エクスポートが可能</li>
+</ul>
+<p>リソースとメソッド</p>
+<ul>
+<li>リソース (URL パス) の各メソッドに応じて統合バックエンドに振り分け。</li>
+<li><img alt="" src="_attachment/File_165.png" /></li>
+<li>リソースの各メソッドごとに個別に合計4つの設定箇所でフロー処理を定義。</li>
+<li><img alt="" src="_attachment/File_166.png" /></li>
+<li>
+<p>メソッドリクエスト: リクエストの受付に関する設定</p>
+<ul>
+<li>認証とバリデーションを実施。</li>
+<li>オーソライザー。</li>
+<li>API キー認証: API キーを必須とするかどうか</li>
+<li>バリデータ: 受け付けるクエリパラメータ、必須とするHTTPヘッダなどの検証</li>
+</ul>
+</li>
+<li>
+<p>統合リクエスト: 統合バックエンドへのリクエスト送信に関する設定</p>
+<ul>
+<li>バックエンド種類: Lambda, AWSサービス, VPCリンク, HTTP, Mock</li>
+<li>リクエストの変換 (マッピングテンプレート)</li>
+</ul>
+</li>
+<li>
+<p>統合レスポンス: バックエンドからのレスポンスに関する設定</p>
+<ul>
+<li>レスポンスの変換 (マッピングテンプレート) やステータスコードのマッピングなど</li>
+<li>統合リクエストに「統合プロキシ」を指定した場合は設定不可</li>
+</ul>
+</li>
+<li>
+<p>メソッドレスポンス: 最終的な API Gateway からのレスポンスに関する設定</p>
+<ul>
+<li>どういうステータスコードや HTTP レスポンスヘッダを返すかなど</li>
+<li>ベストプラクティス: バックエンドからの未知のレスポンスやマッピングされていないレスポンスに対し、デフォルトで 500 レスポンスを返す。</li>
+</ul>
+</li>
+</ul>
+<p>CORS</p>
+<ul>
+<li>リソース毎に CORS を有効にできる。</li>
+<li><img alt="" src="_attachment/File_167.png" /></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/how-to-cors-console.html">https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/how-to-cors-console.html</a></li>
+</ul>
+<p>HTTP API</p>
+<p>Ref</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/http-api-vs-rest.html">https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/http-api-vs-rest.html</a></li>
+<li><a href="https://dev.classmethod.jp/articles/amazon-api-gateway-http-or-rest/">https://dev.classmethod.jp/articles/amazon-api-gateway-http-or-rest/</a></li>
+<li><a href="https://blog.serverworks.co.jp/api-gateway-http-apis-adds-integration-with-five-aws-services">https://blog.serverworks.co.jp/api-gateway-http-apis-adds-integration-with-five-aws-services</a></li>
+</ul>
+<p>特徴</p>
+<ul>
+<li>re:Invent 2019 で発表</li>
+<li>低レイテンシ・コスト最適化: REST API と比較してコアな機能に特化して最適化。</li>
+<li>REST API の上位 or 下位互換ではない。比較すると出来ること/出来ないことがある。</li>
+</ul>
+<p>統合バックエンド (Integration Backend)</p>
+<ul>
+<li>Lambda, HTTP, VPC リンク</li>
+<li>AWS サービス統合 (2020年8月より)<ul>
+<li>AppConfig, EventBridge, Kinesis Data Streams, SQS, Step Functions</li>
+</ul>
+</li>
+</ul>
+<p>HTTP API vs. REST API</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/http-api-vs-rest.html">https://docs.aws.amazon.com/ja_jp/apigateway/latest/developerguide/http-api-vs-rest.html</a></li>
+<li>
+<p>HTTP API がサポートしないもの:</p>
+<ul>
+<li>エッジ最適化、プライベート API エンドポイント (HTTP API はリージョン API エンドポイントのみ)</li>
+<li>API キー、バリデーション</li>
+<li>キャッシュ、リクエスト変換、テスト呼び出し</li>
+<li>Mock 統合</li>
+<li>クライアント証明書、AWS WAF</li>
+</ul>
+</li>
+<li>
+<p>HTTP API のみサポートするもの:</p>
+<ul>
+<li>JWT オーソライザー: Cognito ユーザープール以外の OIDC/OAuth 2.0 準拠 IdP が発行した JWT で認証</li>
+<li>自動デプロイ (ステージへの手動デプロイが不要)、デフォルトステージ、デフォルトルート</li>
+</ul>
+</li>
+</ul>
+<p>WebSocket API</p>
+<p>概要</p>
+<ul>
+<li>コネクションをキープアライブ(最大2時間) してリアルタイムで双方向通信(プッシュ) をサポート。</li>
+<li>URI スキームは wss://</li>
+</ul>
+<p>ルート</p>
+<ul>
+<li>ルートに応じてバックエンドに振り分ける。</li>
+<li>事前定義のルート: $connect, $disconnect, $default</li>
+<li>
+<p>カスタムルート: JSON メッセージ内のフィールド値で振り分ける</p>
+<ul>
+<li>ルート選択式で定義</li>
+<li><img alt="" src="_attachment/File_168.png" /></li>
+</ul>
+</li>
+<li>
+<p>ルート毎に３つの設定箇所でフロー処理を定義</p>
+<ul>
+<li><img alt="" src="_attachment/File_169.png" /></li>
+<li>
+<p>ルートリクエスト</p>
+<ul>
+<li>$connect: 認証やAPI キー</li>
+<li>$disconnect: 設定なし</li>
+<li>その他のルート: モデル選択式の指定 (optional) </li>
+</ul>
+</li>
+<li>
+<p>統合リクエスト</p>
+<ul>
+<li>バックエンド種類: (REST API と同じ) Lambda, HTTP, Mock, AWSサービス, VPCリンク </li>
+<li>テンプレート選択式の指定 (optional)</li>
+</ul>
+</li>
+<li>
+<p>統合レスポンス (optional)</p>
+<ul>
+<li>レスポンス選択式の指定</li>
+<li>その上で、レスポンスキーとそれに対応するテンプレート選択式、およびテンプレートキーとテンプレートのセットを複数指定可能</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>API Gateway の各種機能</p>
+<p>ステージ</p>
+<ul>
+<li>ステージへの「デプロイ」を行わない限り API は有効にならない。</li>
+<li><img alt="" src="_attachment/File_170.png" /></li>
+<li>
+<p>HTTP API はデフォルトステージをサポート</p>
+<ul>
+<li>https://xxx.amazonaws.com/ が自動的に https://xxx.amazonaws.com/Prod/ を指す。</li>
+</ul>
+</li>
+<li>
+<p>API バージョニングのユースケース例:</p>
+<ul>
+<li>異なる Lambda で V2 を実装してステージを分ける。</li>
+<li><img alt="" src="_attachment/image_1825.png" /></li>
+</ul>
+</li>
+</ul>
+<p>ステージ変数</p>
+<ul>
+<li>${stageVariables} から参照できるステージ毎に異なる変数。</li>
+<li>
+<p>例: ステージ毎に異なる Lambda エイリアスに統合する設定</p>
+<ul>
+<li>統合リクエストで Lambda 関数に myLambda:${stageVariables.alias} を設定する。</li>
+<li>ステージエディタで変数 alias に個別の Lambda のエイリアス名を設定する。</li>
+</ul>
+</li>
+<li>
+<p>ユースケース例:</p>
+<ul>
+<li>ステージ変数で各ステージがそれぞれの Lambda エイリアスに接続。アップグレード時は Lambda エイリアスの変更のみで切り替えと Blue/Green も実施できる。</li>
+<li><img alt="" src="_attachment/image_1826.png" /></li>
+</ul>
+</li>
+</ul>
+<p>統合バックエンドのタイプ</p>
+<p><img alt="" src="_attachment/File_171.png" /></p>
+<ul>
+<li>VPC リンク: VPC 内のインスタンス・コンテナの Web アプリ(API) に NLB 経由でアクセス</li>
+<li><img alt="" src="_attachment/File_172.png" /></li>
+<li>1つの API で複数のバックエンドに統合できる:<ul>
+<li>例:<ul>
+<li>GET /api/xxx -&gt; Lambda</li>
+<li>PUT /doc/{filename} -&gt; S3</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>統合タイムアウト (REST API)</p>
+<ul>
+<li>統合タイムアウト値は 50ミリ秒〜29秒の間で設定可能 (上限緩和不可)</li>
+<li>タイムアウトは API Gateway の INTEGRATION_TIMEOUT エラーとなり 504 (Gateway Timeout) が返る。<ul>
+<li>統合バックエンドのエラー (INTEGRATION_FAILURE) も 504。</li>
+</ul>
+</li>
+</ul>
+<p>オーソライザー: 認証・認可 </p>
+<p><img alt="" src="_attachment/File_173.png" /></p>
+<ul>
+<li>メソッドリクエストでリソースの各メソッド個別に設定 (WebSocket ではルートリクエスト)。</li>
+<li>いずれも認証したプリンシパルの権限でバックエンドサービスを呼び出す。(JWT オーソライザーは不明)</li>
+<li>
+<p>IAM アクセス権限</p>
+<ul>
+<li>IAM ユーザのクリデンシャルから AWS 署名v4 を生成して Authorization ヘッダで送信。</li>
+<li><img alt="" src="_attachment/File_174.png" /></li>
+<li>プリンシパルの IAM ポリシーにオーソライザーが設定された API への呼び出し権限が必要。</li>
+<li>STS や Cognito ID プールの ID フェデレーションで一時クリデンシャルを取得したアプリもこの方法で認証。</li>
+</ul>
+</li>
+<li>
+<p>Lambda オーソライザー</p>
+<ul>
+<li>
+<p>リクエストパラメータベース (REQUEST オーソライザー):</p>
+<ul>
+<li>ヘッダ、クエリ文字列、stageVariables, $context 変数を受け取って認証。</li>
+</ul>
+</li>
+<li>
+<p>トークンベース (TOKEN オーソライザー):</p>
+<ul>
+<li>JWT や OAuth トークンなどのベアラートークンのみを受け取って認証。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Cognito オーソライザー</p>
+<ul>
+<li>Cognito ユーザープールで認証して取得したトークン (JWT) を Authorization ヘッダで送信する。</li>
+</ul>
+</li>
+<li>
+<p>JWT オーソライザー</p>
+<ul>
+<li>HTTP API のみサポート。</li>
+<li>OpenID Connect/OAuth 2.0 準拠の IdP が発行した JWT による認証 (Cognito ユーザープール含む)</li>
+<li>Cognito オーソライザーは Cognito ユーザープールしかサポートしないため、その他の IdP を使用する場合は Lambda オーソライザーによる実装が必要だった。</li>
+<li>
+<p>バックエンドサービスを呼び出すプリンシパルはどうやって結びつけるの？</p>
+<ul>
+<li>多分 JWT オーソライザーでそれができるようになった。Lambda オーソライザーは自前でプリンシパルの情報を返していた。</li>
+</ul>
+</li>
+<li>
+<p>Ref <a href="https://dev.classmethod.jp/articles/amazon-api-gateway-jwt-authorizers/">https://dev.classmethod.jp/articles/amazon-api-gateway-jwt-authorizers/</a></p>
+</li>
+</ul>
+</li>
+</ul>
+<p>リソースポリシー</p>
+<ul>
+<li>API Gateway のリソースベースポリシー。IAM ポリシーと併用できる。</li>
+<li>呼び出し元のプリンシパル(IAM アカウント/ロール)、IP アドレス(範囲/CIDR)、VPC を指定。</li>
+</ul>
+<p>その他のセキュリティ</p>
+<ul>
+<li>プライベート API エンドポイントとする。</li>
+<li>AWS Shield で DDoS 対策されている。</li>
+<li>WAF をステージに設定できる。</li>
+<li>CloudFront レイヤーで Shield/WAF を設置。</li>
+<li>
+<p>カスタムドメインによる証明書設定</p>
+<ul>
+<li>ACM で証明書を管理できる。</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/File_175.png" /></p>
+</li>
+<li>クライアント証明書の追加。</li>
+</ul>
+<p>マッピングテンプレート</p>
+<ul>
+<li>統合リクエスト/統合レスポンスで指定して JSON &lt;-&gt; XML 間の変換などができる。</li>
+<li>JSONPath 等で指定。</li>
+<li>モデルからモデルへの変換。</li>
+</ul>
+<p>モデル</p>
+<ul>
+<li>JSON Schema によるリクエスト・レスポンスメッセージのスキーマ定義。</li>
+<li>リクエストのバリデーションやクライアント SDK 生成、マッピングテンプレートで使用。</li>
+</ul>
+<p><img alt="" src="_attachment/File_176.png" /></p>
+<p>プロキシ統合</p>
+<ul>
+<li>リクエストのクエリがそのままバックエンドに渡り、バックエンドの HTTP レスポンスがそのまま API のレスポンスとなる。</li>
+<li>統合リクエストでのマッピングが不要になる。</li>
+<li>統合レスポンスによるマッピングテンプレート指定は不可。</li>
+<li><img alt="" src="_attachment/File_177.png" /></li>
+<li>プロキシ統合でないほうはカスタム統合という。</li>
+</ul>
+<p>API キー</p>
+<ul>
+<li>
+<p>X-API-Key ヘッダでキー (英数字の文字列) を指定してリクエスト。</p>
+<ul>
+<li>パートナー企業への API 公開などで使う。</li>
+<li>クォータ・スロットリング管理のための機能。認証目的で使用しないようにとのこと。</li>
+</ul>
+</li>
+<li>
+<p>API キー認証: API コールに API キーの指定を必須とする。</p>
+</li>
+<li>使用量プラン: キーごとに API コールのクォータ(日/週/月)とスロットリング(レート/バースト)を設定。</li>
+<li>REST API, WebSocket API で使用可能。</li>
+<li>Ref. <a href="https://qiita.com/baikichiz/items/ed787c5c79059213401e">https://qiita.com/baikichiz/items/ed787c5c79059213401e</a></li>
+</ul>
+<p>スロットリング</p>
+<ul>
+<li>リクエスト数/秒の制限。バースト有りのスロットリング。</li>
+<li>ステージに適用できる使用量プランによる設定とアカウント全体の制約がある。</li>
+<li><img alt="" src="_attachment/File_178.png" /></li>
+<li>いずれかのスロットリングレベルで超過すると THROTTLED エラーとなり 429 (Too Many Requests) を返す。</li>
+<li>レート: 1秒あたりの平均リクエスト数。</li>
+<li><img alt="" src="_attachment/File_179.png" /></li>
+</ul>
+<p>キャッシュ</p>
+<ul>
+<li>REST API のみ。ステージ毎に個別にキャッシュ容量と TTL (デフォルト 300 秒) 設定。</li>
+<li><img alt="" src="_attachment/File_180.png" /></li>
+<li>遅延読み込み (Lazy Loading)</li>
+<li>ベストプラクティス: キャッシュは GET メソッドのみとする。</li>
+</ul>
+<p>カナリアリリース</p>
+<ul>
+<li>指定した比率で特別なステージ「Canary」にリクエストを流せる。</li>
+<li>
+<p>Canary はステージ毎に作成できる。</p>
+<ul>
+<li>Canary を有効化しているステージに対し「ステージ名 (Canary)」でデプロイできるようになる。</li>
+</ul>
+</li>
+<li>
+<p>Canary はメインのステージに「昇格」できる。(Promote Canary)</p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_181.png" /><img alt="" src="_attachment/image_1827.png" /></p>
+<p>CloudWatch Logs</p>
+<ul>
+<li>ステージ/メソッド単位でロギングを有効化。</li>
+<li>
+<p>実行ログ</p>
+<ul>
+<li>ERROR/INFO のレベル指定。</li>
+<li>リクエスト/レスポンスデータのログ出力の有無の指定。</li>
+</ul>
+</li>
+<li>
+<p>アクセスログ</p>
+<ul>
+<li>API に誰がアクセスしたかのロギング。</li>
+</ul>
+</li>
+<li>
+<p>実行ログ・アクセスログは別のロググループとなる。</p>
+</li>
+</ul>
+<p>CloudWatch メトリクス</p>
+<ul>
+<li>レイテンシーが API 全体の時間。統合レイテンシーはバックエンドだけの時間。</li>
+<li><img alt="" src="_attachment/File_182.png" /></li>
+</ul>
+<p>クライアント証明書</p>
+<ul>
+<li>REST API の HTTP 統合バックエンドにアクセスする際のクライアント証明書を設定できる。</li>
+</ul>
+<p>クライアント SDK 生成</p>
+<ul>
+<li>JS, Java, Android, iOS(Objective-C/Swift), Ruby 向け SDK を自動生成。</li>
+<li>スロットリング時のリトライ、AWS 署名v4 対応、モデルのマーシャル/アンマーシャルなどに対応。</li>
+</ul>
+<hr />
+<h1 id="aws-sam-serverless-application-model">AWS SAM (Serverless Application Model)</h1>
+<p>Ref</p>
+<ul>
+<li><a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20190814_AWS-Blackbelt_SAM_rev.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20190814_AWS-Blackbelt_SAM_rev.pdf</a></li>
+</ul>
+<p>概要</p>
+<ul>
+<li>
+<p>SAM テンプレートで CloudFormation テンプレートより簡潔に次のリソースを定義できる:</p>
+<ul>
+<li>API Gateway, Lambda, DynamoDB, Step Functions </li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/File_183.png" /></p>
+</li>
+</ul>
+<p>SAM テンプレート</p>
+<ul>
+<li>CloudFormation テンプレートより簡潔。</li>
+<li><img alt="" src="_attachment/File_184.png" /></li>
+<li>デプロイ時に CloudFormation テンプレートに変換される。<ul>
+<li>Transform セクションに指定した SAM の変換マクロで実現。</li>
+<li>package コマンドによる Lambda の S3 へのデプロイもできる。</li>
+</ul>
+</li>
+</ul>
+<p>リソース</p>
+<ul>
+<li>次のリソースを使うサーバレスアプリケーションをデプロイできる。</li>
+<li><img alt="" src="_attachment/File_185.png" /></li>
+<li>
+<p>AWS::Serverless::Application は Nested Stack にあたる機能。</p>
+<ul>
+<li>SAM テンプレートの置き場所の URI か Serverless Application Repository の ARN を指定。</li>
+</ul>
+</li>
+<li>
+<p>AWS::Serverless::StateMachine で Step Functions もサポート。</p>
+</li>
+<li>CloudFormation がサポートする全てのリソースも指定できる。</li>
+</ul>
+<p>(以下は AWS::Serverless::Function のプロパティ)</p>
+<p>Events プロパティ</p>
+<ul>
+<li>Lambda をトリガーするイベント</li>
+</ul>
+<p><img alt="" src="_attachment/File_186.png" /></p>
+<ul>
+<li>CloudWatchLogs: FilterPattern が指定できる。</li>
+<li>IoTRule: AWS IoT トピックをクエリする SQL を指定する。</li>
+</ul>
+<p>CodeDeploy が組み込まれており Lambda の Blue/Green デプロイメントの指定ができる。</p>
+<p>AutoPublishAlias プロパティ</p>
+<ul>
+<li>Lambda のエイリアス名を指定。</li>
+<li>デプロイ時に関数が更新されていると自動的に関数のバージョンを上げてそのエイリアスに紐づけてくれる。</li>
+</ul>
+<p>DeploymentPreference プロパティ</p>
+<ul>
+<li>デプロイタイプ (Canary10Percent10Minutes 等)</li>
+<li>Pre-traffic / Post-traffic テストの Lambda 関数</li>
+<li>CloudWatch alarms 監視と自動ロールバック</li>
+</ul>
+<pre><code>MyLambdaFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    Handler: index.handler
+    Runtime: nodejs12.x
+    CodeUri: s3://bucket/code.zip
+
+    AutoPublishAlias: prod
+
+    DeploymentPreference:
+      Type: Canary10Percent10Minutes
+      Alarms:
+        # A list of alarms that you want to monitor
+        - !Ref AliasErrorMetricGreaterThanZeroAlarm
+        - !Ref LatestVersionErrorMetricGreaterThanZeroAlarm
+      Hooks:
+        # Validation Lambda functions that are run before &amp; after traffic shifting
+        PreTraffic: !Ref PreTrafficLambdaFunction
+        PostTraffic: !Ref PostTrafficLambdaFunction
+</code></pre>
+<ul>
+<li>CloudFormation で CodeDeploy アプリケーションが自動的に作成される。</li>
+<li><a href="https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/automating-updates-to-serverless-apps.html">https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/automating-updates-to-serverless-apps.html</a></li>
+</ul>
+<p><img alt="" src="_attachment/File_187.png" /></p>
+<ul>
+<li>
+<p>sam init コマンド</p>
+<ul>
+<li>scaffolding ができる</li>
+</ul>
+</li>
+<li>
+<p>sam build</p>
+<ul>
+<li>ビルド。pip install 等。</li>
+</ul>
+</li>
+<li>
+<p>sam package コマンド</p>
+<ul>
+<li>デプロイ用パッケージを S3 にアップロード。</li>
+<li>aws cloudformation package と同様の動作</li>
+<li>sam deploy で自動的に呼ばれるようになった</li>
+</ul>
+</li>
+<li>
+<p>sam deploy コマンド</p>
+<ul>
+<li>aws cloudformation deploy のエイリアス</li>
+</ul>
+</li>
+<li>
+<p>sam publish コマンド: Serverless Application Repository へアプリケーションを保管</p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1828.png" /></p>
+<pre><code># Step 1 - Download a sample application
+sam init --runtime python3.7
+
+# Step 2 - Build your application
+cd sam-app
+sam build
+
+# Step 3 - Test the function
+sam local invoke &quot;HelloWorldFunction&quot; -e events/event.json
+sam local start-api
+curl http://127.0.0.1:3000/hello
+
+# Step 4 - Package your application
+sam package --output-template-file packaged.yaml --s3-bucket aws-devops-course-stephane --region eu-west-1 --profile aws-devops
+
+# Step 5 - Deploy your application
+sam deploy --template-file packaged.yaml --capabilities CAPABILITY_IAM --stack-name aws-sam-getting-started --region eu-west-1 --profile aws-devops
+</code></pre>
+<p><img alt="" src="_attachment/image_1829.png" /></p>
+<ul>
+<li>Lambda local の Docker コンテナが降ってきて Lambda コードを実行する。</li>
+<li>その際の環境変数の指定方法。</li>
+<li><img alt="" src="_attachment/image_1830.png" /></li>
+<li>sam local start-api<ul>
+<li>127.0.0.1:3000 で listen する。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_188.png" /></p>
+<p>AppSync</p>
+<p>Ref</p>
+<ul>
+<li>BB: <a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20190821_AWS-BlackBelt_AppSync.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20190821_AWS-BlackBelt_AppSync.pdf</a></li>
+</ul>
+<p>概要</p>
+<ul>
+<li>GraphQL のマネージドサービス。</li>
+<li>Web/モバイルアプリ(=AppSync クライアント) に GraphQL による API を提供。</li>
+<li>リアルタイム更新、AppSync スキーマで必要なデータのみ取得、セキュリティ。</li>
+</ul>
+<p>GlaphQL の特徴</p>
+<ul>
+<li>
+<p>型指定ありのスキーマ定義</p>
+<ul>
+<li>スキーマをベースに API・ドキュメントを自動生成</li>
+</ul>
+</li>
+<li>
+<p>クライアントからのレスポンス形式の指定</p>
+<ul>
+<li>スキーマのうちクライアントがリクエストしたデータだけが返される</li>
+</ul>
+</li>
+<li>
+<p>サブスクリプションによるリアルタイム更新</p>
+<ul>
+<li>クライアントからデータをサブスクライブ</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/File_189.png" /></p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_190.png" /><img alt="" src="_attachment/File_191.png" /></p>
+<ul>
+<li>Resolver はマッピングテンプレートで記述。</li>
+<li>Resolver, DataSource の組み合わせは開発者の自由。複数サービスと柔軟に組み合わせ。</li>
+</ul>
+<p>API 認証</p>
+<ul>
+<li>OIDC, Cognito ユーザプールが発行する JWT を検証。</li>
+<li><img alt="" src="_attachment/File_192.png" /></li>
+</ul>
+<p>AWS Amplify</p>
+<p><img alt="" src="_attachment/File_193.png" /></p>
+<ul>
+<li>CLI ツール。裏では CloudFormation が動いている。</li>
+</ul>
+<p>Ref</p>
+<p><a href="https://aws.amazon.com/jp/blogs/startup/techblog-3reasons-amplify/">https://aws.amazon.com/jp/blogs/startup/techblog-3reasons-amplify/</a></p>
+<p><a href="https://aws.amazon.com/jp/blogs/mobile/aws-appsync-offline-reference-architecture/">https://aws.amazon.com/jp/blogs/mobile/aws-appsync-offline-reference-architecture/</a></p>
+<p><a href="https://aws.amazon.com/jp/amplify/framework/">https://aws.amazon.com/jp/amplify/framework/</a></p>
+<p>AWS AmplifyでTodoアプリを作るハンズオンをやってみました</p>
+<p><a href="https://www.yamamanx.com/aws-amplify-todo-handson/">https://www.yamamanx.com/aws-amplify-todo-handson/</a></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

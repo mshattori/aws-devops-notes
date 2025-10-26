@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS DVA - SQS, SNS, Step Functions - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS DVA - SQS, SNS, Step Functions</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="app-integration">App Integration</h1>
+<p><a href="AWS/AWS%20SAA%20ECSEKS,%20Lambda,%20SWF,%20Step%20Functions.html">AWS SAA: ECS/EKS, Lambda, SWF, Step Functions</a></p>
+<p>SQS: Simple Queue Service</p>
+<p>Ref</p>
+<ul>
+<li><a href="AWS/AWS%20SAA%20SQS,%20SNS,%20SES,%20AWS%20IoT.html">AWS SAA: SQS, SNS, SES, AWS IoT</a></li>
+<li><a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20190717_AWS-BlackBelt_AmazonSQS.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20190717_AWS-BlackBelt_AmazonSQS.pdf</a></li>
+</ul>
+<p>キューの種類</p>
+<p><img alt="" src="_attachment/File_199.png" /></p>
+<ul>
+<li>結果整合性。複数 AZ に保存される。</li>
+<li>メッセージ最大 256 KB(属性含む)。</li>
+<li>作成後にキューの種類を変更することはできない。</li>
+<li>FIFO キューのスループット: 300 TPS。最大 10 通のバッチ送信で 3,000件/秒。</li>
+</ul>
+<p><img alt="" src="_attachment/File_200.png" /></p>
+<ul>
+<li>冪等性(idempotency): 数学において冪等性（巾等性とも書くが読み方は同じ）は、大雑把に言って、ある操作を1回行っても複数回行っても結果が同じであることをいう概念。</li>
+</ul>
+<p>SendMessage API</p>
+<p><img alt="" src="_attachment/File_201.png" /></p>
+<p>Ref. <a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html">SendMessage</a></p>
+<p>DelaySeconds パラメータ</p>
+<ul>
+<li>メッセージタイマー。キューのデフォルト値に優先する。</li>
+<li>FIFO キューではサポートされない。</li>
+</ul>
+<p>MessageAttribute パラメータ</p>
+<p><img alt="" src="_attachment/File_202.png" /></p>
+<ul>
+<li>Name, Type, Value で構成される。</li>
+<li>Type: String, Number, Binary, カスタム (Binary.gif, Binary.png 等)</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-message-metadata.html">https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-message-metadata.html</a></li>
+</ul>
+<p>MessageDeduplicationId パラメータ</p>
+<ul>
+<li>FIFO キューのメッセージ重複排除 ID 機能。</li>
+<li>同一の重複排除 ID が設定されたメッセージがキューへ送信されても 5 分間はキューに挿入されない。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagededuplicationid-property.html">https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagededuplicationid-property.html</a></li>
+</ul>
+<p>MessageGroupId パラメータ</p>
+<ul>
+<li>FIFO キューのメッセージグループを指定する ID。</li>
+<li>同じグループのメッセージは順序通り処理されるが別グループのメッセージとの順序は保証されない。</li>
+<li>例えばユーザごとにリクエスト順序が保証されれば十分な場合、ユーザ ID をグループ ID とすれば良い。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagegroupid-property.html">https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagegroupid-property.html</a></li>
+</ul>
+<p>SendMessageBatch</p>
+<ul>
+<li>最大 10 通のバッチ送信。</li>
+</ul>
+<p>ReceiveMessage</p>
+<p><img alt="" src="_attachment/File_203.png" /></p>
+<p>MaxNumberOfMessage</p>
+<ul>
+<li>バッチ受信。</li>
+<li>デフォルト 1、最大 10。</li>
+</ul>
+<p>WaitTimeSeconds</p>
+<ul>
+<li>
+<p>ショートポーリング (デフォルト)</p>
+<ul>
+<li>SQS キューは分散したサーバ群で実装されている (分散メッセージキュー )</li>
+<li>ReceiveMessage はランダムサンプリングされたサーバ群のサブセットからメッセージを受信。</li>
+<li>全てのメッセージが返らないことがある。</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/File_204.png" /></p>
+</li>
+<li>
+<p>ロングポーリング</p>
+<ul>
+<li>WaitTimeSeconds パラメータに 0 より大きい値を指定。(最大 20 秒)</li>
+<li>API コール数を削減。全サーバにクエリを実行し、メッセージが空の場合も指定時間だけ待機。</li>
+<li>利用可能なメッセージが取れ次第返る。</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/File_205.png" /></p>
+</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-short-and-long-polling.html#sqs-long-polling">https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-short-and-long-polling.html#sqs-long-polling</a></li>
+</ul>
+<p>VisibilityTimeout (可視性タイムアウト)</p>
+<ul>
+<li>受信メッセージが他のコンシューマに再処理されない時間。デフォルト 30 秒。最大12時間。</li>
+<li>コンシューマ障害でメッセージの処理に失敗した場合に他のコンシューマがタイムアウト後に再処理できる。</li>
+<li><img alt="" src="_attachment/File_206.png" /></li>
+</ul>
+<p><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_ChangeMessageVisibility.html">ChangeMessageVisibility</a> API</p>
+<ul>
+<li>可視性タイムアウトを動的に変更可能。</li>
+<li>コンシューマでの処理時間が予測しづらい場合、処理状況に応じて可視性タイムアウトを動的に変更する。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html">https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html</a></li>
+</ul>
+<p>DeleteMessage 処理</p>
+<ul>
+<li>
+<p>キューから受信したメッセージはすぐには削除されない。DeleteMessage で明示的に削除する。</p>
+<ul>
+<li>受信される前に送信者が削除することも可能。</li>
+</ul>
+</li>
+<li>
+<p>削除しない場合は保持期間まで保持される。(デフォルト4日、最小60秒、最大14日)</p>
+<ul>
+<li>保持期間はキューの作成時か SetQueueAttributes 処理で変更可能。</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/File_207.png" /></p>
+</li>
+<li>DeleteMessageBatch 処理: 最大 10 個を一括削除。</li>
+<li>PurgeQueue 処理: キュー内の全メッセージを削除。</li>
+</ul>
+<p>キューに対する処理</p>
+<p><img alt="" src="_attachment/File_208.png" /></p>
+<ul>
+<li>DelaySeconds: 遅延キュー。最大15 分、デフォルト 0 秒。</li>
+<li>MaximumMessageSize: メッセージの最大バイト数。最大/デフォルト 256 KB。</li>
+<li>MessageRetentionPeriod: メッセージ保持期間。最大 14日、デフォルト 4日。</li>
+<li>ReceiveMessageWaitTimeSeconds: ロングポーリング。最大 20秒。デフォルト 0秒。</li>
+<li>VisibilityTimeout: 最大 12時間。デフォルト 30秒。</li>
+</ul>
+<p>DelaySeconds: 遅延キュー(delay queues)・メッセージタイマー</p>
+<ul>
+<li>遅延キュー: CreateQueue でキュー全体に遅延を設定</li>
+<li>メッセージタイマー: SendMessage でメッセージ毎に遅延を設定</li>
+<li>両者ともデフォルトの遅延は 0 秒、最大は 15 分。</li>
+<li><img alt="" src="_attachment/File_209.png" /></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-message-timers.html">https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-message-timers.html</a></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-delay-queues.html">https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-delay-queues.html</a></li>
+</ul>
+<p>DLQ</p>
+<p><img alt="" src="_attachment/File_210.png" /></p>
+<ul>
+<li>指定した最大受信回数に達する (削除せずに再度受信する) とメッセージを DLQ に移動する。</li>
+<li>メッセージを受信するたびに増分する ReceiveCount が RedrivePolicy の maxReceiveCount を超えると DLQ にメッセージを (元のメッセージ ID で) 移動する。</li>
+<li>CreateQueue または SetQueueAttributes の RedrivePolicy で DLQ を設定できる。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html">https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html</a></li>
+</ul>
+<p>IAM ポリシー / Amazon SQS ポリシー (リソースベース)</p>
+<p><img alt="" src="_attachment/File_211.png" /></p>
+<ul>
+<li>
+<p>共有キュー (クロスアカウント)</p>
+<ul>
+<li>IAM ポリシーまたは Amazon SQS ポリシー設定でクロスアカウントでの利用が可能。</li>
+<li>共有キューへのリクエスト・転送量コストは所有者持ち。</li>
+<li>クロスリージョンは不可。</li>
+</ul>
+</li>
+<li>
+<p>Amazon SQS ポリシーの操作</p>
+<ul>
+<li>CreateQueue/SetQueueAttributes: ポリシー全体をキューに設定する。</li>
+<li>AddPermission/RemovePermission: 特定プリンシパルに対するポリシーの追加・削除を行う。</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-overview-of-managing-access.html">https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-overview-of-managing-access.html</a></p>
+</li>
+</ul>
+<p>SSE</p>
+<ul>
+<li>
+<p>KMS による SSE (デフォルト OFF)。</p>
+<ul>
+<li>AWS マネージドまたは独自の CMK を指定できる。</li>
+</ul>
+</li>
+<li>
+<p>暗号化の対象はメッセージ本文のみ。</p>
+<ul>
+<li>メッセージ属性やキュー自体の属性やメトリクスは対象外。</li>
+</ul>
+</li>
+<li>
+<p>ポリシー設定方法</p>
+<ul>
+<li>
+<p>CMK のリソースポリシー (キーポリシー)</p>
+<ul>
+<li>service.amazonaws.com に kms:GenerateDataKey, kms:Decrypt を許可。</li>
+<li>kms:GenerateDataKey は平文の CDK を返すので暗号化が可能。</li>
+</ul>
+</li>
+<li>
+<p>プロデューサの IAM ポリシー</p>
+<ul>
+<li>CMK の ARN に対して kms:GenerateDataKey, kms:Decrypt を許可。</li>
+<li>暗号化するだけなら本来は Decrypt 不要だが、新しく生成された CDK のインテグリティチェックのために Decrypt をコールするとのこと。</li>
+<li>キューの ARN に対して sqs:SendMessage を許可。</li>
+</ul>
+</li>
+<li>
+<p>コンシューマの IAM ポリシー</p>
+<ul>
+<li>CMK の ARN に対して kms:Decrypt を許可。</li>
+<li>キューの ARN に対して sqs:ReceiveMessage を許可。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-server-side-encryption.html">https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-server-side-encryption.html</a></p>
+</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-key-management.html">https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-key-management.html</a></li>
+</ul>
+<p><img alt="" src="_attachment/File_212.png" /></p>
+<p>キューの用途</p>
+<p><img alt="" src="_attachment/File_213.png" /></p>
+<ul>
+<li>バッファリング、デカップリング、非同期化、並列処理、ファンアウト</li>
+</ul>
+<p><a href="http://en.clouddesignpattern.org/index.php/CDP:Queuing_Chain_Pattern">CDP: Queuing_Chain_パターン</a></p>
+<ul>
+<li>システムのデカップリング (疎結合) と非同期化/並列処理</li>
+<li><img alt="" src="_attachment/File_214.png" /></li>
+</ul>
+<p><a href="http://aws.clouddesignpattern.org/index.php/CDP:Fanout%25E3%2583%2591%25E3%2582%25BF%25E3%2583%25BC%25E3%2583%25B3">CDP: Fanout パターン</a></p>
+<ul>
+<li>SNS → SQS 連携による並列処理</li>
+</ul>
+<p><img alt="" src="_attachment/File_215.png" /></p>
+<ul>
+<li>複数の SQS キューを SNS トピックにサブスクライブさせることで１つのメッセージを並列処理。</li>
+<li>SQS の先にはそれそれの加工処理とデータシンクへの保存を実装したコンシューマがいる。</li>
+<li><strong>Lambda を直接サブスクライバにせず間に SQS を入れるのは非同期化のため。Lambda 処理の先がダウンしてもキューにデータが残っているので復旧後に処理できるため。</strong></li>
+<li>SNS → SQS のリクエストは無料。</li>
+</ul>
+<p><img alt="" src="_attachment/File_216.png" /></p>
+<p><a href="http://aws.clouddesignpattern.org/index.php/CDP:Job_Observer%25E3%2583%2591%25E3%2582%25BF%25E3%2583%25BC%25E3%2583%25B3">CDP: Job_Observerパターン</a></p>
+<ul>
+<li>SQS メトリクスに対して CloudWatch アラームをかけてしきい値を超えた場合に Auto Scaling で EC2 のワーカーインスタンスをスケールアウト。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1831.png" /></p>
+<ul>
+<li>SQS の未処理メッセージ数をメトリクスとした CloudWatch アラームにより Auto Scaling でスポットインスタンス (スポットフリートリクエスト) を利用して安価にバッチ処理などを行うイディオムがある。</li>
+</ul>
+<p>AWS::SQS::Queue</p>
+<p><img alt="" src="_attachment/File_217.png" /></p>
+<ul>
+<li>
+<p>QueueName</p>
+<ul>
+<li>FIFO キューは .fifo サフィックスをつけるルールがある</li>
+</ul>
+</li>
+<li>
+<p>RedrivePolicy</p>
+<ul>
+<li>DLQ の設定</li>
+<li>deadLetterTargetArn : String</li>
+<li>maxReceiveCount : Integer</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sqs-queues.html">https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sqs-queues.html</a></p>
+</li>
+</ul>
+<p>API</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_Operations.html">https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_Operations.html</a></li>
+<li><a href="https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html">https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html</a></li>
+<li>PurgeQueue: メッセージの全削除。</li>
+<li>DeleteQueue: キュー自体の削除。メッセージが残っていても消せる。</li>
+</ul>
+<p>Amazon MQ</p>
+<ul>
+<li>Apache ActiveMQ のマネージドメッセージブローカーサービス</li>
+<li>
+<p>業界標準 API とプロトコルをサポート</p>
+<ul>
+<li>JMS (Java), NMS (.NET), AMQP, STOMP, MQTT, WebSocket</li>
+<li>アプリケーションを書き換えることなく Amazon MQ に移行できる。</li>
+</ul>
+</li>
+<li>
+<p>アクティブ/スタンバイブローカー (オプショナル)</p>
+<ul>
+<li>
+<p>マルチ AZ で高可用性を実現。</p>
+<ul>
+<li>アクティブブローカーのみが使用される。スタンバイはリードレプリカではない。</li>
+</ul>
+</li>
+<li>
+<p>ブローカーの共有ストレージはデフォルトで EFS (高可用/高耐久) が使用される。</p>
+<ul>
+<li>低レイテンシー/高スループットが必要な場合は EBS も使用できる。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/File_218.png" /></p>
+</li>
+</ul>
+<p>SNS: Simple Notification Service</p>
+<p>概要</p>
+<ul>
+<li>１対多の Pub/Sub サービス。</li>
+<li>
+<p>トピック</p>
+<ul>
+<li>通信チャネル。</li>
+</ul>
+</li>
+<li>
+<p>パブリッシャ</p>
+<ul>
+<li>トピックを作成。メッセージを送信する。</li>
+<li>AWS サービスの一部もパブリッシャとして登録できる。<ul>
+<li>S3 イベント、CloudWatch Events の宛先は SNS, SQS, Lambda。</li>
+<li>CloudWatch アラームは SNS, Auto Scaling, EC2 アクション。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>サブスクライバ</p>
+<ul>
+<li>プロトコル+エンドポイントを指定してトピックをサブスクライブ。</li>
+<li>SQS, Lambda, HTTP(S), SMS/モバイルプッシュ, Email, Chatbot<ul>
+<li>SES と異なり Email のフォーマットは指定できない。Subject, Message 文字列を渡すだけ。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>メッセージ</p>
+<ul>
+<li>最大 256 KB。属性含む。</li>
+<li>JSON, テキスト。</li>
+<li>
+<p>配信順序は保証されない。</p>
+<ul>
+<li>SQS FIFO キューをサブスクライバとする場合 FIFO トピックも作れる。</li>
+</ul>
+</li>
+<li>
+<p>配信回数は少なくとも 1回。２回以上配信されることもある。</p>
+</li>
+<li>パブリッシュ済みメッセージは削除できない。</li>
+</ul>
+</li>
+</ul>
+<p>オペレーション</p>
+<p><img alt="" src="_attachment/File_219.png" /></p>
+<ul>
+<li>
+<p>CreateTopic</p>
+<ul>
+<li>最大 3000 個のトピックを作成できる。</li>
+<li>指定された名前のトピックを既に所有している場合は新しいトピックが作成されずに ARN が返される。</li>
+</ul>
+</li>
+<li>
+<p>Subscribe</p>
+<ul>
+<li>エンドポイントに確認メッセージを送信してサブスクライブを準備する。</li>
+<li>サービスが (エンドポイントへの確認を要求することなく) サブスクリプションを即座に作成した場合はサブスクリプション ARN を返す。そうでない場合は "pending confirmation” 文字列を返す。</li>
+<li>DLQ を指定できる。</li>
+</ul>
+</li>
+<li>
+<p>ConfirmSubscription</p>
+<ul>
+<li>確認メッセージに含まれるトークンを検証してエンドポイントでのサブスクライブを確認する。</li>
+<li>トークンが有効である場合、新しいサブスクリプション ARN を返す。</li>
+<li>確認トークンの有効期間は 3日間。</li>
+<li>AuthenticateOnUnsubscribe パラメータ (Bool)<ul>
+<li>トピックオーナーとサブスクリプションオーナー以外が unsubscribe できなくなる。</li>
+<li>確認メールに含まれる unsubscribe リンクが誤って踏まれて unsibscribe されるのを避けられる。</li>
+<li>true にする場合 ConfirmSubscription アクションに AWS 署名が必要となる。</li>
+<li>例) aws sns confirm-subscription …中略… --authenticate-on-unsubscribe true</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/sns/latest/api/API_Operations.html">https://docs.aws.amazon.com/sns/latest/api/API_Operations.html</a></p>
+</li>
+</ul>
+<p>Subscribe: RawMessageDelivery (Raw メッセージ配信)</p>
+<ul>
+<li>通常は JSON 形式で SNS メタデータを含んだメッセージが配信される。</li>
+<li>サブスクライブ時に Raw メッセージ配信を有効にするとメッセージ本文と属性のみが配信される。</li>
+<li><img alt="" src="_attachment/File_220.png" /></li>
+</ul>
+<p>Subscribe: FilterPolicy</p>
+<ul>
+<li>
+<p>サブスクリプションに属性のフィルタを割り当て、マッチしたメッセージのみ配信させることができる。</p>
+<ul>
+<li>文字列マッチング: 完全一致、前方一致、"anything-but"</li>
+<li>数値マッチング: 完全一致、範囲での比較</li>
+</ul>
+</li>
+<li>
+<p>例</p>
+</li>
+<li><img alt="" src="_attachment/File_221.png" /></li>
+<li><img alt="" src="_attachment/File_222.png" /></li>
+</ul>
+<p>配信ポリシー</p>
+<ul>
+<li>リトライポリシーが AWS 管理とカスタマー管理のエンドポイントで異なる。</li>
+<li><img alt="" src="_attachment/File_223.png" /></li>
+<li>全てのリトライが失敗するとサブスクリプションに指定した DLQ に送信される。</li>
+<li>HTTP/HTTPS についてはトピック/サブスクリプション属性に DeliveryPolicy を指定できる。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/sns/latest/dg/sns-message-delivery-retries.html">https://docs.aws.amazon.com/ja_jp/sns/latest/dg/sns-message-delivery-retries.html</a></li>
+</ul>
+<p>SetTopicAttributes: トピック属性</p>
+<ul>
+<li>
+<p>DeliveryPolicy</p>
+<ul>
+<li>HTTP/HTTPS の配信ポリシー。</li>
+</ul>
+</li>
+<li>
+<p>DisplayName</p>
+<ul>
+<li>The display name to use for a topic with SMS subscriptions.</li>
+</ul>
+</li>
+<li>
+<p>Policy</p>
+<ul>
+<li>Amazon SNS ポリシー (リソースベースのポリシー)。</li>
+<li>By default, only the topic owner can publish or subscribe to the topic.</li>
+</ul>
+</li>
+<li>
+<p>KmsMasterKeyId</p>
+<ul>
+<li>KMS による SSE の設定。サブスクライバには SNS サービスで復号後に配信される。</li>
+</ul>
+</li>
+</ul>
+<p>SetSubscriptionAttributes: サブスクリプション属性</p>
+<ul>
+<li>DeliveryPolicy</li>
+<li>FilterPolicy</li>
+<li>RawMessageDelivery</li>
+<li>RedrivePolicy<ul>
+<li>DLQ</li>
+</ul>
+</li>
+</ul>
+<hr />
+<p>AWS Step Functions</p>
+<p>Ref.</p>
+<ul>
+<li>Doc: <a href="https://docs.aws.amazon.com/ja_jp/step-functions/latest/dg/welcome.html">https://docs.aws.amazon.com/ja_jp/step-functions/latest/dg/welcome.html</a></li>
+<li>BB: <a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20190522_AWS-Blackbelt_StepFunctions.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20190522_AWS-Blackbelt_StepFunctions.pdf</a></li>
+</ul>
+<p>概要</p>
+<p>ワークフロー</p>
+<ul>
+<li>ステートマシンを図で表したのがワークフロー</li>
+</ul>
+<p>ASL: Amazon States Language</p>
+<ul>
+<li>JSON 形式のワークフロー定義言語</li>
+<li>チェックツール: <a href="https://github.com/awslabs/statelint%5B">awslabs/statelint</a><ul>
+<li>ASL 記述チェックツール</li>
+<li>Ruby ベース: gem install statelint</li>
+</ul>
+</li>
+</ul>
+<p>ステートマシン</p>
+<ul>
+<li>各要素 (=状態) を State と呼ぶ</li>
+<li>
+<p>実行方法</p>
+<ol>
+<li>コンソール・AWS CLI・SDK による実行 (StartExecution)</li>
+<li>API Gateway: 統合バックエンドとして登録</li>
+<li>CloudWatch Events: S3 の保存や EC2 起動を契機</li>
+</ol>
+</li>
+<li>
+<p>最大実行時間は 1年。</p>
+</li>
+<li>ステートマシンの設定<ul>
+<li>Comment: テキストで任意のコメントを記述。 </li>
+<li>StartAt: 一番最初に実行する State を指定する。</li>
+<li>TimeoutSeconds;<ul>
+<li>ステートマシンの実行時間がこの秒数を超過するとタイムアウトエラーになり実行が終了する。</li>
+<li>ステートマシン全体の TimeoutSeconds とタスク個別の TimeoutSeconds が指定できる。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>ステート</p>
+<p><img alt="" src="_attachment/File_224.png" /></p>
+<p>Wait</p>
+<ul>
+<li>SecondsPath, TimestampPath により入力データのフィールド値を使用して任意の秒数やタイムスタンプで待機できる。</li>
+</ul>
+<p>Pass</p>
+<ul>
+<li>入力値のだだ流しだけでなく、ResultPath, Parameters による変換もできる。</li>
+</ul>
+<p>Parallel</p>
+<ul>
+<li>並列実行される State のいずれかが失敗すると Parallel の State 全体が失敗扱いになる点に注意。</li>
+</ul>
+<p>Map</p>
+<ul>
+<li>入力データの配列要素ごとにタスクを並列実行する。</li>
+<li>2019 に追加された新しいステート。</li>
+</ul>
+<p>Choice</p>
+<ul>
+<li>Choices フィールドの配列に Choice ルール(判定条件と Next) を指定。</li>
+<li><img alt="" src="_attachment/File_225.png" /></li>
+</ul>
+<p>End: true</p>
+<ul>
+<li>Succeed, Fail 以外は End: true で実行を終了できる。</li>
+</ul>
+<p>Retry/Catch</p>
+<ul>
+<li>Task, Parallel に指定できるフィールド。</li>
+<li>
+<p>ErrorEquals フィールドに対象となるエラーを指定。</p>
+<ul>
+<li>Lambda 関数内で独自実装した例外などを条件とすることも可能。</li>
+</ul>
+</li>
+<li>
+<p>Catch では Next フィールドで別のステートに遷移。</p>
+</li>
+<li><img alt="" src="_attachment/PowerPoint_プレゼンテーション.png" /></li>
+</ul>
+<p>Task から呼び出し可能なサービス</p>
+<ul>
+<li>Lambda : 関数実行</li>
+<li>Activity: 自身で定義したサービス</li>
+<li>ECS : ECS タスクの実行</li>
+<li>AWS Batch : ジョブの起動、ジョブ完了の待機</li>
+<li>Glue : ジョブの実行</li>
+<li>SageMaker : トレーニングジョブ、トランスフォームジョブの起動</li>
+<li>DynamoDB : アイテム取得、新規アイテム登録 </li>
+<li>SNS : トピックへのメッセージ送信</li>
+<li>SQS : キューへのメッセージ送信</li>
+<li>SDK サービス統合: 対応サービスの任意の API を実行できるようになった。<ul>
+<li><a href="https://docs.aws.amazon.com/step-functions/latest/dg/supported-services-awssdk.html">https://docs.aws.amazon.com/step-functions/latest/dg/supported-services-awssdk.html</a></li>
+</ul>
+</li>
+</ul>
+<p>Activity</p>
+<p>作成</p>
+<ul>
+<li>CreateActivity で Activity の ARN を取得。</li>
+<li>Task の Resource に ARN を指定。</li>
+</ul>
+<p>サーバやコンテナで実装した Activity ワーカーからポーリング</p>
+<ul>
+<li>
+<p>GetActivityTask でポーリング</p>
+<ul>
+<li>入力: Activity の ARN</li>
+<li>出力: input, taskToken</li>
+</ul>
+</li>
+<li>
+<p>SendTaskSuccess/SendTaskFailure で成功/失敗をレポート</p>
+<ul>
+<li>入力: taskToken, output (SendTaskFailure は cause, error)</li>
+</ul>
+</li>
+</ul>
+<p>ハートビート: SendTaskHeartbeat … デッドロック回避</p>
+<ul>
+<li>
+<p>Task に TimeoutSeconds を設定する。</p>
+<ul>
+<li>GetActivityTask で taskToken 提供後、TimeoutSeconds 以上応答がないと Task が失敗する。</li>
+</ul>
+</li>
+<li>
+<p>SendTaskHeartbeat でハートビートを送信する。</p>
+</li>
+<li>
+<p>HeartbeatSeconds フィールド (オプショナル):</p>
+<ul>
+<li>TimeoutSeconds の秒数より小さいタイムアウトをハートビートに設定したい場合。</li>
+<li>ハートビート間隔が指定秒数を超過した場合、Task は States.Timeout エラーで失敗する。</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/step-functions/latest/dg/amazon-states-language-task-state.html">https://docs.aws.amazon.com/ja_jp/step-functions/latest/dg/amazon-states-language-task-state.html</a></p>
+</li>
+</ul>
+<p>GetActivityTask と SendTaskSuccess/Failure は別の場所から行ってもよい</p>
+<p><img alt="" src="_attachment/image_1832.png" /></p>
+<ul>
+<li>SES で URL に taskToken を埋め込んだ Email を送信。</li>
+<li>API Gateway から統合リクエストで SendTaskSuccess/Failure を送れる</li>
+<li><a href="https://aws.amazon.com/jp/blogs/compute/implementing-serverless-manual-approval-steps-in-aws-step-functions-and-amazon-api-gateway/">https://aws.amazon.com/jp/blogs/compute/implementing-serverless-manual-approval-steps-in-aws-step-functions-and-amazon-api-gateway/</a></li>
+</ul>
+<p>入出力データ</p>
+<p>ペイロードサイズ</p>
+<ul>
+<li>最大 256KB</li>
+</ul>
+<p>InputPath/OutputPath</p>
+<ul>
+<li>入出力の JSON から次のステート渡すフィールドをフィルタする。</li>
+<li><a href="https://github.com/json-path/JsonPath">JsonPath</a> 構文で指定</li>
+</ul>
+<p>Parameters</p>
+<ul>
+<li>入力 JSON のフィールド値を使って別の JSON を再構成。</li>
+<li><img alt="" src="_attachment/PowerPoint_プレゼンテーション_2.png" /></li>
+<li>入力から JsonPath で取得するフィールド値は .$ で終わるようにする。</li>
+</ul>
+<p>ResultPath</p>
+<ul>
+<li>入力 JSON に出力 JSON のフィールドをマージする。出力 JSON を受け取るフィールド名を指定。</li>
+<li>ResultPath がないと出力 JSON がそのままアウトプットとなる。</li>
+<li>OutputPath でさらにフィルタできる。</li>
+<li><img alt="" src="_attachment/PowerPoint_プレゼンテーション_3.png" /></li>
+</ul>
+<p><img alt="" src="_attachment/PowerPoint_プレゼンテーション_4.png" /></p>
+<p>その他</p>
+<p><img alt="" src="_attachment/PowerPoint_プレゼンテーション_5.png" /></p>
+<ul>
+<li>State への入出力最大データサイズは 256KB に拡張されている。</li>
+<li>Ref. <a href="https://aws.amazon.com/jp/about-aws/whats-new/2020/09/aws-step-functions-increases-payload-size-to-256kb/">https://aws.amazon.com/jp/about-aws/whats-new/2020/09/aws-step-functions-increases-payload-size-to-256kb/</a></li>
+</ul>
+<p>Task の Resource フィールドの指定方法</p>
+<ul>
+<li>Lambda や Activity の ARN を直接指定する方法と</li>
+<li>連携サービス固有の pre-defined の ARN を書いて Parameters でインプットを渡す方法がある</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/step-functions/latest/dg/connect-to-resource.html">https://docs.aws.amazon.com/ja_jp/step-functions/latest/dg/connect-to-resource.html</a></li>
+</ul>
+<pre><code>&quot;Send message to SNS&quot;:{ 
+  &quot;Type&quot;:&quot;Task&quot;,
+  &quot;Resource&quot;:&quot;arn:aws:states:::sns:publish&quot;,
+  &quot;Parameters&quot;:{ 
+      &quot;TopicArn&quot;:&quot;arn:aws:sns:us-east-1:123456789012:myTopic&quot;,
+      &quot;Message&quot;:&quot;Hello from Step Functions!&quot;
+  },
+  &quot;Next&quot;:&quot;NEXT_STATE&quot;
+}
+</code></pre>
+<p>Task からの連携サービス呼び出し方法</p>
+<ol>
+<li>Default Response</li>
+<li>Run a Job (.sync)</li>
+<li>Wait for a Callback (.waitForTaskToken) ... Callback Pattern</li>
+</ol>
+<p>Ref. <a href="https://docs.aws.amazon.com/step-functions/latest/dg/connect-supported-services.html">https://docs.aws.amazon.com/step-functions/latest/dg/connect-supported-services.html</a></p>
+<p>.sync とかは Resource に指定する ARN の最後に付ける</p>
+<p>Default Response</p>
+<ul>
+<li>単純に連携サービスの REST API を呼んでレスポンスがあれば終了。</li>
+<li>DynamoDB や SQS にデータを突っ込むなど。</li>
+</ul>
+<p>Run a Job (.sync)</p>
+<ul>
+<li>AWS Batch や ECS タスク、Glue ジョブなどの終了を待つ。</li>
+</ul>
+<p>Wait for a Callback (.waitForTaskToken)</p>
+<ul>
+<li>SQS/SNS などに Task Token 付きで入力データを投入。</li>
+<li>SendTaskSuccess / SendTaskFailure API でトークンが返されるまで待つ。</li>
+<li><a href="https://www.infoq.com/news/2019/08/aws-step-functions-callback/">https://www.infoq.com/news/2019/08/aws-step-functions-callback/</a></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/step-functions/latest/dg/connect-to-resource.html#connect-wait-token">https://docs.aws.amazon.com/ja_jp/step-functions/latest/dg/connect-to-resource.html#connect-wait-token</a></li>
+</ul>
+<p>標準ワークフロー</p>
+<ul>
+<li>長時間実行され、耐久性が高く、監査可能なワークフローに最適。</li>
+<li>最長 1 年間実行でき、実行完了後 90 日以内であれば Step Functions API を使用して実行履歴を取得できる。</li>
+<li>at-most-once モデル: Retry を指定しない限り、タスク/状態が複数回実行されることはありません。</li>
+<li>状態移行ごとの価格設定</li>
+</ul>
+<p>Express ワークフロー</p>
+<ul>
+<li>大量イベント処理に最適: IoT データ取り込み、ストリーミングデータ処理/変換、モバイルアプリのバックエンドなど</li>
+<li>最大 5 分間。</li>
+<li>at-least-once モデル: ステートが複数回実行される可能性がある。</li>
+<li>実行回数、実行時間、消費されたメモリによって課金されます。</li>
+<li>Run a Job (.sync) / Wait for Callback (.waitForTaskToken) サポートしない。</li>
+</ul>
+<p>Ref. Standard Workflows vs. Express Workflows</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/step-functions/latest/dg/concepts-standard-vs-express.html">https://docs.aws.amazon.com/step-functions/latest/dg/concepts-standard-vs-express.html</a></li>
+</ul>
+<p>Actions</p>
+<ul>
+<li>CreateStateMachine DeleteStateMachine UpdateStateMachine ListStateMachines DescribeStateMachine DescribeStateMachineForExecution </li>
+<li>StartExecution StopExecution ListExecutions DescribeExecution GetExecutionHistory</li>
+<li>CreateActivity DeleteActivity DescribeActivity ListActivities</li>
+<li>GetActivityTask SendTaskFailure SendTaskSuccess SendTaskHeartbeat</li>
+<li>TagResource UntagResource ListTagsForResource </li>
+<li><a href="https://docs.aws.amazon.com/step-functions/latest/apireference/API_Operations.html">https://docs.aws.amazon.com/step-functions/latest/apireference/API_Operations.html</a></li>
+</ul>
+<p>Kinesis Data Stream</p>
+<p><img alt="" src="_attachment/File_9.jpeg" /></p>
+<ul>
+<li>
+<p>コンシューマが Data Streams のシャードからデータレコード(&gt;=1MB) を取り出して分析処理。</p>
+<ul>
+<li>KCL (Kinesis Client Library) を使い EC2 上のアプリや Lambda や Apache Spark で実装。</li>
+</ul>
+</li>
+<li>
+<p>データレコードに含まれるパーティションキーによりレコードが保存されるシャードが決まる。</p>
+</li>
+<li>
+<p>キューと異なりシャードから取り出したデータレコードは削除せず一定期間 (24h~7d) 保持する。</p>
+<ul>
+<li>コンシューマはデータの取得範囲をシーケンス番号で指定して最新データを取得。</li>
+</ul>
+</li>
+<li>
+<p>スケーリング方法</p>
+<ul>
+<li>スケールアップ: シャード分割、EC2 インスタンスサイズの増強</li>
+<li>データ量に応じてシャードを Auto Scaling できる。</li>
+</ul>
+</li>
+</ul>
+<p><br></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

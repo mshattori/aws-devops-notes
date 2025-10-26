@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS - Security - IAM, STS, Organization - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS - Security - IAM, STS, Organization</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="iam-identity-and-access-management">IAM: Identity and Access Management</h1>
+<p>アイデンティティ</p>
+<ul>
+<li>AWS アカウント (root ユーザ)</li>
+<li>IAM ユーザ</li>
+<li>IAM グループ</li>
+<li>IAM ロール</li>
+</ul>
+<p>AWS アカウント</p>
+<ul>
+<li>
+<p>マルチテナンシー: 課金・リソース・セキュリティの境界</p>
+<ul>
+<li>明示的にクロスアカウント設定しない限りリソースにアクセスできない</li>
+</ul>
+</li>
+<li>
+<p>アカウント ID (数字列) とルートユーザを持つ。</p>
+</li>
+<li>
+<p>ルートユーザでなければ出来ない操作もある</p>
+<ul>
+<li>サポートプランの変更</li>
+<li>S3 バケットを MFA Delete に設定</li>
+</ul>
+</li>
+<li>
+<p>本番・開発環境やシステム課金の分離にアカウントを分けるケースも。</p>
+</li>
+<li>マルチアカウント管理は Organization や SSO を活用。<ul>
+<li>Prod/Dev 各アカウントと AD の信頼関係を結んで SSO できるようにする。</li>
+</ul>
+</li>
+</ul>
+<p>アカウントが侵害された場合の対処</p>
+<p><a href="https://aws.amazon.com/jp/premiumsupport/knowledge-center/potential-account-compromise/">https://aws.amazon.com/jp/premiumsupport/knowledge-center/potential-account-compromise/</a></p>
+<ul>
+<li>全ユーザのアクセスキーの削除・ローテート(=新しいキーへの置き換え)</li>
+<li>不正な IAM ユーザの削除と全ユーザのパスワード更新</li>
+<li>請求書をチェックして使用されたリソースを確認</li>
+<li>作成した覚えの無いリソースの削除</li>
+<li>ルートと全ユーザの MFA の有効化</li>
+<li>アカウント情報の確認</li>
+<li>AWS サポートから通知があれば応答</li>
+<li>Credential Report (認証情報レポート) でパスワードやアクセスキーの使用履歴を確認できる。</li>
+</ul>
+<p>IAM ユーザー</p>
+<ul>
+<li>
+<p>ユーザー名、パス、グループ、インラインポリシーを持つ。</p>
+<ul>
+<li>パスはスラッシュ区切りで組織階層などを表す。</li>
+</ul>
+</li>
+<li>
+<p>デフォルト状態では何の権限も持たない。</p>
+</li>
+<li>複数の管理ポリシーをアタッチできる。</li>
+<li>ポリシーでアクセス元の IP アドレス制限が可能。</li>
+<li><img alt="" src="_attachment/image_1460.png" /><ul>
+<li>管理コンソール以外の(アクセスキーによる)リクエストに IP 制限をかける例</li>
+</ul>
+</li>
+</ul>
+<p>IAM グループ</p>
+<ul>
+<li>AWS アカウントあたり 100 グループまで作成可能。</li>
+<li>グループ名、パス、インラインポリシーを持つ。</li>
+<li>複数の管理ポリシーをアタッチできる。</li>
+<li>グループの持つポリシーが所属ユーザにアタッチされると考えるとよい。</li>
+<li>ポリシーでグループを Principal 指定しても識別されない。</li>
+</ul>
+<p>プリンシパル・エンティティ</p>
+<ul>
+<li>アクセスを行う主体を表す IAM ポリシーの要素</li>
+<li>ユーザ、ロール以外にも Federated user や AWS サービスも指定可能。</li>
+<li>可算名詞で主役、本人、正犯などの意。</li>
+</ul>
+<p>ロール</p>
+<ul>
+<li>
+<p>権限をユーザやサービスに委任するために使う。</p>
+<ul>
+<li>Switch Role: ユーザへのロールの委任。クロスアカウントでの委任も可能。</li>
+</ul>
+</li>
+<li>
+<p>STS が発行する一時クリデンシャルが動的に受け渡される (AssumeRole)</p>
+</li>
+<li>例: EC2 インスタンスへの IAM ロール付与の仕組み<ul>
+<li>EC2 サービスが STS から取得した一時クリデンシャルをメタデータに格納し、インスタンスからそれを参照する。</li>
+<li>6時間で自動的にローテーションする。(AssumeRole で DurationSeconds 6時間を指定)</li>
+</ul>
+</li>
+</ul>
+<p>サービスロール (Service role)</p>
+<ul>
+<li>ユーザに代わってサービスがリソースにアクセスすることを許可するためのロール。</li>
+<li>EC2 インスタンスのロールも特殊なサービスロールの一種。</li>
+</ul>
+<p>Service-linked role</p>
+<ul>
+<li>サービスに直接リンクされた事前定義のロール。</li>
+<li>
+<p>ユーザが変更することも可能。</p>
+<ul>
+<li>Service-linked role を作成してポリシーをアタッチする権限例:</li>
+<li><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/using-service-linked-roles.html#service-linked-role-permissions">https://docs.aws.amazon.com/IAM/latest/UserGuide/using-service-linked-roles.html#service-linked-role-permissions</a></li>
+</ul>
+</li>
+<li>
+<p>例: Systems Manager は Service-linked role とサービスロールの両方がある</p>
+<ul>
+<li>Service-linked role は Systems Manager 全体で必要な権限が事前定義されている。</li>
+<li>サービスロールは Systems Manager の個別の機能を設定する際に指定する。</li>
+<li><a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/setup-service-role.html">https://docs.aws.amazon.com/systems-manager/latest/userguide/setup-service-role.html</a></li>
+</ul>
+</li>
+</ul>
+<p>IAM ポリシーと連携するサービス</p>
+<ul>
+<li>サービスごとのリソースベースポリシーやサービスロールのサポート状況のリスト。</li>
+<li>DynamoDB の例:</li>
+<li>
+<p><img alt="" src="_attachment/image_1461.png" /></p>
+<ul>
+<li>DynamoDB の Serivce-liked role は DAX (VPC 内の DynamoDB キャッシュ) が VPC 内で行う操作への許可を定義。</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_aws-services-that-work-with-iam.html">https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_aws-services-that-work-with-iam.html</a></p>
+</li>
+</ul>
+<p>セキュリティ認証情報 (Security Credentials)</p>
+<ul>
+<li>
+<p>ユーザー名/パスワード</p>
+<ul>
+<li>マネジメントコンソールへのログイン用</li>
+<li>MFA</li>
+<li>パスワードポリシー: 文字数、文字種、有効期限、再利用の制限、等。</li>
+</ul>
+</li>
+<li>
+<p>アクセスキー</p>
+<ul>
+<li>アクセスキー ID とシークレットアクセスキー</li>
+<li>API アクセス用。</li>
+<li>ユーザ辺り2つまで。</li>
+<li>シークレットアクセスキーは再表示できない。</li>
+<li>CloudTrail ログでどのアクセスキーでコールされたか (accessKeyId) も分かる。</li>
+<li>削除でなく無効化も可能。アクセスキーを削除していいか分からない場合は無効化。</li>
+</ul>
+</li>
+<li>
+<p>X.509 証明書</p>
+<ul>
+<li>SOAP 形式の API リクエストで使用。</li>
+<li>外部の認証局で作った証明書を登録。</li>
+</ul>
+</li>
+</ul>
+<p>アクセスキーの保護</p>
+<ul>
+<li>キーを定期的に更新する。</li>
+<li>キーを無効にするか削除して、アクセス権限を取り消す。</li>
+<li>異なるエンティティには異なるキーを使用する。</li>
+<li>使用しなくなったアクセスキーを削除する。</li>
+<li>アクセスキーを直接コードに埋め込まない。</li>
+<li>ルートユーザのアクセスキーを作らない。</li>
+</ul>
+<p>MFA デバイスの回復</p>
+<ul>
+<li>
+<p>QR コードを保管してあれば再登録できる。</p>
+<ul>
+<li>異なるタイムゾーンで MFA デバイスを設定する場合にも使用できる</li>
+</ul>
+</li>
+<li>
+<p>管理者ユーザで MFA デバイスを無効化(削除)して再登録する。</p>
+<ul>
+<li>MFA デバイスは1つしか登録できない。</li>
+<li>MFA デバイスを移行する場合も同じ手順。</li>
+</ul>
+</li>
+<li>
+<p>ルートユーザについてはメールアドレスと電話番号で回復できる。</p>
+</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_credentials_mfa_lost-or-broken.html">https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_credentials_mfa_lost-or-broken.html</a></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_credentials_mfa_disable.html">https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_credentials_mfa_disable.html</a></li>
+</ul>
+<p>認証情報レポート (Credential Reports)</p>
+<ul>
+<li>アカウントの全て IAM ユーザの各種認証情報 (パスワード、アクセスキー、MFA など) の情報が示されたレポート (CSV) を生成。</li>
+<li>ユーザの作成日や最後にパスワードやアクセスキーが使われた⽇時も含まれる。</li>
+<li>管理コンソールだけでなく CLI/SDK(=API) でも取得できる。</li>
+<li>認証情報レポートは、4 時間に 1 回生成。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_credentials_getting-report.html">https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_credentials_getting-report.html</a></li>
+</ul>
+<p>API 署名</p>
+<ul>
+<li>アクセスキーで API の HTTP リクエストを署名して Authorization ヘッダで送付。</li>
+<li>署名バージョン 4<ul>
+<li>タイムスタンプ、リージョン名、サービス名などを SecretAccessKey で順次署名して署名キーを作成し、署名キーでリクエスト全体を署名。</li>
+<li>AccessKeyID も Authorization ヘッダに一緒に指定される。(AccessKeyID は秘密でない)</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/general/latest/gr/sigv4-signed-request-examples.html">https://docs.aws.amazon.com/ja_jp/general/latest/gr/sigv4-signed-request-examples.html</a></li>
+</ul>
+</li>
+</ul>
+<p>API エンドポイント</p>
+<ul>
+<li>CLI, SDK 等は各リージョンのサービス毎の API エンドポイントに HTTP リクエストを投げている</li>
+</ul>
+<p><img alt="" src="_attachment/image_1462.png" /></p>
+<ul>
+<li>
+<p>グローバルエンドポイント</p>
+<ul>
+<li>Route 53 等。基本的にバージニア北部 (us-east-1)</li>
+</ul>
+</li>
+<li>
+<p>Ref. <a href="https://docs.aws.amazon.com/ja_jp/general/latest/gr/rande.html">https://docs.aws.amazon.com/ja_jp/general/latest/gr/rande.html</a></p>
+</li>
+</ul>
+<p>認証情報ファイル</p>
+<p><img alt="" src="_attachment/File_65.png" /></p>
+<ul>
+<li>prod のような複数のプロファイルが保存できる。</li>
+<li>プロファイルは SDK の設定ファイルやクライアント(bot3.client)のインスタンス化の際に指定できる。</li>
+<li>デフォルトのリージョンは ~/.aws/config で指定。</li>
+</ul>
+<p>EC2 インスタンスで認証情報が使われる優先順位</p>
+<ol>
+<li>ハードコードで API に渡された認証情報</li>
+<li>環境変数: AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY</li>
+<li>認証情報ファイル (~/.aws/credentials)</li>
+<li>EC2 インスタンスに付与されたロールの認証情報 (メタデータ内に格納)</li>
+</ol>
+<h2 id="_1">ポリシー</h2>
+<p><img alt="" src="_attachment/File_66.png" /></p>
+<p>アイデンティティベース vs リソースベースのポリシー</p>
+<ul>
+<li>リソースベースポリシーをサポートするサービス例<ul>
+<li>S3, SQS, SNS, KMS</li>
+</ul>
+</li>
+</ul>
+<p>インラインポリシー</p>
+<ul>
+<li>ユーザ、グループ、ロールのリソースベースのポリシー</li>
+<li>通常は使用しない</li>
+<li>権限の高いポリシーを誤ってアタッチしないようするために使うケースがある</li>
+</ul>
+<p>マネージド (管理) ポリシー</p>
+<ul>
+<li>管理ポリシーは IAM ユーザ、グループ、ロールに複数アタッチできる。</li>
+<li>
+<p>AWS 管理ポリシー</p>
+<ul>
+<li>必要な権限がざっくり定義されていて便利</li>
+</ul>
+</li>
+<li>
+<p>カスタマー管理ポリシー</p>
+<ul>
+<li>細かいアクセス制御ができる</li>
+</ul>
+</li>
+</ul>
+<p>信頼ポリシー (Trust Policy)と AssumeRole</p>
+<ul>
+<li>信頼ポリシーはロールに付属するリソースベースポリシー。ロールの信頼関係タブで表示される。</li>
+<li>ユーザが任意のロールに AssumeRole できたらアクセス制限にならないので信頼ポリシーで許可。</li>
+<li>プリンシパル (AWS サービスや IAM ユーザ) が対象ロールに sts::AssumeRole を実行して STS から一時クリデンシャルを取得できるよう許可する。</li>
+<li>
+<p><img alt="" src="_attachment/File_67.png" /></p>
+<ul>
+<li><a href="https://techblog.recochoku.jp/6035">https://techblog.recochoku.jp/6035</a></li>
+</ul>
+</li>
+<li>
+<p>AssumeRole は STS から一時クリデンシャルを払い出す</p>
+</li>
+<li>
+<p><img alt="" src="_attachment/image_1463.png" /></p>
+<ul>
+<li>ARN が assumed-role になっている</li>
+</ul>
+</li>
+<li>
+<p>一時クリデンシャルがキャッシュされる</p>
+</li>
+<li><img alt="" src="_attachment/image_1464.png" /></li>
+</ul>
+<p>外部 ID (External ID)</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/STS/latest/APIReference/API_AssumeRole.html">AssumeRole</a> で補助的な ID として使用する任意の文字列。</li>
+<li>信頼ポリシー側では Condition で sts:ExternalId に外部 ID を指定する。</li>
+</ul>
+<pre><code>    &quot;Principal&quot;: {&quot;AWS&quot;: &quot;Example Corp's AWS Account ID&quot;},
+    &quot;Condition&quot;: {&quot;StringEquals&quot;: {&quot;sts:ExternalId&quot;: &quot;Unique ID Assigned by Example Corp&quot;}}
+</code></pre>
+<ul>
+<li>AssumeRole の呼び出し側はパラメータで外部 ID を渡す。</li>
+<li>典型的な用途は「混乱した代理 (confused deputy)」問題の回避。複数アカウントをサポートするサービスが誤って別アカウントにアクセスしないうにする。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/STS/latest/APIReference/API_AssumeRole.html">https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html</a></li>
+<li><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html">https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html</a></li>
+</ul>
+<h2 id="_2">ポリシー評価ロジック</h2>
+<p><img alt="" src="_attachment/image_1465.png" /></p>
+<ul>
+<li>リソースベースポリシーは IAM サービスの外らしい</li>
+</ul>
+<p><img alt="" src="_attachment/DD61D172-E81F-4981-B3B8-CBBF4DD4D087.png" /></p>
+<ul>
+<li>Excplicit Deny: 明示的な拒否は許可に優先。</li>
+<li>Implicit Deny: 明示的な許可がないとデフォルトで拒否。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1466.png" /></p>
+<ul>
+<li>Permissions boundary と STS セッションポリシーはアイデンティティベースポリシーと AND が取られるので、両方に許可がないと Implicit Deny となる。</li>
+<li>リソースベースポリシーがある場合、アイデンティポリシーかどちらかに明示的許可があれば許可される<ul>
+<li>クロスアカウントの例で相互に許可する必要があるのは特別？</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1467.png" /></p>
+<ul>
+<li>ユーザ・グループにアタッチされているポリシーに 1 つでも Explicit Deny があれば拒否。</li>
+<li>Switch Role している場合はユーザ・グループではなくロールのポリシーのみが評価される。</li>
+</ul>
+<h2 id="_3">ポリシードキュメント</h2>
+<p><img alt="" src="_attachment/image_1468.png" /></p>
+<p>Ref. <a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/reference_policies_elements.html">https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/reference_policies_elements.html</a></p>
+<p>ステートメントブロック</p>
+<ul>
+<li>ポリシードキュメントには複数のステートメントブロックが書ける (Statement 配列)</li>
+<li>OR 評価されるので、ブロックの順序は関係ない。</li>
+</ul>
+<p>Principal/NotPrincipal</p>
+<ul>
+<li>アイデンティティベースのポリシーでは使用できない(省略される)。リソースベースでは必須。</li>
+<li>NotPrincipal は Effect: Deny で使用。他の全プリンシパルが許可される Allow で使用すべきでない。</li>
+<li>リソースベースポリシーの Principal にアカウント ID または root を指定することで、そのアカウントで任意のプリンシパルにそのアクセス権限をポリシーで許可することを委任することを意味する。(クロスアカウント許可で必要)</li>
+</ul>
+<pre><code>&quot;Principal&quot;: { &quot;AWS&quot;: &quot;123456789012&quot; }
+&quot;Principal&quot;: { &quot;AWS&quot;: &quot;arn:aws:iam::123456789012:root&quot; }
+</code></pre>
+<ul>
+<li>リソースベースポリシーがあるリソースはクロスアカウントアクセスできる</li>
+</ul>
+<p>NotAction</p>
+<p>NotResouce</p>
+<h3 id="condition">Condition</h3>
+<p>Ref. <a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/reference_policies_elements_condition.html">https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/reference_policies_elements_condition.html</a></p>
+<p><img alt="" src="_attachment/image_1469.png" /></p>
+<p>複数条件は AND 指定、SourceIP のような配列は OR 指定。</p>
+<h3 id="condition-key">条件キー (Condition key)</h3>
+<p><a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/reference_policies_condition-keys.html">https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/reference_policies_condition-keys.html</a></p>
+<p>VPC を特定</p>
+<pre><code>&quot;StringEquals&quot;: { &quot;aws:SourceVpc&quot;: &quot;vpc-111bbb22&quot; }
+</code></pre>
+<p>VPC エンドポイントを特定</p>
+<pre><code>&quot;StringEquals&quot;: { &quot;aws:SourceVpce&quot;: &quot;vpce-1a2b3c4d&quot; }
+</code></pre>
+<p>TLS を必須にする (S3 の転送中の暗号化をバケットポリシーで有効化)</p>
+<pre><code>&quot;Bool&quot;: { &quot;aws:SecureTransport&quot;: &quot;false&quot; }
+</code></pre>
+<h3 id="_4">ポリシー変数</h3>
+<p>Ref. <a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/reference_policies_variables.html">https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/reference_policies_variables.html</a></p>
+<p>管理ポリシーに ${aws:username} を埋め込んでグループにアタッチするなどの使い方。</p>
+<p><img alt="" src="_attachment/image_1470.png" /></p>
+<p>ARN: Amazon Resource Name</p>
+<p><img alt="" src="_attachment/SAA_3.png" /></p>
+<ul>
+<li>リージョン、アカウントは省略される場合も。</li>
+<li>例: S3 はリソース名でグローバルで一意に識別できるため。</li>
+</ul>
+<p>ポリシーシミュレーター</p>
+<h2 id="_5">様々なポリシーの例</h2>
+<p><img alt="" src="_attachment/image_1471.png" /></p>
+<ol>
+<li>全バケットのリストを許可。</li>
+<li>NotAction: DeleteBucket 以外の操作を myBucket に許可。</li>
+</ol>
+<p><img alt="" src="_attachment/image_1472.png" /></p>
+<ol>
+<li>インスタンスとセキュリティグループの情報取得を許可。</li>
+<li>特定セキュリ ティグループのルール追加・削除の許可、特定インスタンスの開始・停止の許可。</li>
+</ol>
+<p><img alt="" src="_attachment/image_1473.png" /></p>
+<ul>
+<li>S3 の PUT, GET リクエストを MFA が有効な場合に 2019/7/1~12/31 の間許可。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1474.png" /></p>
+<ol>
+<li>指定の DynamoDB テーブルと指定の S3 バケットに DynamoDB, S3 全 API を許可。</li>
+<li>NotResource により 指定の DynamoDB テーブルと指定の S3 バケット以外で DynamoDB, S3 全 API を拒否。</li>
+</ol>
+<p>このポリシードキュメントだけだと2つのステートメントブロックの意味は同じだが、NotResource による明示的 Deny で、他のポリシーがアタッチされた場合にも他のテーブル・バケットへの操作を禁止できる。</p>
+<p><img alt="" src="_attachment/image_1475.png" /></p>
+<ol>
+<li>"department: dev" タグがついたインスタンスのボリュームのアタッチ・デタッチを許可。</li>
+<li>ボリュームのタグにユーザ名がついているボリュームのアタッチ・デタッチを許可。</li>
+</ol>
+<p><img alt="" src="_attachment/image_1476.png" /></p>
+<ol>
+<li>ワイルドカードにより Spot インスタンス系の API を全て拒否</li>
+<li>StringNotEquals で ec2:InstanceType が指定インスタンスタイプの場合以外はインスタンス起動を拒否</li>
+<li>StringNotEqualsIgnoreCase で ec2:Owner が amazon 以外のイメージの起動を拒否</li>
+<li>StringEqualsIgnoreCase で AMI-TYPE タグが Paid のインスタンスのスケジュール起動を拒否</li>
+</ol>
+<p>NOTE</p>
+<ul>
+<li>ec2:RunInstances: インスタンスの作成・起動 (Launch)</li>
+<li>ec2:StartInstances: 停止していたインスタンスの再起動 (Start)</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AWSEC2/latest/APIReference/API_RunScheduledInstances.html">ec2:RunScheduledInstances</a>: スケジュールドリザーブドインスタンスの起動 (Launch)</li>
+<li>ForAnyValues:StringEquals: 対象のキーが複数の値を持ち、そのいずれかが等しい場合</li>
+<li>ForAllValues:StringEquals: 対象のキーが複数の値を持ち、その全てが等しい場合</li>
+</ul>
+<p>リソースベースポリシーでアカウントとサービスを特定して許可する場合</p>
+<p><img alt="" src="_attachment/image_1477.png" /></p>
+<p>References</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/reference_policies_elements_condition_operators.html">IAM JSON ポリシー要素: 条件演算子</a></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/reference_policies_multi-value-conditions.html">複数のキーまたは値による条件の作成</a></li>
+</ul>
+<p><img alt="" src="_attachment/image_1478.png" /></p>
+<h2 id="iam-access-analyzer">IAM Access Analyzer (アクセスアナライザー)</h2>
+<ul>
+<li>リソースベースのポリシーを分析し、外部プリンシパルと共有されるリソースを表示。</li>
+<li>対象サービス: IAM ロール, S3 バケット, KMS キー, Lambda 関数/レイヤー, SQS キュー</li>
+<li>Ref. <a href="AWS%20Security%20Logging,%20Monitoring,%20Response.html">AWS: Security: Logging, Monitoring, Response</a></li>
+</ul>
+<h2 id="iam-policy-simulator">IAM Policy Simulator</h2>
+<p><img alt="" src="_attachment/image_1479.png" /><img alt="" src="_attachment/image_1480.png" /></p>
+<ul>
+<li>get-context-keys はポリシー内で使われているポリシー変数を取り出す。</li>
+<li>出力例:</li>
+</ul>
+<pre><code>{
+    &quot;ContextKeyNames&quot;: [
+        &quot;aws:username&quot;,
+        &quot;aws:CurrentTime&quot;
+    ]
+}
+</code></pre>
+<ul>
+<li><a href="https://docs.aws.amazon.com/cli/latest/reference/iam/get-context-keys-for-custom-policy.html">https://docs.aws.amazon.com/cli/latest/reference/iam/get-context-keys-for-custom-policy.html</a></li>
+<li><a href="https://docs.aws.amazon.com/cli/latest/reference/iam/get-context-keys-for-principal-policy.html">https://docs.aws.amazon.com/cli/latest/reference/iam/get-context-keys-for-principal-policy.html</a></li>
+</ul>
+<h2 id="permissions-boundery">Permissions Boundery</h2>
+<p>エンティティ (User/Group/Role) にアタッチできるガードレール(境界)</p>
+<p><img alt="" src="_attachment/image_1481.png" /></p>
+<ul>
+<li>ガードレールと許可ポリシーの AND が取られる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1482.png" /></p>
+<ul>
+<li>Permissions boundry には GetObject の許可がないので AND を取った結果は Implicit Deny となる。</li>
+</ul>
+<p>Permissions boundary の典型的なユースケースはロールの作成許可の開発者への権限移譲</p>
+<ul>
+<li>ロール作成許可をフリーハンドで与えてしまうとそのユーザは AssumeRole することでどんな権限でも使えるようになってしまう問題を解決したい。</li>
+<li>禁止したい権限を明示的に拒否する Permissions boundary をエンティティにアタッチしておく。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1483.png" /></p>
+<p><img alt="" src="_attachment/image_1484.png" /></p>
+<ul>
+<li>Condition で PermissionsBoundery のついた Role 以外の Role 作成や PermissionsBoundery のアタッチなどをできないようにする。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1485.png" /></p>
+<ul>
+<li>禁止したい操作を拒否するのが Permissions Boundary のベストプラクティス</li>
+</ul>
+<p>Q. ブラックリスト形式のアイデンティティベースポリシーでなく Permissions Boundary を使う利点は？</p>
+<p>A. 組織全体で横断的なガードレールをかけたりしたい場合、ブラックリストの管理ポリシーをたくさん作るよりもシンプル。</p>
+<h3 id="references">References</h3>
+<ul>
+<li>
+<p>re:Invent 2018: Become an IAM Policy Master in 60 Minutes or Less</p>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=YQsK4MtsELU">https://www.youtube.com/watch?v=YQsK4MtsELU</a></li>
+<li>60分でポリシーマスターになろうというセッション。</li>
+</ul>
+</li>
+<li>
+<p>AWSサービスの権限管理</p>
+<ul>
+<li><a href="https://d1.awsstatic.com/webinars/jp/pdf/solution-casestudy/20160621_AWS-BlackBelt-Authority-public.pdf">https://d1.awsstatic.com/webinars/jp/pdf/solution-casestudy/20160621_AWS-BlackBelt-Authority-public.pdf</a></li>
+<li><a href="https://www.slideshare.net/AmazonWebServicesJapan/aws-black-belt-online-seminar-aws">https://www.slideshare.net/AmazonWebServicesJapan/aws-black-belt-online-seminar-aws</a></li>
+<li>IAMの権限設計のガイドライン。現実的な運用をわかりやすく解説する有用な資料。</li>
+</ul>
+</li>
+<li>
+<p>KDDI 流 クラウド・セキュリティ ～「大企業のクラウド適応」 秘伝のレシピ～</p>
+<ul>
+<li><a href="https://www.slideshare.net/ohashimamoru/kddi-aws-summit-tokyo-2017">https://www.slideshare.net/ohashimamoru/kddi-aws-summit-tokyo-2017</a></li>
+<li><a href="https://www.youtube.com/watch?v=oUWnKlRJklE">https://www.youtube.com/watch?v=oUWnKlRJklE</a></li>
+<li>明示的な拒否の実装例。</li>
+</ul>
+</li>
+<li>
+<p>AWSマルチアカウントにおけるIAMユーザー設計戦略を考えてみる</p>
+<ul>
+<li><a href="https://iselegant.hatenablog.com/entry/2020/05/24/215808">https://iselegant.hatenablog.com/entry/2020/05/24/215808</a></li>
+</ul>
+</li>
+<li>
+<p>Permissions boundary の参考</p>
+<ul>
+<li><a href="https://aws.amazon.com/jp/blogs/security/delegate-permission-management-to-developers-using-iam-permissions-boundaries/">https://aws.amazon.com/jp/blogs/security/delegate-permission-management-to-developers-using-iam-permissions-boundaries/</a></li>
+<li><a href="https://identity-round-robin.awssecworkshops.com/permission-boundaries-advanced/">https://identity-round-robin.awssecworkshops.com/permission-boundaries-advanced/</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="mfa">MFA</h2>
+<p><img alt="" src="_attachment/image_1486.png" /></p>
+<ul>
+<li>いずれのデバイスも時間同期されるワンタイムパスワード (OTP) アルゴリズムに基づいて 6 桁の数値コードを生成する。</li>
+<li>DUO などのアプリが仮想デバイス。</li>
+</ul>
+<p>SDK/API での MFA は <a href="https://docs.aws.amazon.com/ja_jp/STS/latest/APIReference/API_GetSessionToken.html">sts:GetSessionToken</a> または <a href="https://docs.aws.amazon.com/ja_jp/STS/latest/APIReference/API_AssumeRole.html">sts:AssumeRole</a> でデバイスの SerialNumber と 6 桁の TokenCode を渡す。(GetSessionToken は MFA 必須)</p>
+<p><img alt="" src="_attachment/image_1487.png" /></p>
+<p>対象のロールは aws:MultiFactorAuthPresent で MFA を必須としておく。</p>
+<pre><code>{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: {
+    &quot;Effect&quot;: &quot;Allow&quot;,
+    &quot;Principal&quot;: {&quot;AWS&quot;: &quot;ACCOUNT-B-ID&quot;},
+    &quot;Action&quot;: &quot;sts:AssumeRole&quot;,
+    &quot;Condition&quot;: {&quot;Bool&quot;: {&quot;aws:MultiFactorAuthPresent&quot;: &quot;true&quot;}}
+  }
+}
+</code></pre>
+<p><img alt="" src="_attachment/image_1488.png" /></p>
+<p>Ref.</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_credentials_mfa_configure-api-require.html">https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_credentials_mfa_configure-api-require.html</a></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_credentials_temp_request.htm">https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_credentials_temp_request.htm</a></li>
+<li><a href="https://aws.amazon.com/jp/premiumsupport/knowledge-center/authenticate-mfa-cli/">https://aws.amazon.com/jp/premiumsupport/knowledge-center/authenticate-mfa-cli/</a></li>
+</ul>
+<hr />
+<h1 id="aws-sts-security-token-service">AWS STS: Security Token Service</h1>
+<p>概要</p>
+<ul>
+<li><img alt="" src="_attachment/image_1489.png" /></li>
+<li>
+<p>一時的なセキュリティ認証情報を発行する。IAM ロールや ID フェデレーションの基盤。</p>
+<ul>
+<li>アクセスキー ID, シークレットアクセスキー, セッショントークン(セキュリティトークン)</li>
+<li>
+<p><img alt="" src="_attachment/File_68.png" /></p>
+<ul>
+<li>セッショントークン(セキュリティトークン) 以外はアクセスキーと同じ</li>
+</ul>
+</li>
+<li>
+<p>有効期間 (DurationSeconds):</p>
+<ul>
+<li>デフォルト 3600秒 (1h) </li>
+<li>最小 15分、最大 12 時間</li>
+<li>ロールの属性 MaxSessionDuration で最大期間を 1h ~ 12h で設定できる。</li>
+</ul>
+</li>
+<li>
+<p>セッショントークンは API 呼び出しの際にヘッダまたはクエリ変数の X-Amz-Security-Token で指定する。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>リージョンエンドポイント</p>
+<ul>
+<li>STS はグローバルサービスでデフォルトは <a href="https://sts.amazonaws.com/">https://sts.amazonaws.com</a> (us-east-1)</li>
+<li>リージョンエンドポイントを使うことでレイテンシー低減が可能。<ul>
+<li>取得した認証情報はグローバルに使用できる。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_credentials_temp.html">https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_credentials_temp.html</a></p>
+</li>
+</ul>
+<p>クロスアカウント認証</p>
+<ul>
+<li>
+<p>ロールの信頼ポリシー: 相手側アカウントでの AssumeRole の許可を委任する。</p>
+<ul>
+<li>Principal に相手のアカウント ID か root ユーザの ARN を指定。</li>
+</ul>
+</li>
+<li>
+<p>リモートアカウント側ポリシー: ロールへの AssumeRole を許可する。</p>
+</li>
+<li><img alt="" src="_attachment/File_2.jpeg" /></li>
+<li>MFA による保護<ul>
+<li>信頼ポリシーで「Requre MFA」をチェックすることで MFA 認証されたアカウントのみを許可するよう設定できる。</li>
+<li><img alt="" src="_attachment/File_69.png" /></li>
+</ul>
+</li>
+<li>Switch Role<ul>
+<li>AWS コンソールで IAM ロールへの切り替えが可能。</li>
+<li>コンソール右上のユーザ名をクリックして出るメニューで「ロールの切り替え」</li>
+<li>「ロールの切り替え」ページで相手のアカウント番号とロール名を入力する。</li>
+<li>リモートアカウントのロールとしてコンソールが表示される。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_roles_use_switch-role-console.html">https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/id_roles_use_switch-role-console.html</a></li>
+</ul>
+</li>
+</ul>
+<p>Ref. <a href="AWS/Security%20Engineering%20on%20AWS%20Lab1%20%E3%82%AF%E3%83%AD%E3%82%B9%E3%82%A2%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E8%AA%8D%E8%A8%BC.html">Security Engineering on AWS: Lab1 クロスアカウント認証</a></p>
+<ul>
+<li>ロールの信頼ポリシーで別アカウントからの AssumeRole を許可。</li>
+<li>EC2 インスタンスにアタッチするロールのポリシーでリモートロールへの AssumeRole を許可。</li>
+<li>EC2 インスタンスから aws sts assume-role コマンドを実施。</li>
+<li>取得した一時クリデンシャルを環境変数に設定。<ul>
+<li>AWS_ACCESS_KEY_ID</li>
+<li>AWS_SECRET_ACCESS_KEY</li>
+<li>AWS_SESSION_TOKEN</li>
+</ul>
+</li>
+</ul>
+<p>SSE-KMS 暗号化された CloudTrail ログの復号を許可する例:</p>
+<ul>
+<li>同一アカウントではキーポリシーで対象ユーザを ARN で許可する。</li>
+<li>クロスアカウントではキーポリシーで相手アカウントの root の ARN に Decrypt の許可を委譲、さらに相手アカウント側でユーザに Decrypt を許可する。</li>
+</ul>
+<p>KMS キーポリシー</p>
+<pre><code>{
+  &quot;Sid&quot;: &quot;Enable encrypted CloudTrail log read access&quot;,
+  &quot;Effect&quot;: &quot;Allow&quot;,
+  &quot;Principal&quot;: {
+    &quot;AWS&quot;: [
+      &quot;arn:aws:iam::222222222222:root&quot;
+    ]
+  },
+  &quot;Action&quot;: &quot;kms:Decrypt&quot;,
+  &quot;Resource&quot;: &quot;*&quot;,
+  &quot;Condition&quot;: {
+    &quot;Null&quot;: {
+      &quot;kms:EncryptionContext:aws:cloudtrail:arn&quot;: &quot;false&quot;
+    }
+  }
+}
+</code></pre>
+<p>リモートアカウントの IAM ユーザーポリシー</p>
+<pre><code>{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: &quot;kms:Decrypt&quot;,
+      &quot;Resource&quot;: &quot;arn:aws:kms:us-west-2:111111111111:key/keyA&quot;
+    }
+  ]
+}
+</code></pre>
+<p>Ref. <a href="https://docs.aws.amazon.com/ja_jp/awscloudtrail/latest/userguide/create-kms-key-policy-for-cloudtrail.html">https://docs.aws.amazon.com/ja_jp/awscloudtrail/latest/userguide/create-kms-key-policy-for-cloudtrail.html</a></p>
+<hr />
+<h1 id="aws-organization">AWS Organization</h1>
+<p>概要</p>
+<ul>
+<li>複数アカウントを階層的なポリシーで管理。</li>
+<li>一括請求と SCP (Service Control Policy) によるアクセス許可ガードレール。</li>
+<li>追加料金なしで利用できる。</li>
+</ul>
+<p>一括請求 (Consolidated Billing)</p>
+<ul>
+<li>
+<p>ボリューム価格</p>
+<ul>
+<li>EC2, S3 等は使用するほど低価格となるボリューム価格が提供されている。</li>
+<li>請求を統合することによってコストを削減できる。</li>
+</ul>
+</li>
+<li>
+<p>他のアカウントによって購入されたリザーブドインスタンスも利用できる。</p>
+</li>
+<li>Organization の導入方法として「一括請求」のみと「すべての機能」がある。</li>
+</ul>
+<h2 id="ou-organization-unit">OU (Organization Unit)</h2>
+<p><img alt="" src="_attachment/File_70.png" /></p>
+<ul>
+<li>マスターアカウント: Organization を作成したアカウント。管理アカウントとなる。</li>
+<li>メンバーアカウント: 所属アカウント。</li>
+<li>
+<p>組織構造に合わせて論理単位である OU を構成する。</p>
+<ul>
+<li><strong>上位 OU から SCP のポリシーが継承される。</strong></li>
+<li>5階層までネスト可能。</li>
+</ul>
+</li>
+<li>
+<p>OU にメンバーアカウントを所属させる。(Root OU に直接含めることもできる)</p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1490.png" /></p>
+<h2 id="scp-service-control-policy">SCP (Service Control Policy)</h2>
+<ul>
+<li>アカウントのユーザやロールにアクセス許可ガードレールを適用する。</li>
+<li>メンバーアカウントのルートユーザの権限を制限できる点が特に重要。</li>
+<li>組織全体(=Root OU), 各 OU,  各アカウント単位でアタッチできる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1491.png" /></p>
+<ul>
+<li>デフォルトでは FullAWSAccess という AWS 管理ポリシーが全 OU, アカウントにアタッチされる。</li>
+<li>サービスロールには適用されない。</li>
+</ul>
+<p>SCP の例</p>
+<ul>
+<li>OU に S3_Only の SCP を指定、その配下の Admin 権限を持つユーザも S3 しかアクセスできなくなる。root ユーザも同様。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1492.png" /></p>
+<p>SCP は OU 階層に従って継承される</p>
+<p><img alt="" src="_attachment/image_1493.png" /></p>
+<ul>
+<li>SCP 間の Allow の AND がとられるので、全ての SCP で Allow となる Action しか許可されなくなる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1494.png" /></p>
+<p>評価プロセス</p>
+<p><img alt="" src="_attachment/image_1495.png" /></p>
+<p>詳細</p>
+<p><img alt="" src="_attachment/image_1496.png" /></p>
+<ul>
+<li>メンバーアカウントのユーザから自身に適用された SCP が見られるかは SCP で許可されたパーミッション次第。</li>
+</ul>
+<p>Organization のサービス統合</p>
+<p><img alt="" src="_attachment/image_1497.png" /></p>
+<p>クロスアカウントを個別設定しなくても一括設定できる。</p>
+<p>CloudTrail の組織証跡</p>
+<ul>
+<li>全アカウントで CloudTrail ログを有効化し、アカウントで証跡が変更されるのを防ぐことができる。</li>
+</ul>
+<p>AWS Config アグリゲータとの統合</p>
+<ul>
+<li>個々のアカウントを設定せずに AWS Config のデータを組織で一元集約できる。</li>
+</ul>
+<p>Firewall Manager との統合</p>
+<ul>
+<li>リソースの AWS WAF ルールを組織内で一元管理できる。</li>
+</ul>
+<p>CloudWatch Event Bus</p>
+<ul>
+<li>個々のアカウント ID を指定する代わりに Organization の全アカウントからの送信を一括許可できる。</li>
+</ul>
+<p>AWS SSO</p>
+<ul>
+<li>Organizations と ネイティブ統合され、所属する全アカウントが一覧表示される。</li>
+</ul>
+<p>AWS Security Hub</p>
+<ul>
+<li>組織アカウント横断で検出結果を統合。</li>
+</ul>
+<p>AWS Control Tower</p>
+<hr />
+<h1 id="aws-control-tower">AWS Control Tower</h1>
+<p>マルチアカウント管理の問題を解決する Landing Zone を適用するサービス。</p>
+<p>アカウントの各種設定、監査ログ集約、ガードレールなどのデプロイを自動化。</p>
+<p>SCP (予防的ガードレール) と Config Rules (発見的ガードレール)。</p>
+<p>Ref. <a href="AWS/AWS%20Security%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS: Security: CloudFormation, Service Catalog, Control Tower</a></p>
+<p><br></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

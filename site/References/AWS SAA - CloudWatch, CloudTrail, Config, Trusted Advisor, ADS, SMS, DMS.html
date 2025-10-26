@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS SAA - CloudWatch, CloudTrail, Config, Trusted Advisor, ADS, SMS, DMS - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS SAA - CloudWatch, CloudTrail, Config, Trusted Advisor, ADS, SMS, DMS</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <p>CloudWatch</p>
+<p>サービス</p>
+<p><img alt="" src="_attachment/File_282.png" /></p>
+<ul>
+<li>
+<p>CloudWatch メトリクス (アラーム/ダッシュボード)</p>
+<ul>
+<li>AWS サービスや OS のメトリクス収集。</li>
+<li>アラーム: メトリクスのしきい値による通知 -&gt; SNS, AutoScaling, EC2 アクション</li>
+<li>ダッシュボード。</li>
+</ul>
+</li>
+<li>
+<p>CloudWatch Logs</p>
+<ul>
+<li>AWS サービスのログ収集・保管。</li>
+<li>EC2 インスタンス内の OS、アプリケーションのログ (要 CloudWatch Agent)</li>
+<li>Amazon Elasticsearch Service の Kibana でビジュアル化して見たりする</li>
+<li>送信先はない<ul>
+<li>S3 にエクスポートできるだけ</li>
+<li>アクション起こすには Metrics Filter 使う</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>CloudWatch Events</p>
+<ul>
+<li>AWS リソースの変更をトリガーにしたアクション実行 -&gt; SNS, SQS, Lambda</li>
+<li>S3 へのデータ投入を契機に Lambda 呼べる (CloudTrail で S3 の API アクティビティのロギングも必要)</li>
+</ul>
+</li>
+</ul>
+<p>BB: <a href="https://www.slideshare.net/AmazonWebServicesJapan/black-belt-online-seminar-amazon-cloudwatch">https://www.slideshare.net/AmazonWebServicesJapan/black-belt-online-seminar-amazon-cloudwatch</a></p>
+<p>CloudWatch</p>
+<p>メトリクス</p>
+<ul>
+<li>
+<p>標準メトリクス</p>
+<ul>
+<li>AWS サービスのメトリクス。</li>
+<li>EC2, EBS, RDS, ELB など 70 以上のサービスが対応。</li>
+</ul>
+</li>
+<li>
+<p>カスタムメトリクス</p>
+<ul>
+<li>ユーザが AWS API/AWS CLI を使用して投入。</li>
+<li>AWS 外からも投入できるはず。</li>
+</ul>
+</li>
+<li>
+<p>データポイント</p>
+<ul>
+<li>メトリクスの値のこと。</li>
+<li>例: CPU 使用率がメトリクスなら、30%, 40% とかがデータポイント。</li>
+</ul>
+</li>
+</ul>
+<p>EC2 インスタンスのメトリクス</p>
+<ul>
+<li>
+<p>標準メトリクス</p>
+<ul>
+<li>ハイパーバイザーで取れるもの</li>
+<li>CPU 使用率、DISK I/O、ネットワーク I/O、EC2 ステータス</li>
+</ul>
+</li>
+<li>
+<p>カスタムメトリクス</p>
+<ul>
+<li>
+<p>CloudWatch エージェントが収集するメトリクス</p>
+<ul>
+<li>OS から取るもの</li>
+<li>CPU 詳細、DISK 詳細、ネットワーク詳細、メモリ使用率、プロセス情報</li>
+<li>メモリ使用率はハイパーバイザーで取れない。(仮想)メモリ管理は OS の仕事。</li>
+</ul>
+</li>
+<li>
+<p>API/CLI で個別に発行</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>メトリクス解像度</p>
+<ul>
+<li>
+<p>標準メトリクス</p>
+<ul>
+<li>デフオルトは基本モニタリングの 5 分？</li>
+<li>(デフォルトでメトリクスを 1 分の分解能で集約して保存、という文も？)</li>
+<li>最小分解能は 1 秒。</li>
+</ul>
+</li>
+<li>
+<p>カスタムメトリクス</p>
+<ul>
+<li>標準 1分間隔、高解像度は 1秒間隔</li>
+</ul>
+</li>
+</ul>
+<p>料金</p>
+<ul>
+<li><a href="https://aws.amazon.com/jp/cloudwatch/pricing/">https://aws.amazon.com/jp/cloudwatch/pricing/</a></li>
+<li>基本モニタリングのメトリクス: 5分間隔</li>
+<li>詳細モニタリングのメトリクス: 1分間隔</li>
+<li>
+<p>無料枠: 基本モニタリングのメトリクスと詳細モニタリングのメトリクス 10 個まで</p>
+<ul>
+<li>それ以上の詳細モニタリングメトリクスやカスタムメトリクスは有料</li>
+</ul>
+</li>
+<li>
+<p>無料枠</p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1905.png" /></p>
+<p>メトリクス保存期間</p>
+<ul>
+<li>高解像度メトリクスは低解像度に集約されて長期間保存される</li>
+<li>60 秒未満のデータポイントを 3時間</li>
+<li>1 分間隔のデータポイントを 15 日間</li>
+<li>5 分間隔のデータポイントを 63 日間</li>
+<li>1 時間間隔のデータポイントを 455 日間 (15ヶ月)</li>
+<li><a href="https://aws.amazon.com/jp/about-aws/whats-new/2016/11/cloudwatch-extends-metrics-retention-and-new-user-interface/">https://aws.amazon.com/jp/about-aws/whats-new/2016/11/cloudwatch-extends-metrics-retention-and-new-user-interface/</a></li>
+</ul>
+<p><strong>CloudWatch アラーム</strong></p>
+<ul>
+<li>メトリクスにしきい値を設定してアラーム通知</li>
+<li>
+<p>状態</p>
+<ul>
+<li>OK: しきい値以下</li>
+<li>ALARM: しきい値超過</li>
+<li>INSUFFICIENT_DATA: 開始直後やメトリクスが利用できないなどデータ不足の状態</li>
+</ul>
+</li>
+<li>
+<p>アクション: 3 種類</p>
+<ul>
+<li>SNS 通知</li>
+<li>Auto Scaling (Step/Simple Scaling)</li>
+<li>EC2 アクション: インスタンス停止・再起動など</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_283.png" /></p>
+<ul>
+<li>ALARM → OK に戻った場合にも通知できる</li>
+</ul>
+<p>請求アラーム</p>
+<ul>
+<li>アカウントの予想請求額が CloudWatch に送られる。</li>
+<li>上限金額を設定しておくとアラーム通知される。</li>
+</ul>
+<p>ダッシュボード</p>
+<ul>
+<li>メトリクスのグラフ表示</li>
+</ul>
+<p>CloudWatch Logs</p>
+<ul>
+<li>AWS サービスのログ収集と保管。</li>
+</ul>
+<p><img alt="" src="_attachment/AWS_SAA__CloudWatch__CloudTrail__Config__Trusted_Advisor__ADS__SMS__DMS.png" /></p>
+<pre><code>- EC2 Log, VPC Flow Log, DNS Log (Route 53)
+</code></pre>
+<ul>
+<li>
+<p>CloudWatch Agent による EC2 インスタンスの OS/アプリケーションログ収集</p>
+<ul>
+<li>Windows のイベントログ等</li>
+</ul>
+</li>
+<li>
+<p>保持期間</p>
+<ul>
+<li>1日～10年、無制限を指定</li>
+</ul>
+</li>
+<li>
+<p>Amazon Elasticsearch Service の Kibana でビジュアル化して見たりする。</p>
+</li>
+<li>ログデータは S3 にエクスポートできる。</li>
+</ul>
+<p><strong>CloudWatch Logs Metric Filter</strong></p>
+<ul>
+<li>あらかじめ設定した文字列 ("ERROR" 等) でログをフィルタしてカウントをカスタムメトリクスとして取得する。</li>
+<li>カスタムメトリクスなのでアラーム通知したりダッシュボードで見たりできる。</li>
+<li>
+<p>用例</p>
+<ol>
+<li>CloudWatch Agent でアプリケーションログを取得。</li>
+<li>ERROR ログにメトリクスフィルタを設定して CloudWatch カスタムメトリクスを取得。</li>
+<li>カスタムメトリクスに対してアラームを設定。</li>
+<li>アラームから SNS で管理者にモバイルプッシュで通知。</li>
+</ol>
+</li>
+<li>
+<p>CloudWatch Logs は Metric Filter 使わなければ Alarm や Events のような通知先 (アクション/ターゲット) はない？</p>
+</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/logs/MonitoringLogData.html">https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/logs/MonitoringLogData.html</a></li>
+</ul>
+<p>NOTE: Centralized-logging (集中ロギング/中央ロギング)</p>
+<ul>
+<li>複数種類のログを一緒に集約管理すること。</li>
+<li>EC2 への CloudWatch Agent インストールと VPC Flow Log 有効化で CloudWatch Logs で OS ログとトラッフィクログを Centralized-logging できる。 </li>
+<li>集中ロギングが定訳で、中央ロギングは自動翻訳らしい。</li>
+</ul>
+<p>CloudWatch Events</p>
+<ul>
+<li>AWS リソース変更をトリガーにしたアクション実行。</li>
+<li>イベントソース</li>
+<li>
+<p><img alt="" src="_attachment/Black_Belt_Online_Seminar_Amazon_CloudWatch.png" /></p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html">https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/EventTypes.html</a></li>
+</ul>
+</li>
+<li>
+<p>イベントターゲット</p>
+<ul>
+<li>実行するアクション。</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/Black_Belt_Online_Seminar_Amazon_CloudWatch_2.png" /></p>
+<ul>
+<li>SNS, SQS, EC2, Lambda 等。だいたい全部行けると思ってい良い</li>
+<li><a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/WhatIsCloudWatchEvents.html">https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/WhatIsCloudWatchEvents.html</a></li>
+</ul>
+</li>
+<li>
+<p>ルール</p>
+<ul>
+<li>イベント種類とターゲットの組み合わせ。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1906.png" /></p>
+<ul>
+<li>
+<p>CloudWatch Events と S3 の用例</p>
+<ul>
+<li>S3 バケットへのオブジェクト操作 (API コール) イベントを Lambda で受け取る例</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/log-s3-data-events.html">https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/log-s3-data-events.html</a></p>
+<ol>
+<li>
+<p>S3 バケットとプレフィックス (optional) を指定して CloudTrail を有効にする</p>
+<ul>
+<li>バケットとプレフィックスを指定しなければ全てのログが取れる</li>
+<li>S3 の Data Events:<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/dev/cloudtrail-logging.html#cloudtrail-bucket-level-tracking">https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/dev/cloudtrail-logging.html#cloudtrail-bucket-level-tracking</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Lambda 関数を作る</p>
+</li>
+<li>
+<p>CloudWatch Events のルールを作る</p>
+<ul>
+<li>Event source として S3 の Object Level Operations であることとか、どのオペレーションかを指定。</li>
+<li>
+<p>デフォルトでリージョンの全バケットが対象になるけどバケット指定することもできる。</p>
+<ul>
+<li>CloudTrail とは明示的に結びつけることはないみたい。</li>
+</ul>
+</li>
+<li>
+<p>Target として Lambda 関数を指定。</p>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+<li>
+<p>S3 バケットのファイルアップデートのターゲットに ECS タスクを指定する例</p>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/CloudWatch-Events-tutorial-ECS.html">https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/CloudWatch-Events-tutorial-ECS.html</a></p>
+<ul>
+<li>ほぼ同上。CloudTrail を有効にする手順は省略されている？</li>
+</ul>
+</li>
+<li>
+<p>なお、S3 イベントを使うことでも直接 Lambda を呼べる。</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/with-s3.html">https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/with-s3.html</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>CloudTrail</p>
+<p>概要</p>
+<ul>
+<li>AWS API 実行のロギング。</li>
+<li>AWS API = AWS マネジメントコンソール、AWS CLI で実行されたアクション。</li>
+<li>S3 の API コールが取れるので紛らわしいが対象はリソースではなくアカウント操作。<ul>
+<li>リソース変更履歴は Config。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/aws-black-belt-online-seminar-2016-aws-cloudtrail-aws-config-8-638_jpg__638×359_.png" /></p>
+<ul>
+<li>
+<p>現在はデフォルトで有効化されている。</p>
+<ul>
+<li><a href="https://aws.amazon.com/jp/blogs/news/new-amazon-web-services-extends-cloudtrail-to-all-aws-customers/">https://aws.amazon.com/jp/blogs/news/new-amazon-web-services-extends-cloudtrail-to-all-aws-customers/</a></li>
+</ul>
+</li>
+<li>
+<p>BB: <a href="https://www.slideshare.net/AmazonWebServicesJapan/aws-black-belt-online-seminar-2016-aws-cloudtrail-aws-config">https://www.slideshare.net/AmazonWebServicesJapan/aws-black-belt-online-seminar-2016-aws-cloudtrail-aws-config</a></p>
+</li>
+</ul>
+<p>リージョン</p>
+<ul>
+<li>CloudTrail はリージョン個別にもグローバルにも有効にできる。</li>
+</ul>
+<p>証跡</p>
+<ul>
+<li>
+<p>CloudTrail イベントの配信設定</p>
+<ul>
+<li>配信先: S3 バケット, CloudWatch Logs, CloudWatch Events</li>
+<li>CloudTrail イベントログファイルはデフォルトで S3-SSE で暗号化される。</li>
+</ul>
+</li>
+<li>
+<p>証跡を全リージョンに適用することもできる</p>
+<ul>
+<li>全リージョンの CloudTrail イベントを、1つの S3 バケットで受信できる。</li>
+<li>オプションで CloudWatch Logs ロググループにも同時に配信できる。</li>
+</ul>
+</li>
+<li>
+<p>デフォルトでは無効。</p>
+</li>
+</ul>
+<p>2 種類のイベント</p>
+<ul>
+<li>
+<p>管理イベント</p>
+<ul>
+<li>コントロールプレーンオペレーション</li>
+<li>AWS アカウントのリソースで実行される管理オペレーション</li>
+</ul>
+</li>
+<li>
+<p>データイベント (デフォルトでは記録されない)</p>
+<ul>
+<li>データプレーンオペレーション</li>
+<li>リソースに実行されたオペレーション</li>
+<li>例<ul>
+<li>S3 の API アクティビティ (例: GetObject、DeleteObject、PutObject API)</li>
+<li>Lambda の実行アクティビティ (Invoke API)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>例</p>
+<ul>
+<li>セキュリティグループが変更された時に E-mail で通知<ul>
+<li>CloudTrail → CloudWatch Logs → CloudWatch Logs Metrics Filter → SNS</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/aws-black-belt-online-seminar-2016-aws-cloudtrail-aws-config-18-638_jpg__638×359__3.png" /><img alt="" src="_attachment/aws-black-belt-online-seminar-2016-aws-cloudtrail-aws-config-20-638_jpg__638×359_.png" /></p>
+<p><strong>CloudTrail Insights</strong></p>
+<ul>
+<li>
+<p>AWS アカウント内 (CloudTrail ログ) の異常なアクティビティをキャプチャ。</p>
+<ul>
+<li>GuardDuty とは関係ないの？</li>
+</ul>
+</li>
+<li>
+<p>証跡の作成時にデフォルトでは Insights events は無効。</p>
+</li>
+<li>有効にして、CloudTrail が異常なアクティビティを検出した場合、証跡の宛先 S3 バケット内の別のフォルダまたはプレフィックスに記録。</li>
+<li>アカウントの典型的な使用パターンと大きく異なる API 使用状況の変化を検出してログに記録。</li>
+<li>
+<p>例</p>
+<ul>
+<li>通常、アカウントは S3 deleteBucket API コールを 1 分あたり 20 個までログに記録するのに対し、1 分あたり平均 100 個の deleteBucket API コール。</li>
+<li>異常なアクティビティの開始時にインサイトイベントが記録され、異常なアクティビティの終了を示すために別のインサイトイベントが記録される。</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/awscloudtrail/latest/userguide/cloudtrail-concepts.html#cloudtrail-concepts-insights-events">https://docs.aws.amazon.com/ja_jp/awscloudtrail/latest/userguide/cloudtrail-concepts.html#cloudtrail-concepts-insights-events</a></p>
+</li>
+</ul>
+<p>CloudWatch 連携</p>
+<ul>
+<li>
+<p>CloudWatch Logs</p>
+<ul>
+<li>オプションで証跡の保存先にできる。</li>
+</ul>
+</li>
+<li>
+<p>CloudWatch Events</p>
+<ul>
+<li>CloudWatch Events のイベントソースに CloudTrail が使用できる。</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/awscloudtrail/latest/userguide/cloudtrail-concepts.html#cloudtrail-concepts-cloudwatch-logs">https://docs.aws.amazon.com/ja_jp/awscloudtrail/latest/userguide/cloudtrail-concepts.html#cloudtrail-concepts-cloudwatch-logs</a></p>
+</li>
+</ul>
+<p>AWS Config</p>
+<p>概要</p>
+<ul>
+<li>
+<p>AWS リソースの設定のコンプライアンス評価 (ルール)</p>
+<ul>
+<li>リソースの作成・変更時と定期的なディスカバリーでリソースを評価</li>
+</ul>
+</li>
+<li>
+<p>AWS リソースの変更履歴の S3 バケットへの保存。 </p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/aws-black-belt-online-seminar-2016-aws-cloudtrail-aws-config-34-638_jpg__638×359__2.png" /><img alt="" src="_attachment/File_284.png" /><img alt="" src="_attachment/aws-black-belt-online-seminar-2016-aws-cloudtrail-aws-config-37-638_jpg__638×359_.png" /></p>
+<ul>
+<li>AWS Config 各種イベントの SNS トピックへの配信<ul>
+<li>ComplianceChangeNotification: リソースのコンプライアンスタイプの変更</li>
+<li>ConfigurationItemChangeNotification: リソースの作成/削除/設定変更</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/how-does-config-work.html#delivery-channel-SNS-topic">https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/how-does-config-work.html#delivery-channel-SNS-topic</a></li>
+</ul>
+</li>
+</ul>
+<p>Config ルール</p>
+<ul>
+<li>AWS リソースのコンプライアンスポリシー等のルール。</li>
+<li>設定項目がルールを評価する Lambda 関数に送られてルール評価が実施される。</li>
+<li>
+<p>AWS マネージドルール</p>
+<ul>
+<li>AWS が提供する 80 以上のルール。</li>
+</ul>
+</li>
+<li>
+<p>カスタムルール</p>
+<ul>
+<li>ユーザが Lamda で実装する。</li>
+</ul>
+</li>
+</ul>
+<p>Config ダッシュボード</p>
+<ul>
+<li>監視対象のリソース数や非準拠ルール数を表示するダッシュボード</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/viewing-the-aws-config-dashboard.html">https://docs.aws.amazon.com/ja_jp/config/latest/developerguide/viewing-the-aws-config-dashboard.html</a></li>
+</ul>
+<p><img alt="" src="_attachment/File_285.png" /></p>
+<p><strong>Config アグリゲータ</strong></p>
+<ul>
+<li>複数アカウント/リージョンの Config 評価結果を１つのアカウントに集約</li>
+</ul>
+<p>AWS Trusted Advisor</p>
+<p>概要</p>
+<ul>
+<li>AWS 環境を自動で精査し、AWSに蓄積されたベストプラクティスに基く推奨設定を通知。</li>
+<li>AWS アカウントを開設した直後から監査が有効。</li>
+<li>ダッシュボードで確認。</li>
+<li>内容をメールで受信（要設定）</li>
+<li><a href="https://www.slideshare.net/AmazonWebServicesJapan/20180711-aws-black-belt-online-seminar-aws-trusted-advisor">https://www.slideshare.net/AmazonWebServicesJapan/20180711-aws-black-belt-online-seminar-aws-trusted-advisor</a></li>
+<li><a href="https://dev.classmethod.jp/cloud/aws/cm-advent-calendar-2015-getting-started-again-aws-td/">https://dev.classmethod.jp/cloud/aws/cm-advent-calendar-2015-getting-started-again-aws-td/</a></li>
+</ul>
+<p>５つの観点</p>
+<ul>
+<li>コスト最適化: 稼働率の低いインスタンスや使われていない EIP など</li>
+<li>パフォーマンス: 稼働率が高すぎるインスタンスやセキュリティグループのルール数過多など</li>
+<li>セキュリティ: パブリックになっているリソースなど</li>
+<li>フォールトトレーランス:  ELB最適化、RDS Multi-AZ、EBSスナップショット等</li>
+<li>サービス制限: アカウント毎のリソース数の最大値 (上限緩和申請するやつ) の 80% に達していないか</li>
+<li><a href="https://aws.amazon.com/jp/premiumsupport/technology/trusted-advisor/">https://aws.amazon.com/jp/premiumsupport/technology/trusted-advisor/</a></li>
+</ul>
+<p><img alt="" src="_attachment/File_286.png" /><img alt="" src="_attachment/image_1907.png" /></p>
+<p><img alt="" src="_attachment/image_1908.png" /></p>
+<ul>
+<li>全機能はビジネス/エンタープライズ以上。</li>
+<li>メール通知の登録や CloudWatch Events への連携もできる</li>
+</ul>
+<p># 移行のためのサービス</p>
+<p>TCO Calculator</p>
+<ul>
+<li><a href="https://aws.amazon.com/jp/tco-calculator/">https://aws.amazon.com/jp/tco-calculator/</a></li>
+<li>オンプレや DC のサーバの台数や CPU 等を入力することで AWS との TCO の比較ができる。</li>
+</ul>
+<p><img alt="" src="_attachment/File_287.png" /></p>
+<p><img alt="" src="_attachment/File_288.png" /></p>
+<p>AWS ADS: Application Discovery Service</p>
+<ul>
+<li>
+<p>オンプレのサーバの各種情報を収集。ADS のダッシュボードで確認。</p>
+<ul>
+<li>アプリケーションの検出、依存関係、性能 (CPU, RAM, I/O, etc.)。</li>
+</ul>
+</li>
+<li>
+<p>AWS Migration Hub と統合 → 移行の進捗をトラッキング</p>
+</li>
+<li>
+<p>エージェントレス型</p>
+<ul>
+<li>VMware vCenter Server 環境</li>
+<li>AWS Agentless Discovery Connector (OVA 形式の仮想アプライアンス) を使用する。</li>
+</ul>
+</li>
+<li>
+<p>エージェント型</p>
+<ul>
+<li>Ubuntu, CentOS, RedHat, Windows Server</li>
+</ul>
+</li>
+<li>
+<p><a href="https://www.slideshare.net/AmazonWebServicesJapan/20170621-awsblack-beltadssms">https://www.slideshare.net/AmazonWebServicesJapan/20170621-awsblack-beltadssms</a></p>
+</li>
+<li>問題例: The company is using a VMWare vCenter Server for data center management of their vSphere environments and virtual servers. A DevOps engineer is tasked to implement a solution that will collect various information from their on-premises and EC2 instances, such as operating system details, MAC address, IP address, and many others. The Operations team should also be able to analyze the collected data in a visual format.</li>
+<li>解答<ul>
+<li>Using the AWS Application Discovery Service, deploy the Agentless Discovery Connector in an OVA file format to your VMware vCenter and then install the AWS Discovery Agents on the EC2 instances to collect the required data.</li>
+<li>Use the AWS Migration Hub Dashboard to analyze your hybrid infrastructure.</li>
+</ul>
+</li>
+</ul>
+<p>AWS Migration Hub</p>
+<ul>
+<li>オンプレサーバ移行のためのダッシュボード。</li>
+</ul>
+<p>VM Import/Export</p>
+<ul>
+<li>VM イメージの EC2 インスタンス (AMI) へのインポート/元のオンプレ VM へのエクスポート。</li>
+<li>VMware ESX, VMware Workstation, Microsoft Hyper-V, Citrix Xen をサポート。</li>
+<li>AWS SMS が上位機能なので試験に出なそう。</li>
+</ul>
+<p>AWS SMS: Server Migration Service</p>
+<ul>
+<li>
+<p>多数の VM を短時間で AWS に移行できる。</p>
+<ul>
+<li>1 アカウント最大 50 VM まで同時移行 </li>
+</ul>
+</li>
+<li>
+<p>AWS コンソールでジョブの設定やトラッキングができる。</p>
+</li>
+</ul>
+<p>サーバーの増分レプリケーション</p>
+<ul>
+<li>オンプレサーバ側の変更をクラウド側に増分でレプリケート。</li>
+<li>ダウンタイムを最小化できる → オンプレ稼働中にレプリケートして、移行時にオンプレ側に入った差分だけをクラウド側に適用すれば移行時のダウンタイムが短くなるという意味。</li>
+</ul>
+<p>サポート対象</p>
+<ul>
+<li>
+<p>プラットフォーム</p>
+<ul>
+<li>VMware vSphere, Windows Hyper-V, Microsoft Azure</li>
+</ul>
+</li>
+<li>
+<p>OS</p>
+<ul>
+<li>Windows Server 2003、2008、2012、2016</li>
+<li>Windows 7、8、10</li>
+<li>RHEL、SUSE、CentOS、Ubuntu、Oracle Linux、Fedora、Debian Linux</li>
+</ul>
+</li>
+</ul>
+<p>SMS Connector</p>
+<ul>
+<li>SMS に必要な FreeBSD VM の仮想アプライアンス。</li>
+<li>VMware vSphere や Hyper-V, Azure に導入する </li>
+</ul>
+<p><img alt="" src="_attachment/SAA_6.png" /></p>
+<p>Ref. </p>
+<p><a href="https://docs.aws.amazon.com/ja_jp/server-migration-service/latest/userguide/server-migration.html">https://docs.aws.amazon.com/ja_jp/server-migration-service/latest/userguide/server-migration.html</a></p>
+<p><a href="https://aws.amazon.com/jp/blogs/news/aws-server-migration-service-server-migration-to-the-cloud-made-easy/">https://aws.amazon.com/jp/blogs/news/aws-server-migration-service-server-migration-to-the-cloud-made-easy/</a></p>
+<p>NOTE: VMware vSphere</p>
+<ul>
+<li>VMware vSphere は vSphere ESXi と vCenter Server を含む仮想化ソフトウェアのスイート</li>
+<li>ESXi は vSphere のハイパーバイザー</li>
+</ul>
+<p><img alt="" src="_attachment/File_289.png" /></p>
+<p>AWS DMS: Database Migration Service</p>
+<ul>
+<li><a href="https://aws.amazon.com/jp/dms/">https://aws.amazon.com/jp/dms/</a></li>
+<li>オンプレ DB から Amazon RDS へのデータ移行。</li>
+<li>低コスト: 移行プロセス中に使用したコンピューティングリソースと、追加ログのストレージにのみ料金が発生。<ul>
+<li>テラバイトサイズの DB 移行にわずか 3 USD。</li>
+</ul>
+</li>
+</ul>
+<p>同種のエンジン間での移行</p>
+<ul>
+<li>Oracle → RDS for Oracle</li>
+<li>MS SQL Server → RDS for SQL Server</li>
+<li>MySQL → RDS for MySQL</li>
+<li>MySQL → Aurora</li>
+</ul>
+<p>異なるエンジン間での移行</p>
+<ul>
+<li>Scheme Conversion Tool でスキーマやコードの変換を実施して DMS で移行。</li>
+</ul>
+<p><img alt="" src="_attachment/File_290.png" /></p>
+<p>プロダクション環境と開発環境 (開発・テスト・ステージング) でのデータ移行</p>
+<ul>
+<li>AWS でプロダクションの実データで開発・テスト -&gt; オンプレのプロダクションにデプロイ</li>
+<li>オンプレの開発環境で開発・テスト -&gt; AWS のプロダクションにデプロイ</li>
+</ul>
+<p>DB 統合</p>
+<p><img alt="" src="_attachment/File_291.png" /></p>
+<p>レプリケーション</p>
+<p><img alt="" src="_attachment/File_292.png" /></p>
+<p>AWS Snowball</p>
+<ul>
+<li>ストレージアプライアンスの物理輸送でペタバイト規模のデータを安全に S3 に転送。</li>
+<li>例) 100 テラバイトのデータ転送<ul>
+<li>100 Mbps の専用接続を使って 100 日以上</li>
+<li>Snowball デバイスを 2 個使用すれば同じ容量のデータを 1 週間未満で転送</li>
+</ul>
+</li>
+</ul>
+<p>Snowball アプライアンス</p>
+<ul>
+<li><a href="https://aws.amazon.com/jp/snow/">https://aws.amazon.com/jp/snow/</a></li>
+<li>50 TB Snowballs (42 TB of usable space) - データコピー必要時間は 1 日未満</li>
+<li>80 TB Snowballs (72 TB of usable space) - データコピー必要時間は 2 日半</li>
+<li>耐タンパ性筐体、256 ビット暗号化、TPM 使用。暗号化キーは AWS KMS を使って管理。</li>
+</ul>
+<p>Snowball Edge</p>
+<ul>
+<li>ストレージだけじゃなくオンボードで EC2, Lambda が実行できる。</li>
+<li>100 TB</li>
+</ul>
+<p>Snowmobile</p>
+<ul>
+<li>セミトレーラートラックが牽引する長さ 14 m の丈夫な輸送コンテナ</li>
+<li>1 台あたり 100 PB。</li>
+</ul>
+<p>AWS DataSync</p>
+<ul>
+<li>オンプレと EFS 間のマネージドデータ転送サービス</li>
+<li>OSS ツールと比べて最大 10 倍の速度でアクティブなデータセットを Direct Connect またはインターネット経由で転送。</li>
+<li>アプリケーションを変更したり、API に書き込む必要はありません。</li>
+<li>1回のデータ移行だけでなく、定期的な同期を伴う進行中ワークフロー、データ保護と復元のレプリケーションに使用できる。</li>
+</ul>
+<p>AWS Storage Gateway</p>
+<ul>
+<li>オンプレから S3 へのデータ移行にもつかえる。</li>
+<li>Ref <a href="AWS%20SAA%20ECSEKS,%20Lambda,%20EFS,%20Storage%20Gateway.html">AWS SAA: ECS/EKS, Lambda, EFS, Storage Gateway</a></li>
+</ul>
+<p>AWS Transfer for SFTP</p>
+<ul>
+<li>SFTP (SSH File Transfer Protocol) で外部 (オンプレ環境等) から S3 にファイルをアップロード。</li>
+<li>SFTP は SSH で FTP を暗号化する。SCP とは別モノ。SCP はサーバ側にシェルが必要。</li>
+</ul>
+<p># コスト管理のためのサービス</p>
+<p>AWS Cost Explorer</p>
+<ul>
+<li>グラフで期間ごとのコストを確認できる。</li>
+<li>過去の使用状況から今後 3ヶ月のコストを予測できる。</li>
+<li>予算 (AWS Budget)<ul>
+<li>予算額を超えたときや、推定コストが予算を超えたときに Amazon SNS 通知できる</li>
+<li>コスト配分タグ: タグを使用することで部門や環境ごとにコストを確認できる<ul>
+<li><a href="https://aws.amazon.com/jp/blogs/news/cost-allocation-tag/">https://aws.amazon.com/jp/blogs/news/cost-allocation-tag/</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>Trusted Advisor</p>
+<ul>
+<li>コスト最適化の項目がある</li>
+</ul>
+<p>AWS Organizations</p>
+<ul>
+<li>Consolidated Billing で複数アカウントの請求をまとめることができる。</li>
+</ul>
+<p><br></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

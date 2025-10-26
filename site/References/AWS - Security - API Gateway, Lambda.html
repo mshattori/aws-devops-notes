@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS - Security - API Gateway, Lambda - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS - Security - API Gateway, Lambda</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <p><br></p>
+<p><img alt="" src="_attachment/image_1352.png" /></p>
+<hr />
+<h1 id="api-gateway">API Gateway</h1>
+<p>セキュリティ概要</p>
+<ul>
+<li>デフォルトのエッジ最適化エンドポイントで CloudFront レイヤーでの DDoS 緩和。</li>
+<li>リージョン API エンドポイントをオリジンとしたユーザ管理の CloudFront で WAF/Shield Advanced による保護が可能。</li>
+<li>WAF を API のステージ毎に設定できる。</li>
+<li>
+<p>リソースポリシーによるアクセスコントロール</p>
+<ul>
+<li>プリンシパル、IP アドレス(範囲/CIDR)、VPC の制限。</li>
+<li>URL パスとメソッドの組み合わせを ARN で参照して制限。</li>
+</ul>
+</li>
+<li>
+<p>プライベート API エンドポイントで特定 VPC だけに公開。</p>
+</li>
+<li>
+<p>オーソライザーによるユーザ認証</p>
+<ul>
+<li>IAM アクセス権限: ID 連携等でクリデンシャルを持つユーザの認証・認可。</li>
+<li>Cognito オーソライザー: Cognito ユーザープール連携。</li>
+<li>JWT オーソライザー: OIDC/OAuth 2.0 IdP 連携。</li>
+<li>Lambda オーソライザー: リクエスト、トークンをチェックする独自認証。</li>
+</ul>
+</li>
+<li>
+<p>スロットリング・キャッシュによる DDoS 緩和。</p>
+</li>
+<li>カスタムドメインの証明書設定と ACM による管理。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1353.png" /><img alt="" src="_attachment/File_32.png" /></p>
+<p>API エンドポイントタイプ</p>
+<ul>
+<li>API の URL のデプロイ方法の違い。</li>
+<li><img alt="" src="_attachment/File_33.png" /></li>
+<li>
+<p>エッジ最適化 API エンドポイント (デフォルト)</p>
+<ul>
+<li>CloudFront でエッジロケーションにルーティング後、API Gateway に転送。</li>
+<li>地理的に分散したクライアントへの接続時間が改善。</li>
+</ul>
+</li>
+<li>
+<p>リージョン API エンドポイント:</p>
+<ul>
+<li>リージョンの API Gateway に直接リクエストが届く。</li>
+<li>同一リージョンの EC2 インスタンス等からアクセスする場合は低レイテンシ。</li>
+<li>ユーザ管理の CloudFront ディストリビューションのオリジンとする場合はこちらを使う。</li>
+<li>Route 53 レイテンシールーティングでパブリック API をレーテンシーに応じてリージョンに振り分けるユースケースもある。</li>
+</ul>
+</li>
+<li>
+<p>プライベート API エンドポイント:</p>
+<ul>
+<li>インターフェイス VPC エンドポイント (AWS PrivateLink) としてデプロイ。</li>
+<li>VPC 内からのみアクセスできる。</li>
+</ul>
+</li>
+</ul>
+<p>リソースポリシーによるアクセスコントロール</p>
+<ul>
+<li>API のリソースベースポリシー。</li>
+<li>呼び出し元のプリンシパル、IP アドレス(範囲/CIDR)、VPC を制限できる。</li>
+<li>API のリソース (URL パス) とメソッドの組み合わせを ARN で参照して制御できる。</li>
+<li><img alt="" src="_attachment/image_1354.png" /></li>
+<li>特定 VPC からのみ接続許可するなどの制御が可能。</li>
+<li>プライベート API エンドポイントでは VPC エンドポイントポリシーと併用可能<ul>
+<li>API のリソースポリシーは接続可能な VPC を指定し、VPC エンドポイントポリシーで VPC 毎にプリンシパルや URL パスなどを細かく制御する、とか？</li>
+</ul>
+</li>
+</ul>
+<p>オーソライザー (認証)</p>
+<p><img alt="" src="_attachment/File_34.png" /></p>
+<ul>
+<li>メソッドリクエストでリソースの各メソッド毎に設定 (WebSocket はルートリクエスト)。</li>
+<li>
+<p>IAM アクセス権限</p>
+<ul>
+<li>IAM ユーザのクリデンシャルから AWS 署名v4 を生成して Authorization ヘッダで送信。</li>
+<li><img alt="" src="_attachment/File_35.png" /></li>
+<li>プリンシパルの IAM ポリシーに API Gateway への呼び出し権限が必要。</li>
+<li>ID フェデレーション (STS/Cognito ID プール) で一時クリデンシャルを取得したアプリもこの方法で認証可能。</li>
+</ul>
+</li>
+<li>
+<p>Lambda オーソライザー</p>
+<ul>
+<li>
+<p>リクエストパラメータベース (REQUEST オーソライザー):</p>
+<ul>
+<li>ヘッダ、クエリ文字列、stageVariables, $context 変数を受け取って認証。</li>
+</ul>
+</li>
+<li>
+<p>トークンベース (TOKEN オーソライザー):</p>
+<ul>
+<li>JWT や OAuth トークンなどのベアラートークンのみを受け取って認証。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Cognito オーソライザー</p>
+<ul>
+<li>Cognito ユーザープールで取得したトークン (JWT) を Authorization ヘッダで送信する。</li>
+</ul>
+</li>
+<li>
+<p>JWT オーソライザー</p>
+<ul>
+<li>HTTP API のみサポート。</li>
+<li>OpenID Connect/OAuth 2.0 準拠の IdP が発行した JWT による認証 (Cognito ユーザープール含む)</li>
+<li>Cognito オーソライザーは Cognito ユーザープールしかサポートしないため、その他の IdP を使用する場合は Lambda オーソライザーによる実装が必要だった。</li>
+<li>Ref <a href="https://dev.classmethod.jp/articles/amazon-api-gateway-jwt-authorizers/">https://dev.classmethod.jp/articles/amazon-api-gateway-jwt-authorizers/</a></li>
+</ul>
+</li>
+</ul>
+<p>実行ロール</p>
+<ul>
+<li>API の実行ロールで統合バックエンド (Lambda 等) を呼び出す権限を指定する。</li>
+</ul>
+<p>API キー</p>
+<ul>
+<li>X-API-Key ヘッダにキーを指定してリクエスト。</li>
+<li>API キー認証: API キーの指定を必須とする。</li>
+<li>
+<p>使用量プラン</p>
+<ul>
+<li>キーごとにクォータ(日/週/月)・スロットリング(レート/バースト)を設定。</li>
+<li>API キーはクォータ・スロットリングのための機能なので認証目的で使用しない。</li>
+</ul>
+</li>
+<li>
+<p>REST API, WebSocket API で使用可能。</p>
+</li>
+</ul>
+<p>スロットリング</p>
+<ul>
+<li>使用量プランとは個別に働くステージレベルでのによるスロットリング。</li>
+<li><img alt="" src="_attachment/File_36.png" /></li>
+<li>超過すると THROTTLED エラーとなり 429 (Too Many Requests) を返す。</li>
+<li>レート: トークンの補充レート=1秒あたりの想定平均リクエスト数。</li>
+<li>バースト: トークンをためるバケットの最大サイズ。</li>
+<li><img alt="" src="_attachment/File_37.png" /></li>
+</ul>
+<p>カスタムドメインと証明書設定</p>
+<ul>
+<li>API Gateway の API にカスタムドメインを設定し証明書を設定できる。</li>
+<li>ACM で API Gateway の証明書を管理できる。</li>
+<li><img alt="" src="_attachment/File_38.png" /></li>
+<li>クライアント証明書の追加。</li>
+</ul>
+<p>VPC リンク</p>
+<ul>
+<li>統合バックエンドの1つ。</li>
+<li>VPC 内インスタンスの Web アプリに NLB 経由でアクセス。</li>
+<li><img alt="" src="_attachment/File_39.png" /></li>
+</ul>
+<p>CloudWatch Logs</p>
+<ul>
+<li>ステージ/メソッド単位でロギングを有効化。</li>
+<li>
+<p>実行ログ</p>
+<ul>
+<li>ERROR/INFO のレベル指定。</li>
+<li>リクエスト/レスポンスデータのログ出力の有無の指定。</li>
+</ul>
+</li>
+<li>
+<p>アクセスログ</p>
+<ul>
+<li>API に誰がアクセスしたかのロギング。</li>
+</ul>
+</li>
+<li>
+<p>実行ログ・アクセスログは別のロググループとなる。</p>
+</li>
+</ul>
+<hr />
+<h1 id="lambda">Lambda</h1>
+<p>Lambda のトリガーと IAM ポリシー</p>
+<ul>
+<li>
+<p>イベントソース (プッシュモデル)</p>
+<ul>
+<li>S3 イベント等、Lambda 連携しているイベントソースが関数をトリガー。</li>
+<li>関数のリソースベースポリシーでイベントソースのサービスを許可する。</li>
+</ul>
+</li>
+<li>
+<p>プルモデル</p>
+<ul>
+<li>Lambda サービスがリソースをポーリング。</li>
+<li>関数の実行ロールにイベントソースへのアクセス権が必要。</li>
+</ul>
+</li>
+<li>
+<p>Request-Response モデル</p>
+<ul>
+<li>API Gateway や API で直接呼び出し。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1355.png" /></p>
+<p>リソースベースポリシー (関数ポリシー)</p>
+<p>例</p>
+<p><img alt="" src="_attachment/image_1356.png" /></p>
+<ul>
+<li>関数を呼び出すサービスをプリンシパルとして InvokeAction を許可する。</li>
+<li>S3 イベントの Lambda トリガー等はリソースベースポリシー必須<ul>
+<li>S3 にはサービスロールを設定できないから</li>
+</ul>
+</li>
+</ul>
+<p>実行ロール</p>
+<ul>
+<li>プルモデルでポーリングする権限や関数から DynamoDB にアクセスする権限など。</li>
+<li>関数からの CloudWatch Logs の書き込み等でも必要。</li>
+</ul>
+<p>環境変数の暗号化</p>
+<ul>
+<li>
+<p>保管時はデフォルトで AWS managed CMK で暗号化され、関数が呼び出されると復号される</p>
+<ul>
+<li>Customer managed CMK も利用可能。</li>
+</ul>
+</li>
+<li>
+<p>伝送中の暗号化のためのヘルパー</p>
+<ul>
+<li>復号用のサンプルコードが表示されるので Lambda 関数内のコードで復号を実装する。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_40.png" /></p>
+<p>管理コンソールの時点でブラウザ上で KMS Encrypt でデータキーを使わず直接暗号化してから Lambda 側に環境変数を送っている。どちらもサイズ制限が 4KB までなので可能。復号も Decrypt で復号している。また Lambda 関数名を Encryption Context として指定している。</p>
+<pre><code>import boto3
+import os
+
+from base64 import b64decode
+
+ENCRYPTED = os.environ['test']
+# Decrypt code should run once and variables stored outside of the function
+# handler so that these are decrypted once per container
+DECRYPTED = boto3.client('kms').decrypt(
+    CiphertextBlob=b64decode(ENCRYPTED),
+    EncryptionContext={'LambdaFunctionName': os.environ['AWS_LAMBDA_FUNCTION_NAME']}
+)['Plaintext'].decode('utf-8')
+
+def lambda_handler(event, context):
+    # TODO handle the event here
+    pass
+</code></pre>
+<p>VPC アクセス</p>
+<ul>
+<li>関数から VPC 内のリソースにインターネットを経由せずにアクセスさせたい場合。</li>
+<li>
+<p>関数に VPC サブネット(複数可) とセキュリティグループ(1つ)を設定する。</p>
+<ul>
+<li>AZ ごとにサブネットを指定してそれらを関数に設定することでマルチ AZ で可用性確保できる。</li>
+</ul>
+</li>
+<li>
+<p>ENI により実現される</p>
+<ul>
+<li>サブネットごとに指定したセキュリティグループが設定された ENI が作成される。</li>
+<li>AWS Hyperplane を利用したクロスアカウントの VPC 間 NAT でカスタマー VPC 内の ENI に接続される。</li>
+<li><img alt="" src="_attachment/3EF3472F-9560-4EF0-9301-5B52B96AA8B2.png" /></li>
+<li>実行ロールに AWSLambdaVPCAccessExecutionRole という管理ポリシーが必要。</li>
+</ul>
+</li>
+<li>
+<p>VPC を設定したタイミングから関数からのインターネットアクセスは不可</p>
+<ul>
+<li>
+<p>パブリック IP は割り当てられない (=IGW にパブリック IP への NAT が登録されない)</p>
+<ul>
+<li>ENI にサブネットのプライベート IP が DHCP で割り当てられる。</li>
+</ul>
+</li>
+<li>
+<p>インターネットアクセスにはパブリックサブネットに NAT GW を置いてやる必要がある。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>ロギングと監視</p>
+<p><img alt="" src="_attachment/image_1357.png" /><img alt="" src="_attachment/File_41.png" /></p>
+<p>Lambda@Edge</p>
+<ul>
+<li>
+<p>CloudFront の機能。エッジロケーションで Lambda でリクエスト/レスポンスをハンドルできる。</p>
+<ul>
+<li>エッジでの認証処理など。</li>
+</ul>
+</li>
+<li>
+<p>Lambda 関数をグローバルにデプロイできる。</p>
+</li>
+<li>キャッシュがある場合にリクエストを処理したくない場合はオリジンリクエストに関数を設定する。</li>
+<li><img alt="" src="_attachment/File_42.png" /></li>
+<li>レガシーアプリケーションに HTTP セキュリティヘッダーを追加するというユースケースも<ul>
+<li>Content Security-Policy</li>
+<li>X-Frame-Options</li>
+<li>X-XSS-Protection</li>
+</ul>
+</li>
+</ul>
+<p><br></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

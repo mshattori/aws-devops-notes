@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS SAA - VPC, ELB, Auto Scaling, Route 53, CloudFront, Direct Connect - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS SAA - VPC, ELB, Auto Scaling, Route 53, CloudFront, Direct Connect</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <p>VPC: Virtual Private Cloud</p>
+<p>特徴</p>
+<ul>
+<li>クラウド上のプライベートな仮想ネットワーク</li>
+<li>IGW 経由で Static NAT (Private:Public IP 1対1) でインターネットに出て行く</li>
+<li>リージョンサービス: リージョンをまたぐことはできない。</li>
+<li>VPC 作成は無料。</li>
+<li>BB: <a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20190313_AWS-BlackBelt-VPC.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20190313_AWS-BlackBelt-VPC.pdf</a></li>
+</ul>
+<p><img alt="" src="_attachment/SAA_25.png" /></p>
+<p>CIDR ブロック</p>
+<ul>
+<li>VPC で使える IPv4 アドレスレンジ。</li>
+<li>16〜28ビットのプレフィックスを指定可能。<ul>
+<li>プレフィックス最小がクラスBで最大は残り4ビット。</li>
+</ul>
+</li>
+</ul>
+<p>サブネット</p>
+<ul>
+<li>
+<p>VPC の CIDR ブロックをサブネットに分割</p>
+<ul>
+<li>サブネットのプレフィックス(CIDRブロック)を指定する。</li>
+</ul>
+</li>
+<li>
+<p>サブネットには AZ が明示的に紐づく</p>
+<ul>
+<li>AZ 内にサブネットを置く。1つの AZ に複数置ける。 </li>
+<li>1つのサブネットは複数 AZ にまたがることはできない。</li>
+</ul>
+</li>
+<li>
+<p>同一 VPC のサブネット間のインスタンスの通信はプライベートアドレスで行われる。</p>
+<ul>
+<li>パブリック IP は SNAT のグローバル側なのでサブネット内から ping 打っても到達しなそう。</li>
+<li>EIP は SNAT 関係ないかもだけどサブネット間にルートが設定されてないため到達しない？</li>
+</ul>
+</li>
+<li>
+<p>パブリックとプライベートのサブネット間もデフォルトで通信可能。</p>
+</li>
+<li>利用できる IP アドレス数は 5 つ差し引かれる</li>
+</ul>
+<p><img alt="" src="_attachment/SAA_26.png" /><img alt="" src="_attachment/PowerPoint_Presentation.png" /></p>
+<p>(参考) <a href="http://aws.clouddesignpattern.org/index.php/CDP:Backnet%E3%83%91%E3%82%BF%E3%83%BC%E3%83%B3">Backnet</a> パターン</p>
+<ul>
+<li>サーバの公開用 (Web) と管理用 (SSH) のサブネットを分け、インスタンスからそれぞれに ENI を生やす。</li>
+<li>管理用のプライベートアドレスのサブネットには VPN 経由でのみ接続できるようにする。(AZ はたぶん同一)</li>
+<li>各 ENI には異なるセキュリティグループが設定できる。</li>
+</ul>
+<p><img alt="" src="_attachment/File_312.png" /></p>
+<p>ルートテーブル</p>
+<ul>
+<li>各種ゲートウェイ (IGW, NAT GW, VGW) へのルートを登録する。</li>
+<li>ルートテーブルはサブネットに対して設定される。</li>
+<li>サブネット毎に個別にルートテーブルを指定する。<ul>
+<li>IGW とローカルのルートがあればよいのでデフォルトでは1つの同じルートテーブルが複数のサブネットに割り当てられていた</li>
+</ul>
+</li>
+</ul>
+<p>ゲートウェイ</p>
+<ul>
+<li>
+<p>IGW (Internet Gateway)</p>
+<ul>
+<li>
+<p>プライベート/パブリックIP 1対1の Static NAT でインターネットに出て行くゲートウェイ</p>
+<ul>
+<li>送信先を 0.0.0.0/0 としたデフォルトルートとして設定される</li>
+</ul>
+</li>
+<li>
+<p>パブリックサブネット</p>
+<ul>
+<li>ルートテーブルでデフォルト GW に IGW が登録されているサブネット。</li>
+<li>特にサブネットのオプションでパブリック/プライベートの区別がある訳ではない。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/VPC_Subnets.html">https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/VPC_Subnets.html</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>NAT Gateway</p>
+<ul>
+<li>プライベートサブネットから NAPT でインターネットに出て行くゲートウェイ。</li>
+<li>インターネット側からプライベートサブネットにアクセスしないようにできる。</li>
+<li>パブリックサブネットに置かれる。ElP を使用する。</li>
+</ul>
+</li>
+<li>
+<p>VGW (Virtual Private Gateway)</p>
+<ul>
+<li>VPC からインターネット VPN または専用線 (Direct Connect) で外部の拠点と接続するGW。</li>
+<li>対向側は CGW (Customer Gateway) と呼ばれる。</li>
+</ul>
+</li>
+<li>
+<p><a href="https://milestone-of-se.nesuke.com/sv-advanced/aws/internet-nat-gateway/">https://milestone-of-se.nesuke.com/sv-advanced/aws/internet-nat-gateway/</a></p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_313.png" /></p>
+<ul>
+<li>セキュリティ関連でプライベートサブネットに DB サーバ等を置く構成はよく出てくる。</li>
+<li>外部にアウトバウンドで出て行く必要があればパブリックサブネットの NAT GW を使う。そうでなければパブリックサブネットの Web サーバ等とプライベートアドレスで通信できる。</li>
+</ul>
+<p>ネットワークACL</p>
+<p><img alt="" src="_attachment/SAA_27.png" /></p>
+<ul>
+<li>サブネットにつくファイアウォール。</li>
+<li>基本はセキュリティグループでデフォルト Deny で設定。ネットワーク ACL は Any Allow で素通しになっている。</li>
+<li>ネットワーク ACL はサブネット全体で制御するような場合に使う。</li>
+<li>ネットワーク ACL はステートレスなのでインバウンド・アウトバウンド個別に設定する。</li>
+</ul>
+<p>NAT インスタンス</p>
+<ul>
+<li>Amazon Linux をベースに NAT を構成した AMI (amzn-ami-vpc-nat) のインスタンス。 </li>
+<li>NAT ゲートウェイと異なり、ユーザがソフトウェアアップデートやスケーリングを管理する必要がある。(NAT GW は Elastic にスケールする)</li>
+<li>EIP またはパブリック IP アドレスを使用する。(NAT GW は EIP)</li>
+<li>
+<p>セキュリティグループを関連づけてトラフィックをコントロールできる。</p>
+<ul>
+<li>NAT GW は SG 関連づけ出来ない。背後のインスタンスの SG かネットワーク ACL でコントロール。</li>
+</ul>
+</li>
+<li>
+<p>ポート転送や踏み台サーバとしての使用ができる。(NAT GW はできない)</p>
+</li>
+<li>
+<p>IP フラグメント化された TCP, ICMP パケットもリアセンブルする。</p>
+<ul>
+<li>NAT GW は UDP のみ。TCP, ICMP はリアセンブルしない。</li>
+</ul>
+</li>
+<li>
+<p>送信元/送信先チェック (Source/Destination Checks) の無効化</p>
+<ul>
+<li>EC2 インスタンスはデフォルトでトラフィックの Source/Destination が自分かチェックする。NAT インスタンスは自分向けでないトラフィックも受け取る必要があるのでインスタンスでこれを無効にする必要がある。</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/vpc-nat-comparison.html">https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/vpc-nat-comparison.html</a></p>
+</li>
+</ul>
+<p>踏み台 (Bastion) サーバと ELB による Web サーバのプライベートサブネット配置</p>
+<ul>
+<li>Web アプリケーションサーバと DB サーバをプライベートサブネットに配置。</li>
+<li>パブリックサブネットに Bastion サーバと NAT GW と ELB を配置。</li>
+<li>インターネットから Bastion サーバに SSH できるようセキュリティグループを設定。</li>
+<li>Bastion サーバから Web サーバと DB サーバに SSH できるようセキュリティグループを設定。</li>
+<li>Web サーバと DB サーバのセキュリティアップデートのダウンロード等は NAT GW 経由でインターネットに取りに行く。</li>
+<li>Web アクセスは ELB から Web サーバにリバースプロキシ。</li>
+</ul>
+<p><img alt="" src="_attachment/File_46.jpeg" /></p>
+<p>VPC エンドポイント</p>
+<ul>
+<li>VPC の AZ サービスからインターネットを経由せずにパブリック IP 空間のリージョンサービスにアクセスする手段。</li>
+<li>
+<p>AZ サービス</p>
+<ul>
+<li>EC2, Redshift, EMR など</li>
+</ul>
+</li>
+<li>
+<p>リージョンサービス</p>
+<ul>
+<li>S3, DynamoDB, CloudWatch など</li>
+</ul>
+</li>
+<li>
+<p>ゲートウェイ VPC エンドポイント</p>
+<ul>
+<li>ルートテーブルにゲートウェイとして指定する。</li>
+<li>S3 と DynamoDB でサポート。</li>
+<li>おそらくマルチ AZ レプリケーションなので IP が1つにならない。DNS ラウンドロビンとかで IP 帰るのかも</li>
+</ul>
+</li>
+<li>
+<p>インターフェイス VPC エンドポイント</p>
+<ul>
+<li>
+<p>ENI としてサブネット内のプライベート IP アドレスを持つエンドポイントが現れる。</p>
+<ul>
+<li>サービスのエンドポイントと ENI が AWS PrivateLink でリンクされる。</li>
+<li>VPC の DNS に ENI のプライベート IP が &lt;サービス名&gt;.&lt;リージョン&gt;.amazonaws.com のような A レコードで登録される。</li>
+</ul>
+</li>
+<li>
+<p>インターフェイス VPC エンドポイントは ENI に対してアクセスするため、アクセス制御は ENI に関連付けたセキュリティグループで行う。</p>
+</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/vpc-endpoints.html">https://docs.aws.amazon.com/ja_jp/vpc/latest/userguide/vpc-endpoints.html</a></p>
+</li>
+<li><img alt="" src="_attachment/PowerPoint_Presentation_2.png" /></li>
+</ul>
+<p>ピア接続</p>
+<ul>
+<li>2つの VPC 間の接続。</li>
+<li>クロスリージョンやクロスアカウントの VPC との接続も可能。</li>
+<li>
+<p>直接接続している VPC とのみ通信可能で 2 ホップ以上先との通信 (推移的なピアリング接続) はできない。</p>
+<ul>
+<li>Direct Connect や VPN でオンプレから VPC に接続する場合も同様。推移的な接続はできない。</li>
+</ul>
+</li>
+<li>
+<p>CIDR ブロックがかぶる VPC とはピアリング接続できない。</p>
+</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/vpc/latest/peering/what-is-vpc-peering.html">https://docs.aws.amazon.com/ja_jp/vpc/latest/peering/what-is-vpc-peering.html</a></li>
+</ul>
+<p>VPC のオプション</p>
+<ul>
+<li>
+<p>DNS hostnames</p>
+<ul>
+<li>インスタンスがパブリック IP アドレスについてのパブリック DNS ホスト名を受け取るかどうか</li>
+</ul>
+</li>
+<li>
+<p>DNS resolution</p>
+<ul>
+<li>VPC DNS サーバによる名前解決のサポート</li>
+<li>プライベートホストゾーンに対する DNS クエリは VPC DNS サーバでのみ解決される</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/PowerPoint_Presentation_3.png" /></p>
+<p>ELB: Elastic Load Balancing</p>
+<p>概要</p>
+<ul>
+<li>仮想ロードバランサー</li>
+<li>リスナー<ul>
+<li>リスナールール: ルーティングのルールを定義する。</li>
+<li>ルールの条件が満たされると指定されたターゲットグループに転送などのアクションをとる。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/application/load-balancer-listeners.html">https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/application/load-balancer-listeners.html</a></li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_314.png" /></p>
+<ul>
+<li>
+<p>ターゲットグループ</p>
+<ul>
+<li>
+<p>リスナールールに指定されたターゲットグループにトラフィックを振り分ける (ALB/NLB)。</p>
+<ul>
+<li>ターゲットの種類: インスタンス ID, IP アドレス, Lambda (ALB のみ)<ul>
+<li>非 VPC の Lambda も VPC Lambda も両方ターゲットにできる</li>
+<li><a href="https://dev.classmethod.jp/articles/invoke-lambda-and-vpc-lambda-from-internal-alb/">https://dev.classmethod.jp/articles/invoke-lambda-and-vpc-lambda-from-internal-alb/</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>1つのターゲット (リクエストを処理するインスタンス) を複数のターゲットグループに登録することも可能。</p>
+</li>
+<li>CLB ではロードバランサーにインスタンスを登録。</li>
+<li>ECS コンテナもターゲットにできる。</li>
+</ul>
+</li>
+<li>
+<p>ヘルスチェック</p>
+<ul>
+<li>
+<p>TCP/HTTP/HTTPS でキープアライブ</p>
+<ul>
+<li>インターバルと Healthy/Unhealthy に移行する試行回数を指定しておく。</li>
+</ul>
+</li>
+<li>
+<p>Healthy のターゲットに転送。</p>
+</li>
+<li>Unhealthy に遷移したら CloudWatch Events で通知。ヘルスチェックは続けるので Healthy に戻る場合も。</li>
+<li>インスタンスの再起動などの回復機能はない。</li>
+</ul>
+</li>
+<li>
+<p>ELB 自体は負荷に応じて自動スケーリング (スケールアウト/スケールイン) する。</p>
+<ul>
+<li>スケーリングが間に合わないと 503 を返す。</li>
+</ul>
+</li>
+<li>
+<p>リクエストの流れを中断することなくロードバランサーに対してターゲットの追加と削除が可能。</p>
+</li>
+</ul>
+<p>Ref</p>
+<ul>
+<li>BB: <a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20191029_AWS-Blackbelt_ELB.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20191029_AWS-Blackbelt_ELB.pdf</a></li>
+</ul>
+<p>ALB: Application Load Balancer</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/application/introduction.html">https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/application/introduction.html</a></li>
+<li>L7 (HTTP/HTTPS) レベルのロードバランシング</li>
+<li>
+<p>負荷分散アルゴリズム</p>
+<ul>
+<li>ラウンドロビン (デフォルト)</li>
+<li>最小の未処理リクエスト (the least outstanding requests)<ul>
+<li>outstanding: 未払いの、未決の</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>機能</p>
+<ul>
+<li>複数ポート: 同一インスタンス上の複数ポートのサーバに負荷分散。(ALB/NLB でサポート)</li>
+<li><img alt="" src="_attachment/PowerPoint_Presentation_4.png" /></li>
+<li>
+<p>パスベースのルーティング: URL のパスで振り分け。</p>
+<ul>
+<li>/api のパスなら API サーバに振り分けるとかできる。</li>
+</ul>
+</li>
+<li>
+<p>ホストベースのルーティング: Host ヘッダで振り分け。(複数ドメイン)</p>
+</li>
+<li>クエリ文字列/ヘッダベースのルーティング</li>
+<li>HTTP/2, WebSockets サポート。</li>
+<li>別の URL へのリダイレクト。</li>
+<li>Lambda ターゲットのサポート。(NLB/CLB はサポートしない)</li>
+</ul>
+</li>
+</ul>
+<p>NLB: Network Load Balancer</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/network/introduction.html">https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/network/introduction.html</a></li>
+<li>
+<p>L4 (TCP/UDPレベル) NAT ロードバランサー</p>
+<ul>
+<li>UDP をサポート。</li>
+</ul>
+</li>
+<li>
+<p>大規模トラフィック対応: 毎秒数百万のリクエストを処理できる</p>
+</li>
+<li>
+<p>負荷分散アルゴリズム: フローハッシュアルゴリズム</p>
+<ul>
+<li>パケットでなくフローレベルで振り分け。</li>
+<li>プロトコル、送信元 IP アドレス、送信元ポート、宛先 IP アドレス、宛先ポート、TCP シーケンス番号からハッシュを計算しターゲットに振り分け。(UDP ならシーケンス番号以外)</li>
+<li>接続中は単一ターゲットにルーティングされる。Sticky になる。<ul>
+<li>TCP シーケンス番号は ISN のこと？</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>静的 (Static) IP アドレスのサポート</p>
+<ul>
+<li>AZ (サブネット) ごとに1つの Static IP が自動的に提供される。</li>
+<li>EIP で独自の固定 IP を設定することも可能。</li>
+<li>FW などの制約で宛先を IP 指定しなければいけない場合など。</li>
+</ul>
+</li>
+<li>
+<p>送信元 IP アドレスの保持</p>
+<ul>
+<li>DNAT/SNAT するだけだから大規模トラフィックもさばける</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_315.png" /></p>
+<pre><code>- [https://kanny.hateblo.jp/entry/2017/09/20/142638](https://kanny.hateblo.jp/entry/2017/09/20/142638)
+</code></pre>
+<ul>
+<li>NLB はセキュリティグループを設定できない (ALB, CLB は可)<ul>
+<li>ターゲットのセキュリティグループを 0.0.0.0/0 にする必要がある。(公開サービスなら)</li>
+</ul>
+</li>
+</ul>
+<p>CLB: Classic Load Balancer</p>
+<ul>
+<li>L4/L7 リバースプロキシ。EC2-Classic ネットワークで使用。</li>
+<li>
+<p>負荷分散アルゴリズム:</p>
+<ul>
+<li>TCP リスナーにはラウンドロビン。</li>
+<li>HTTP/HTTPS リスナーには最小の未処理リクエスト。</li>
+</ul>
+</li>
+<li>
+<p>CLB とターゲットのインスタンスのポートは1対1対応</p>
+<ul>
+<li>CLB の1つのポートから複数のインスタンスや複数ポートに振り分けられない。</li>
+</ul>
+</li>
+</ul>
+<p>参照</p>
+<ul>
+<li>種類: <a href="https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/developerguide/load-balancer-types.html">https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/developerguide/load-balancer-types.html</a></li>
+<li>比較: <a href="https://aws.amazon.com/jp/elasticloadbalancing/features/#compare">https://aws.amazon.com/jp/elasticloadbalancing/features/#compare</a></li>
+</ul>
+<p>ELB と AZ</p>
+<ul>
+<li>ELB は AZ サービス。DNS とロードバランサーノードで成り立つ。</li>
+<li>
+<p>ELB 作成時に AZ を指定。</p>
+<ul>
+<li>ロードバランサーノードが指定された AZ に作成され、その AZ 内のターゲットに転送。</li>
+<li>DNS を引くとそれぞれの AZ のロードバランサーの IP が返ってくる。</li>
+</ul>
+</li>
+<li>
+<p>耐障害性 (Fault tolerance) のためにマルチ AZ 指定が推奨される。</p>
+<ul>
+<li>マルチ AZ ならある AZ がダメになっても healthy なターゲットのある AZ のロードバランサーが利用される。</li>
+</ul>
+</li>
+<li>
+<p>ALB では2つ以上の AZ を設定する必要がある。</p>
+</li>
+<li>
+<p>設定された各 AZ に1つ以上のターゲットがないと意味がない。</p>
+<ul>
+<li>ELB が存在しない AZ にいるインスタンスをターゲットグループに登録しても、そのターゲットには転送されない。</li>
+<li>ターゲットがいない AZ のロードバランサーの IP は DNS で返らないはずだが、状況によって IP が返ってそっちの AZ に振り分けられてタイムアウトになるらしい。</li>
+<li>Lambda ターゲットの AZ はどうなってるの？</li>
+</ul>
+</li>
+<li>
+<p>ELB をパブリックサブネットに配置してターゲットのインスタンスはプライベートサブネットという構成もできる。</p>
+</li>
+</ul>
+<p>クロスゾーン負荷分散: Cross-Zone Load Balancing</p>
+<ul>
+<li>ALB/CLB: デフォルト有効、NLB: デフォルト無効</li>
+<li>デフォルトでは各 AZ のロードバランサーノードはその AZ のターゲットでしかトラフィックを分散させない。</li>
+<li>
+<p>クロスゾーン負荷分散を有効にすることで有効な AZ の全てのターゲットに分散する。</p>
+<ul>
+<li>Route53 の加重ルーティングが効いている？通常はラウンドロビン。</li>
+</ul>
+</li>
+<li>
+<p>クロスゾーン負荷分散が無効な場合: 各 AZ に 50% ずつのトラフィックが振り分けられる。</p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_316.png" /></p>
+<ul>
+<li>クロスゾーン負荷分散が有効な場合: ターゲットに均等にトラフィックが振り分けられる。</li>
+</ul>
+<p><img alt="" src="_attachment/File_317.png" /></p>
+<ul>
+<li>参照<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/network/network-load-balancers.html#availability-zones">https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/network/network-load-balancers.html#availability-zones</a></li>
+<li>ELB の詳細: <a href="https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/userguide/how-elastic-load-balancing-works.html">https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/userguide/how-elastic-load-balancing-works.html</a></li>
+<li>ALB の作成: <a href="https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/application/create-application-load-balancer.html">https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/application/create-application-load-balancer.html</a></li>
+<li>NLB の作成: <a href="https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/network/create-network-load-balancer.html">https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/network/create-network-load-balancer.html</a></li>
+<li>NLB で複数AZ構成での挙動: <a href="https://tech.unifa-e.com/entry/2018/03/16/111538">https://tech.unifa-e.com/entry/2018/03/16/111538</a></li>
+<li>NLB のクロスゾーン負荷分散について: <a href="https://qiita.com/atsumjp/items/f42ace079b808a25bd28">https://qiita.com/atsumjp/items/f42ace079b808a25bd28</a></li>
+<li>AZ のパージ: <a href="https://dev.classmethod.jp/cloud/aws/purge-resources-specific-az/">https://dev.classmethod.jp/cloud/aws/purge-resources-specific-az/</a></li>
+<li>ALB でターゲットのいない AZ を指定した話: <a href="https://qiita.com/ninomiyt/items/0f11757f00fa20ca08bf">https://qiita.com/ninomiyt/items/0f11757f00fa20ca08bf</a></li>
+</ul>
+</li>
+</ul>
+<p>SSL Termination: TLS Termination / SSL offloading</p>
+<ul>
+<li>ELB で SSL を終端してターゲット側は SSL 対応せずに済む</li>
+<li>証明書管理や TLS/SSL のパッチなどの管理が軽減される。</li>
+<li>(NLB は非対応だったが 2019 年から対応開始)</li>
+<li><a href="https://aws.amazon.com/jp/blogs/news/new-tls-termination-for-network-load-balancers/">https://aws.amazon.com/jp/blogs/news/new-tls-termination-for-network-load-balancers/</a></li>
+<li><a href="https://dev.classmethod.jp/cloud/aws/nlb-support-tls-termination-and-access-log/">https://dev.classmethod.jp/cloud/aws/nlb-support-tls-termination-and-access-log/</a></li>
+</ul>
+<p>スティッキーセッション (Sticky session)</p>
+<ul>
+<li>Cookie により同一のターゲットにセッションを転送する機能。デフォルト無効。</li>
+<li>HTTP の機能なので ALB, CLB がサポート。</li>
+<li>
+<p>ロードバランサーによって生成された Cookie による維持。</p>
+<ul>
+<li>設定された有効期限の間、同一ターゲットとセッションを維持。</li>
+</ul>
+</li>
+<li>
+<p>アプリケーションによって生成された Cookie による維持。</p>
+<ul>
+<li>指定された Cookie が存在する限り同一ターゲットにセッションを維持。</li>
+<li>応答に新しいアプリケーション Cookie が含まれている場合のみ、新しい維持 Cookie を挿入します。ロードバランサー維持 Cookie はリクエストごとに更新されることはありません。アプリケーション Cookie が明示的に削除されるかまたは有効期限切れになると、新しいアプリケーション Cookie が発行されない限り、セッションは sticky ではなくなります。</li>
+<li>ALB では使えないっぽい: <a href="https://qiita.com/nori4k/items/2455f3987dae1ab214d4">https://qiita.com/nori4k/items/2455f3987dae1ab214d4</a></li>
+</ul>
+</li>
+</ul>
+<p>アクセスログ</p>
+<ul>
+<li>取得するにはアクセスログを有効にして S3 バケットに保存するよう設定する。</li>
+<li>CloudWatch Log とかと連携してないので分析するには Athena とか使う必要がある。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/application/load-balancer-access-logs.html">https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/application/load-balancer-access-logs.html</a></li>
+</ul>
+<p>Pre-Warming (暖気運転)</p>
+<ul>
+<li>ELB のスケーリングが間に合わない場合を予想して事前に ELB をスケールさせておくこと。</li>
+<li>AWS サポートに申請が必要。</li>
+<li>NLB は大規模トラフィックをサポートできるので不要らしい。</li>
+</ul>
+<p>Connection Draining</p>
+<ul>
+<li>ELB でインスタンスが登録解除/Unhealthyになってからロードバランサーが接続を保持する秒数。転送は止める。</li>
+<li>300秒でデフォルト有効。</li>
+<li>
+<p>目的</p>
+<ul>
+<li>時間のかかるリクエストの完了を待つ。</li>
+<li>Web サーバのバックエンド DB の短時間のフェイルオーバーへの対処。</li>
+<li>等</li>
+</ul>
+</li>
+<li>
+<p><a href="https://aws.amazon.com/jp/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/">https://aws.amazon.com/jp/blogs/aws/elb-connection-draining-remove-instances-from-service-with-care/</a></p>
+</li>
+</ul>
+<p>ALB での HTTPS の利用</p>
+<ul>
+<li>HTTPS リスナーを作って証明書を指定する。</li>
+<li>
+<p>AWS Certificate Manager で証明書を作って ALB に設定できる。</p>
+<ul>
+<li>ACM と統合されている ELB, CloudFront, API GW では証明書の費用が無料。</li>
+</ul>
+</li>
+<li>
+<p><a href="https://oji-cloud.net/2019/09/15/post-3017/">https://oji-cloud.net/2019/09/15/post-3017/</a></p>
+</li>
+</ul>
+<p>Auto Scaling</p>
+<p>Ref. <a href="AWS%20Auto%20Scaling.html">AWS: Auto Scaling</a></p>
+<p>Amazon Route 53</p>
+<p><a href="https://www.slideshare.net/AmazonWebServicesJapan/aws-black-belt-tech-2016-amazon-route-53">https://www.slideshare.net/AmazonWebServicesJapan/aws-black-belt-tech-2016-amazon-route-53</a></p>
+<p>概要</p>
+<ul>
+<li>権威 DNS のマネージドサービス</li>
+<li>(参考) 権威 DNS サーバ: あるゾーンの情報を保持し、他のサーバに問い合わせることなく応答を返すことができるサーバ</li>
+</ul>
+<p><img alt="" src="_attachment/File_318.png" /></p>
+<p>ホストゾーン</p>
+<ul>
+<li>
+<p>ドメイン・サブドメインの DNS リソースレコードを管理するコンテナ。</p>
+<ul>
+<li>(参考) 通常の DNS はサブドメインを別ゾーンに委任することもできる。委任する場合は親ドメイン(親ゾーン) に定義した NS レコードでサブドメインのDNSサーバへ誘導する。</li>
+</ul>
+</li>
+<li>
+<p>可用性 (availability)100% の SLA を提供。</p>
+<ul>
+<li>各ホストゾーンは異なるエッジロケーションの 4台の DNSサーバ (<strong>Delegation Set</strong>) で管理される。</li>
+<li>Delegation Set の DNS サーバのドメイン名は 4つの TLD (.com, .net, .org, .co.uk) にまたがって設定される。<ul>
+<li>ns-2048.awsdns-64.com</li>
+<li>ns-2049.awsdns-65.net</li>
+<li>ns-2050.awsdns-66.org</li>
+<li>ns-2051.awsdns-67.co.uk</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>制限</p>
+<ul>
+<li>AWS アカウント毎に 500 ゾーンまで。(上限緩和可能)</li>
+<li>ホストゾーンあたり 10,000 レコードまで。(上限緩和可能)</li>
+</ul>
+</li>
+<li>
+<p>パブリックホストゾーン</p>
+<ul>
+<li>インターネットで使用するリソースレコードの管理。</li>
+</ul>
+</li>
+<li>
+<p>プライベートホストゾーン</p>
+<ul>
+<li>VPC のプライベートネットワークで使用するリソースレコードを管理。</li>
+<li>作成時に対象にする VPC を指定する。</li>
+</ul>
+</li>
+</ul>
+<p>Alias レコード</p>
+<ul>
+<li>
+<p>CNAME のように別名がつけられる Route 53 固有の機能。</p>
+<ul>
+<li>A レコードまたは AAAA レコードで利用可能</li>
+<li>A/AAAA レコードを CNAME 同様に他のレコードにマップできる。</li>
+<li>A/AAAA レコードの IP を指定する部分が別レコード名になっている状態。</li>
+</ul>
+</li>
+<li>
+<p>AWS サービスのエンドポイントを登録するのに使用。</p>
+<ul>
+<li>AWS サービスに固定のドメイン名をアサインする場合。</li>
+<li>CloudFront, 静的 Web サイトの S3 バケット, ELB など。</li>
+<li>CloudFront, S3, ELB へのクエリは無料になる。</li>
+<li>ELB に IPv4 と IPv6 の DNS 名 (www.acme.com) をつける例:<ul>
+<li>A www.acme.com (Alias) elb1.us-east-1.elb.amazonaws.com</li>
+<li>AAAA www.acme.com (Alias) elb1.us-east-1.elb.amazonaws.com </li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>CNAME よりレスポンスが高速。</p>
+<ul>
+<li>AWS サービスのエンドポイントは CNAME でも登録可能。</li>
+<li>ただし CNAME だといったん別名が返り、さらに別名の A レコードを引く必要がある。</li>
+<li>Alias だと直接 IP アドレスが返る。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/SAA_28.png" /></p>
+<ul>
+<li>
+<p>Zone Apex の利用</p>
+<ul>
+<li>
+<p>Zone Apex は管理しているドメインの頂点となるノード</p>
+<ul>
+<li>www.example.com なら example.com</li>
+</ul>
+</li>
+<li>
+<p>ブラウザから ELB へのアクセス (名前解決) に Zone Apex を使いたいような場合の話。</p>
+</li>
+<li>Alias レコードにより AWS サービスのエンドポイントの名前解決に Zone Apex が利用可能となる。</li>
+<li>AWS サービスのエンドポイントを DNS に登録する場合、CNAME レコード (か Alias レコード) を登録する必要がある。</li>
+<li>しかし、次の DNS 仕様 により Zone Apex には CNAME レコードが登録できない。 <ul>
+<li>CNAME レコードと同じ名前で他の DNS レコードを登録してはならない。</li>
+<li>Zone Apex は既に NS レコードが登録されているため CNAME レコードを登録できない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/SAA_29.png" /></p>
+<pre><code>- NOTE: この例のように動的に IP アドレスが変更される AWS サービスのエンドポイントについては AWS により A レコードが登録される。CNAME をその A レコードに対して設定することで固定のドメイン名を設定できるが Zone Apex では CNAME が使えない。
+</code></pre>
+<p>ルーティングポリシー</p>
+<ul>
+<li>(レコードに複数リソースがある場合の) 動的なトラフィックルーティング。</li>
+<li>
+<p>シンプルルーティング</p>
+<ul>
+<li>ドメインにリソース (レコード) を単純に設定する。</li>
+<li>レコードに複数のリソース (IP アドレス等) がある場合は全ての値をランダムな順序で返す。</li>
+</ul>
+</li>
+<li>
+<p>加重 (Weighted) ルーティング</p>
+<ul>
+<li>複数のリソースを重み付けして登録。重みの高いものに多くルーティングされる。</li>
+<li>複数リソースに同じ名前とタイプでレコードを作成、レコードごとに重みを割り当てる。</li>
+</ul>
+</li>
+<li>
+<p>Latency (遅延) ルーティング</p>
+<ul>
+<li>最も遅延の少ないリージョンのリソースにルーティング。</li>
+<li>複数リージョンで DR 運用する場合。</li>
+</ul>
+</li>
+<li>
+<p>Geolocation (位置情報) ルーティング</p>
+<ul>
+<li>位置情報に基づくルーティング。国やアメリカの州に結びつける。</li>
+<li>ユースケース: ローカライズ、コンプライアンス、パフォーマンス。</li>
+</ul>
+</li>
+<li>
+<p>Geoproximity (地理近接性) ルーティング</p>
+<ul>
+<li>ユーザの位置情報とリソースのリージョンの地理的近接性によるルーティング。</li>
+</ul>
+</li>
+<li>
+<p>Failover ルーティング</p>
+<ul>
+<li>DNS フェイルオーバー(下記) により、ヘルスチェックで Healthy なエンドにのみルーティング。</li>
+</ul>
+</li>
+<li>
+<p>複数値回答 (Multi-value) ルーティング</p>
+<ul>
+<li>ランダムに選ばれた最大8つの Healthy なレコードを応答。</li>
+<li>シンプルルーティングの複数値と異なり各インスタンスにヘルスチェックが行われる。</li>
+</ul>
+</li>
+<li>
+<p>リージョンをまたぐ場合は動的なルーティングポリシーで各リージョンの ELB に振り分けるような運用になる。</p>
+</li>
+<li>トラフィックフロー<ul>
+<li>複雑なルーティングを順序を設定してトラフィックポリシーで設定できる。</li>
+<li>ビジュアルエディターがある。</li>
+</ul>
+</li>
+</ul>
+<p>DNS フェイルオーバー</p>
+<ul>
+<li>
+<p>ヘルスチェック</p>
+<ul>
+<li>Route 53 用の世界各地に15 以上あるヘルスチェッカーからエンドポイントにリクエスト。</li>
+<li>ヘルスチェック間隔は30秒か10秒から選択。</li>
+<li>15台なので30秒でも2秒に一回リクエストを受ける。</li>
+<li>ヘルスチェック結果が Route 53 DNS サーバに伝播される。</li>
+</ul>
+</li>
+<li>
+<p>ヘルスチェックは Failover ルーティング以外でも指定可能。</p>
+</li>
+<li>1つも正常なエンドポイントがない場合、全てのエンドポイントを正常とみなして動作する。</li>
+<li>
+<p>セキュリティグループ等にモニタリングパケットを受けられるよう設定が必要。</p>
+<ul>
+<li>aws route53 get-checker-ip-ranges</li>
+</ul>
+</li>
+<li>
+<p>ヘルスチェックの種類</p>
+<ul>
+<li>
+<p>TCP ヘルスチェック</p>
+<ul>
+<li>エンドポイントとの TCP 接続の確立。</li>
+</ul>
+</li>
+<li>
+<p>HTTP/HTTPS ヘルスチェック</p>
+<ul>
+<li>エンドポイントからの HTTP  2xx または 3xx 応答</li>
+</ul>
+</li>
+<li>
+<p>HTTP/HTTPS ヘルスチェックと文字列一致</p>
+<ul>
+<li>HTTP/HTTPS ヘルスチェックに加え、レスポンス本文から指定された文字列を検索</li>
+</ul>
+</li>
+<li>
+<p>CloudWatch アラーム</p>
+</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/Route53/latest/DeveloperGuide/health-checks-types.html">https://docs.aws.amazon.com/ja_jp/Route53/latest/DeveloperGuide/health-checks-types.html</a></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/Route53/latest/DeveloperGuide/dns-failover-determining-health-of-endpoints.html">https://docs.aws.amazon.com/ja_jp/Route53/latest/DeveloperGuide/dns-failover-determining-health-of-endpoints.html</a></li>
+</ul>
+</li>
+</ul>
+<p>Amazon CloudFront</p>
+<p>概要</p>
+<ul>
+<li>
+<p>エッジロケーションによる CDN サービス</p>
+<ul>
+<li>クライアントへのレスポンス向上。</li>
+<li>オリジンサーバの負荷軽減。</li>
+</ul>
+</li>
+<li>
+<p>DNS が Geolocation で位置情報 DB から直近のエッジーサーバの IP を返す</p>
+<ul>
+<li>デフォルトのドメインは *.cloudfront.net</li>
+<li>独自ドメイン使うには Alias or CNAME 設定と SSL/TLS 証明書設定。<ul>
+<li>Alias はタダになるからこちらが正解！</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>オリジンサーバ</p>
+<ul>
+<li>オリジナルのコンテンツが置いてある場所。</li>
+<li>S3 バケット、S3 静的 Web ホスティング、カスタムオリジンがある。</li>
+</ul>
+</li>
+<li>
+<p>エッジサーバー</p>
+<ul>
+<li>エッジロケーションにあるキャッシュサーバ</li>
+</ul>
+</li>
+<li>
+<p>HTTP/2, WebSockets サポート。</p>
+</li>
+<li>ディストリビューション<ul>
+<li>ドメインごとの CloudFront 設定</li>
+</ul>
+</li>
+</ul>
+<p>動的コンテンツ機能</p>
+<ul>
+<li>オリジンがヘッダやクエリ文字列を見て動的にコンテンツ生成する場合。</li>
+<li>全てをフォワードするとキャッシュ効率が下がるため、フォワードするヘッダ、Cookie、クエリ文字列パラメータを Whitelist/Blacklist 方式で登録する。</li>
+</ul>
+<p>HTTPS 暗号化: クライアント-エッジサーバ間</p>
+<ul>
+<li>デフォルトの <a href="http://cloudfront.net/">cloudfront.net</a> では SSL 証明書を標準で利用出来る</li>
+<li>独自ドメイン使用では X509 PEM 形式のサーバ証明書をインポートする</li>
+</ul>
+<p>HTTPS 暗号化: エッジサーバ-オリジンサーバ間</p>
+<ul>
+<li>
+<p>S3 バケット</p>
+<ul>
+<li>クライアントからアクセスされたプロトコル (HTTP/HTTPS) に準する</li>
+<li>HTTPS 必須にするにはディストリビューションの設定で Viewer Protocol Policy を次のいずれかに指定<ul>
+<li>Redirect HTTP to HTTPS</li>
+<li>HTTPS Only</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>S3 静的 Web ホスティング</p>
+<ul>
+<li>S3 静的 Web ホスティングは HTTPS を利用できない。</li>
+</ul>
+</li>
+<li>
+<p>カスタムオリジン</p>
+<ul>
+<li>
+<p>ディストリビューションで Origin Protocol Policy を次のいずれかに設定</p>
+<ul>
+<li>Redirect HTTP to HTTPS</li>
+<li>HTTPS Only</li>
+</ul>
+</li>
+<li>
+<p>かつ、SSL プロトコル (TLSv1.2, TLSv1.1, TLSv1, SSLv3) を選択できる。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>署名付き URL (Pre-signed URL)</p>
+<ul>
+<li>CloudFront でも期間限定の署名付き URL を作成できる。</li>
+<li>レンタルコンテンツ配信や限定されたユーザへのコンテンツ配信など。</li>
+</ul>
+<p>署名付き Cookies</p>
+<ul>
+<li>URL を変更したくない場合はこちらも利用できる。</li>
+</ul>
+<p>オリジンサーバの保護: オリジンサーバの URL 直アクセスの禁止</p>
+<ul>
+<li>
+<p>S3 バケット</p>
+<ul>
+<li>OAI (Origin Access Identity) をディストリビューションに設定して S3 のバケットポリシーでアクセス制限。</li>
+</ul>
+</li>
+<li>
+<p>S3 静的 Web ホスティング</p>
+<ul>
+<li>S3 静的 Web ホスティングはパブリックに設定する必要があるため保護できない。</li>
+</ul>
+</li>
+<li>
+<p>カスタムオリジン</p>
+<ul>
+<li>CloudFront のオリジンカスタムヘッダーを利用。</li>
+<li>指定された任意のヘッダをオリジンサーバ側でチェックすることで CloudFront のみからのアクセスを受け付ける。</li>
+<li>オリジンサーバへのアクセス自体はパブリックとなるので注意。</li>
+</ul>
+</li>
+</ul>
+<p>例題:</p>
+<p>Q. すべての従業員にトレーニングビデオを配布するシステムを構築するように依頼されました。CloudFrontを使用して S3に保存されているものの、直接公開されていないコンテンツを提供する必要があります。</p>
+<p>この要件を満たすため必要なサービスの設定を選択してください。</p>
+<p>A. CloudFront に OAI を作成して S3 オブジェクトに割り当てる。</p>
+<p>解説: S3 バケットから配信するコンテンツへのアクセスを制限するには、CloudFront 署名付き URL または署名付き Cookie を作成してコンテンツへのアクセスを制限してから、OAI (Origin Access Identity) という特別な CloudFront ユーザを作成して S3 でそのユーザのみにアクセス許可を設定する。ユーザは S3 バケットへの直接 URL を使用してファイルにアクセスすることはできない。</p>
+<p>Lambda@Edge</p>
+<ul>
+<li>CloudFront エッジロケーションでリクエスト/レスポンスを傍受でき、CloudFront イベント発生時に Lambda 関数を実行できる。</li>
+<li>S3 オリジンへの直接アクセス制限と、インデックスドキュメント機能を共存させる方法<ul>
+<li><a href="https://dev.classmethod.jp/cloud/aws/directory-indexes-in-s3-origin-backed-cloudfront/">https://dev.classmethod.jp/cloud/aws/directory-indexes-in-s3-origin-backed-cloudfront/</a></li>
+</ul>
+</li>
+</ul>
+<p>AWS Direct Connect</p>
+<p>概要</p>
+<ul>
+<li>オンプレ拠点 (オフィスや DC) と VPC を専用線で接続する</li>
+<li>セットアップに数週間はかかるしお高い。</li>
+<li>
+<p>EC2, VPC, S3, DynamoDB など AWS のすべてのサービスを Direct Connect とともに使用できる、という記述があるが S3, DynamoDB へのアクセスはエンドポイント経由ということ？</p>
+<ul>
+<li><a href="https://aws.amazon.com/jp/directconnect/faqs/">https://aws.amazon.com/jp/directconnect/faqs/</a></li>
+</ul>
+</li>
+<li>
+<p>Ref. <a href="https://www.slideshare.net/AmazonWebServicesJapan/aws-black-belt-tech-aws-direct-connect">https://www.slideshare.net/AmazonWebServicesJapan/aws-black-belt-tech-aws-direct-connect</a></p>
+</li>
+</ul>
+<p>Direct Connect ロケーション</p>
+<ul>
+<li>Ref. <a href="https://dev.classmethod.jp/cloud/aws/direct-connect-guide/">https://dev.classmethod.jp/cloud/aws/direct-connect-guide/</a></li>
+<li>AWS と通信事業者などの AWS Direct Connect パートナーが IX に用意した相互接続ポイント。</li>
+<li>東京リージョンは東京2カ所、大阪1カ所、台北2カ所。</li>
+<li>
+<p>専有型: 専用接続 (Dedicated Connections)</p>
+<ul>
+<li>Direct Connect ロケーションの AWS のルータとの接続を専有するプラン。</li>
+<li>1Gbps/10Gbps の2種類から選択。</li>
+<li>共用型と比べて高価だが、論理接続が作り放題かつ論理接続数は課金対象にならないので複数 VPC との接続が必要であれば、こちらがオススメ。</li>
+</ul>
+</li>
+<li>
+<p>共有型: ホスト型接続 (Hosted Connections)</p>
+<ul>
+<li>通信事業者から払い出される物理接続を他のユーザと論理接続で共有する。</li>
+<li>50Mbps~10Gbps</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_319.png" /></p>
+<p>物理接続と論理接続</p>
+<ul>
+<li>Direct Connect ロケーションの物理接続はユーザ側スイッチで VLAN で論理接続に分割</li>
+<li>
+<p>VIF (Virtual Interface)</p>
+<ul>
+<li>ユーザ側スイッチの仮想 NIC。</li>
+<li>個別に VLAN ID が割り当てられる。</li>
+</ul>
+</li>
+<li>
+<p>BGP で VPC へのルーティング情報を得る。</p>
+</li>
+<li>VPC (VGW) は論理接続と1対1で紐づくため、複数のVPCを接続するにはその分の論理接続が必要</li>
+</ul>
+<p><img alt="" src="_attachment/AWS_Black_Belt_Techシリーズ_AWS_Direct_Connect_3.png" /></p>
+<p>NOTE: Direct Connect からインターネット VPN へのフォールバック</p>
+<ul>
+<li>CGW から両方に接続する。</li>
+<li>CGW で BGP により Direct Connect 障害時にインターネット VPN にルーティングされるよう設定。</li>
+</ul>
+<p>プライベート接続/パブリック接続</p>
+<ul>
+<li>VIF ごとにプライベート接続/パブリック接続を設定</li>
+<li>
+<p>プライベート接続</p>
+<ul>
+<li>VPC/オンプレ相互にプライベート IP を使用。</li>
+<li>VPC のプライベートサブネットにアクセス。</li>
+</ul>
+</li>
+<li>
+<p>パブリック接続</p>
+<ul>
+<li>AWS のパブリックサービスへの接続。</li>
+<li>パブリック IP に接続するためにオンプレ側もパブリック IP (NAT) が必要。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/SAA_30.png" /></p>
+<p>Direct Connect Gateway</p>
+<ul>
+<li>複数リージョンの VPC にプライベート接続でアクセスするゲートウェイ。</li>
+<li>
+<p>プライベート接続ではユーザ側スイッチの VIF と VPC 側の VGW が１対１接続される。</p>
+<ul>
+<li>通常、別リージョンの VPC にアクセスするには別リージョンの Direct Connect ロケーションを使う。</li>
+</ul>
+</li>
+<li>
+<p>いずれかのリージョンで Direct Connect Gateway を作れば全リージョンの VPC にアクセスできるようになる。</p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_320.png" /></p>
+<ul>
+<li>Direct Connect Gateway 経由で VPC 同士は通信できない。</li>
+<li>Direct Connect Gateway 経由でユーザの別拠点にはアクセスできない。</li>
+</ul>
+<p>Direct Connect の課金</p>
+<ul>
+<li>ポート時間とデータ転送に分けて請求</li>
+<li>
+<p>ポート時間</p>
+<ul>
+<li>接続タイプ (専有/共有) と容量ごとに価格設定</li>
+<li>消費されたポート時間</li>
+<li>1時間未満の使用は1時間として請求</li>
+</ul>
+</li>
+<li>
+<p>データ転送</p>
+<ul>
+<li>Direct Connect 経由の通信に対して GB 単位の転送料</li>
+</ul>
+</li>
+<li>
+<p><a href="https://aws.amazon.com/jp/directconnect/pricing/">https://aws.amazon.com/jp/directconnect/pricing/</a></p>
+</li>
+</ul>
+<p>Transit Gateway</p>
+<ul>
+<li>複数の VPC 同士やオンプレとの Direct Connect や VPN を HUB となるゲートウェイで接続するサービス。</li>
+<li>スター型ネットワークでルーティングテーブルの制御を Transit Gateway で集中管理できる。</li>
+<li>VPN ピア接続は推移的な通信ができないため複数 VPC だとそれぞれピア接続を設定したり Direct Connect や VPN を接続する必要があり複雑になるが、Transit Gateway なら集中接続できる。</li>
+<li><a href="https://aws.amazon.com/jp/transit-gateway/">https://aws.amazon.com/jp/transit-gateway/</a></li>
+</ul>
+<p><img alt="" src="_attachment/image_1937.png" /></p>
+<p>AWS VPN (AWS Managed VPN)</p>
+<p>豆知識: パイロットライト</p>
+<ul>
+<li>最小限のバージョンの環境が常にクラウドで実行されているDRシナリオを表すためによく使用されます。</li>
+<li>AWSでシステムの最も重要なコア要素を設定して実行することでパイロットライトを維持できます。 </li>
+<li>回復時には、重要なコアを中心に本格的な本番環境を迅速にプロビジョニングできます。</li>
+</ul>
+<p><br></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

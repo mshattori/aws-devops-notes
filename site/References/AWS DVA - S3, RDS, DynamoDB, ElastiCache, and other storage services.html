@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS DVA - S3, RDS, DynamoDB, ElastiCache, and other storage services - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS DVA - S3, RDS, DynamoDB, ElastiCache, and other storage services</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <p>Ref</p>
+<ul>
+<li><a href="AWS/AWS%20SAA%20EC2,%20EBS,%20S3,%20EFS,%20Storage%20Gateway.html">AWS SAA: EC2, EBS, S3, EFS, Storage Gateway</a></li>
+<li>
+<p><a href="AWS%20SAA%20RDS,%20Aurora.html">AWS SAA: RDS, Aurora</a></p>
+<ul>
+<li>迅速取り出し: 通常 1～5 分</li>
+<li>標準取り出し: 通常 3～5 時間</li>
+<li>大容量(バルク)取り出し: 大量データを 5～12 時間。最低価格。</li>
+</ul>
+</li>
+<li>
+<p>S3 Glacier Deep Archive</p>
+<ul>
+<li>取り出し: 12 時間 or 48 時間の 2 つのオプション</li>
+</ul>
+</li>
+<li>
+<p>最低保持期間 90日。</p>
+</li>
+<li>
+<p>Vault</p>
+<ul>
+<li>アーカイブを格納するコンテナ。</li>
+<li>Vault Lock ポリシーで「write once read many: WORM」などを指定できる。</li>
+<li>Vault アクセスポリシーもある。</li>
+</ul>
+</li>
+<li>
+<p>Glacier Select</p>
+<ul>
+<li>Vault 内のオブジェクトを取り出さずに S3 Select できる。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/E15C8A27-0711-4343-A048-353E04719E8C.png" /></p>
+<ul>
+<li>バケット名やキー名のリスト、メタデータ更新のための無駄なコピーを避ける。</li>
+</ul>
+<p>CloudFront での S3 キャッシュによるコスト削減</p>
+<ul>
+<li>CloudFront - S3 間は転送料がかからない。</li>
+<li>CloudFront は S3 より転送料高いがボリュームディスカウントが大きいので大規模トラッフィクなら安くなるかも。</li>
+</ul>
+<p>Storage Gateway</p>
+<ul>
+<li>
+<p>オンプレの Storage Gateway から S3 をバックエンドとして利用。</p>
+<ul>
+<li>GW は仮想アプライアンス(VM) かハードウェアアプライアンス。</li>
+</ul>
+</li>
+<li>
+<p>ファイルゲートウェイ</p>
+<ul>
+<li>NFS インターフェース。</li>
+</ul>
+</li>
+<li>
+<p>テープゲートウェイ (VTL: Virtual Tape Library)</p>
+<ul>
+<li>iSCSI VTL インターフェース。</li>
+</ul>
+</li>
+<li>
+<p>ボリュームゲートウェイ</p>
+<ul>
+<li>iSCSI インターフェース。マウント可能。</li>
+<li>
+<p><strong>保管型</strong>ボリュームゲートウェイ (<strong>Stored volumes</strong>)</p>
+<ul>
+<li>オンプレ側がプライマリで S3 がバックアップ。</li>
+</ul>
+</li>
+<li>
+<p><strong>キャッシュ型</strong>ボリュームゲートウェイ (<strong>Cached volumes</strong>)</p>
+<ul>
+<li>オンプレ側はキャッシュ。S3 側がプライマリ。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>暗号化</p>
+<ul>
+<li>デフォルトで SSE-S3 有効。API で SSE-KMS も利用できる。</li>
+</ul>
+</li>
+</ul>
+<p>EFS: Elastic File System</p>
+<ul>
+<li>
+<p>EC2 インスタンスから利用する NFS 大規模分散ストレージ。</p>
+<ul>
+<li>自動で伸縮してペタバイトまで拡張可能。</li>
+</ul>
+</li>
+<li>
+<p>並列ワークロードのサポート</p>
+<ul>
+<li>何千ものインスタンスから同時にマウントできる。</li>
+<li>VPC にマウントターゲットを作成し EC2 から NFS マウント。</li>
+<li>マルチ AZ 可能。</li>
+</ul>
+</li>
+<li>
+<p>ファイルシステムのアクセスセマンティクス (強い整合性やファイルのロックなど) を提供</p>
+</li>
+</ul>
+<p>Amazon Data Lifecycle Manager (DLM)</p>
+<ul>
+<li>EBS ボリュームのスナップショット作成、保持、削除を自動化。</li>
+<li>RDS のスナップショットには使えない。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1765.png" /></p>
+<p>スケーリング</p>
+<ul>
+<li>RDB の増強は垂直スケーリング(=スケールアップ) が必要。</li>
+<li>NoSQL は水平スケーリング(=スケールアウト) が可能。</li>
+</ul>
+<p>Amazon RDS</p>
+<ul>
+<li>
+<p>可用性 → マルチAZ</p>
+<ul>
+<li>マスター/スタンバイ構成</li>
+<li>デフォルトでマルチ AZ 配置となる</li>
+</ul>
+</li>
+<li>
+<p>負荷分散 → リードレプリカ</p>
+</li>
+</ul>
+<p>Amazon RDS Proxy</p>
+<ul>
+<li>Lambda が DB コネクションを大量に作成することで過負荷になるのを防ぐのに使う。</li>
+<li><a href="https://aws.amazon.com/jp/blogs/news/using-amazon-rds-proxy-with-aws-lambda/">https://aws.amazon.com/jp/blogs/news/using-amazon-rds-proxy-with-aws-lambda/</a></li>
+</ul>
+<p>Amazon Aurora</p>
+<ul>
+<li>
+<p>MySQL/PostgreSQL 互換。</p>
+<ul>
+<li>MySQL の 5倍、PostgreSQL の 3倍のスループット。</li>
+</ul>
+</li>
+<li>
+<p>Amazon RDS を使ったフルマネージドサービス。</p>
+</li>
+<li>
+<p>クラスターボリューム</p>
+<ul>
+<li>自動的に 3つの AZ に 6 つのコピーが作成される</li>
+<li>シームレスにスケール (10GB 〜 64TB) する仮想ストレージ</li>
+</ul>
+</li>
+<li>
+<p>DB クラスター</p>
+<ul>
+<li>
+<p>プライマリ DB インスタンスと Aurora レプリカ (リードレプリカ)</p>
+<ul>
+<li>レプリカは15 個まで作れる。</li>
+</ul>
+</li>
+<li>
+<p>マルチ AZ: DB クラスター作成時にマルチ AZ 指定する。</p>
+<ul>
+<li>クラスタボリュームはデフォでマルチ AZ だが、DB クラスターではオプション。 </li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_73.png" /></p>
+<p>Aurora Global Database</p>
+<ul>
+<li>別リージョンにリードレプリカを配置してレプリケート。ローカル読み取りの高速化。</li>
+<li>1つのプライマリリージョン (マスター)と最大 5つのセカンダリリージョン (読み取り専用) で構成。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/AuroraUserGuide/aurora-global-database.html">https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/AuroraUserGuide/aurora-global-database.html</a></li>
+</ul>
+<p>Aurora Serverless (serverless DB エンジンモード)</p>
+<ul>
+<li>DB クラスターのオンデマンド Auto Scaling。</li>
+<li>DB インスタンスのサイズを指定する代わりに最大/最小キャパシティーを指定してデータベースエンドポイントを作成する。</li>
+<li>使用状況に応じて DB インスタンスのフリートが自動的にスケールされる。</li>
+<li>データベースエンドポイントの接続先のルーターフリートが、DB インスタンスのフリートにワークロードを送信。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/AuroraUserGuide/aurora-serverless.how-it-works.html">https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/AuroraUserGuide/aurora-serverless.how-it-works.html</a></li>
+</ul>
+<p>従来の Aurora (provisioned DB エンジンモード)</p>
+<ul>
+<li>DB インスタンスのサイズ変更または Aurora レプリカでスループットを増やす。</li>
+</ul>
+<p>エンドポイント</p>
+<p><img alt="" src="_attachment/File_74.png" /></p>
+<ul>
+<li>
+<p>クラスターエンドポイント</p>
+<ul>
+<li>プライマリ DB インスタンスに接続するエンドポイント。 </li>
+<li>障害時は透過的に Aurora レプリカにフェイルオーバー。</li>
+</ul>
+</li>
+<li>
+<p>読み込みエンドポイント</p>
+<ul>
+<li>Aurora レプリカにロードバランシング接続。</li>
+</ul>
+</li>
+<li>
+<p>インスタンスエンドポイント</p>
+<ul>
+<li>特定インスタンスへのエンドポイント</li>
+</ul>
+</li>
+<li>
+<p>カスタムエンドポイント</p>
+<ul>
+<li>インスタンスの組み合わせを自由に行えるエンドポイント</li>
+<li><img alt="" src="_attachment/File_75.png" /></li>
+</ul>
+</li>
+</ul>
+<p>スナップショットのコピー</p>
+<ul>
+<li>クロスアカウント・クロスリージョンでスナップショットのコピーが可能。</li>
+<li>KMS 暗号化されたスナップショットをコピーする際、コピー先に別の CMK も使用できる。</li>
+<li>クロスアカウント (同一リージョン) ではアカウントは CMK へのアクセス権限が必要。</li>
+<li>クロスリージョンでは移動先リージョンの CMK を使用する必要がある (KMS はリージョン固有)。</li>
+</ul>
+<p>Amazon Redshift</p>
+<ul>
+<li><img alt="" src="_attachment/File_76.png" /></li>
+<li>数百ギガバイト〜ペタバイト超のデータセットに対して高いクエリパフォーマンスを発揮</li>
+<li>クエリ実行に必要な I/O 量の抑制: 列指向ストレージとデータ圧縮</li>
+<li>
+<p>超並列処理 (MPP: Massive Parallel Processing) アーキテクチャ</p>
+<ul>
+<li>
+<p>クラスタ構成</p>
+<ul>
+<li>リーダーノード/コンピュートノード</li>
+<li>ノード間は 10GB のネットワークで接続</li>
+<li>ダウンタイムなしでスケールアップ/ダウン</li>
+</ul>
+</li>
+<li>
+<p>シェアードナッシング</p>
+<ul>
+<li>ディスクをノードで共有しない。１つの表は各ノードごとのストレージに分散して保存。</li>
+</ul>
+</li>
+<li>
+<p>スライス</p>
+<ul>
+<li>コンピュートノード内でメモリ・CPU・ディスクスがスライス(分割)され、データも分割格納される</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/image_1766.png" /></p>
+</li>
+<li><img alt="" src="_attachment/image_1767.png" /></li>
+</ul>
+<p>Redshift Spectrum</p>
+<ul>
+<li>S3 のエクサバイト規模のデータをロードせずに外部テーブルとして直接クエリできる。</li>
+<li>コンピュートノードの先の Spectrum 層経由で S3 に透過的にアクセス。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1768.png" /></p>
+<p>Redshift Spectrum と Athena の違い</p>
+<ul>
+<li>
+<p>Athena</p>
+<ul>
+<li>クラスタを立ち上げずにすぐ使える。ファイルに対する grep の UI 的な位置付け。</li>
+</ul>
+</li>
+<li>
+<p>Redshift Spectrum</p>
+<ul>
+<li>テーブルの追加手段な位置付け。クラスタで動作するため大規模データに対して高速レスポンス</li>
+</ul>
+</li>
+<li>
+<p>Redshift はデータウェアハウス、Athena はデータレイク。</p>
+<ul>
+<li>データウェアハウスは構造化データの高速クエリ。</li>
+<li>データレイクは構造化・非構造化データを分析。分析時にスキーマをあてる(スキーマオンリード)。</li>
+</ul>
+</li>
+</ul>
+<p>Amazon Neptune</p>
+<ul>
+<li>フルマネージド型のグラフデータベースサービス。</li>
+<li>
+<p>グラフ構造でデータを保存</p>
+<ul>
+<li>ノード: データエンティティ</li>
+<li>エッジ: リレーションシップ</li>
+<li>プロパティ</li>
+</ul>
+</li>
+<li>
+<p>データのリレーションシップを操作するクエリのパフォーマンスが高い。SNS のソーシャルグラフ等の実装。</p>
+</li>
+<li>一般的に使われるオープングラフ API をサポート。</li>
+<li><img alt="" src="_attachment/File_77.png" /></li>
+</ul>
+<hr />
+<h1 id="dynamodb">DynamoDB</h1>
+<p>Ref.</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/Welcome.html">API Reference</a></li>
+<li><a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20170809_AWS-BlackBelt-DynamoDB.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20170809_AWS-BlackBelt-DynamoDB.pdf</a></li>
+<li><a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20181225_AWS-BlackBelt_DynamoDB.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20181225_AWS-BlackBelt_DynamoDB.pdf</a></li>
+</ul>
+<p>概要</p>
+<ul>
+<li>Key-Value ストアのドキュメントデータベース (NoSQL)</li>
+<li>データの格納・取得に特化。RDB の関係演算 (結合・射影等) が必要な用途には向かない。</li>
+</ul>
+<p><img alt="" src="_attachment/File_78.png" /></p>
+<ul>
+<li>
+<p>パーティションプライマリキー: パーティションキー(ハッシュ属性) のみ</p>
+<ul>
+<li>テーブル内でユニークでなければならない。</li>
+</ul>
+</li>
+<li>
+<p>複合プライマリキー: パーティションキー &amp; ソートキー(範囲属性)</p>
+<ul>
+<li>同じパーティションキーに対して一意のソートキー。</li>
+<li>ソートキーにより項目をパーティション内でソートできる。</li>
+<li>パーティションキーの値が同じ項目は同じパーティションに保存される。</li>
+</ul>
+</li>
+<li>
+<p>項目のデータ (ドキュメント) は JSON</p>
+<ul>
+<li>属性値としてリストやマップもある。</li>
+<li>項目のサイズは最大 400KB (属性名含む)。</li>
+</ul>
+</li>
+<li>
+<p>テーブルに容量 (項目数) の制限はない。</p>
+</li>
+<li>IAM でテーブルや属性レベルの柔軟なアクセスコントロールができる。</li>
+</ul>
+<p>Ref. <a href="https://aws.amazon.com/jp/blogs/database/choosing-the-right-dynamodb-partition-key/">https://aws.amazon.com/jp/blogs/database/choosing-the-right-dynamodb-partition-key/</a></p>
+<p><img alt="" src="_attachment/image_1769.png" /></p>
+<p><img alt="" src="_attachment/File_79.png" /></p>
+<ul>
+<li>
+<p>強い整合性: ConsistentRead</p>
+<ul>
+<li>読み込み系の API で ConsistentRead パラメータに True を設定。</li>
+</ul>
+</li>
+<li>
+<p>DynamoDB トランザクション</p>
+<ul>
+<li>TransactGetItems/TransactWriteItems により複数項目・テーブルを同時に読み込み/書き込み</li>
+</ul>
+</li>
+</ul>
+<p>読み込み/書き込みスループット指定</p>
+<ul>
+<li>プロビジョンド型キャパシティモード</li>
+<li>オンデマンド型キャパシティーモード</li>
+</ul>
+<p>プロビジョンド型キャパシティモード</p>
+<ul>
+<li>テーブルに 1秒あたりの RCU/WCU を設定する。</li>
+<li>
+<p>RCU: 4KB単位</p>
+<ul>
+<li>結果整合性 2回</li>
+<li>強い整合性 1回</li>
+</ul>
+</li>
+<li>
+<p>WCU: 1KB単位</p>
+</li>
+<li>実際の読み書きの有無に関わらず、設定したキャパシティにより課金が発生。</li>
+<li>AWS Auto Scaling でスケーリングできる (下図参照)</li>
+<li>スループットを超えるとスロットリングが発生: ProvisionedThroghputExceeded 例外。</li>
+<li>スループットはパーティション間で均等に分割される。パーティションごとのスループットは設定した総スループットをパーティション数で割った値。</li>
+</ul>
+<p>オンデマンド型キャパシティーモード</p>
+<ul>
+<li>
+<p>キャパシティを設定せず、発生したリクエストによる従量課金。</p>
+<ul>
+<li>オンデマンドの方が料金が高い。オンデマンドでも強い整合性のほうが高い。</li>
+</ul>
+</li>
+<li>
+<p>トラッフィックが新しいピークに達すると瞬時にスケールアップ。</p>
+<ul>
+<li>初期値: 6,000 RCU / 2,000 WCU</li>
+<li>30分以内に前のピークの 2倍を超えた場合にはスロットリングが発生する。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1770.png" /></p>
+<p>セカンダリインデックス</p>
+<ul>
+<li>プライマリキー以外の属性(代替キー)でクエリしたい場合に作る検索用テーブル。</li>
+<li>作成時にはベーステーブルからインデックスにコピー (射影: Projection) する属性も指定する。<ul>
+<li>ProjectionType: KEYS_ONLY, INCLUDE (キーと NonKeyAttributes に指定した属性), ALL</li>
+<li>クエリ結果では射影した属性のみが取得できる。</li>
+</ul>
+</li>
+</ul>
+<p>ローカルセカンダリインデックス (LSI)</p>
+<ul>
+<li>
+<p>追加のソートキーに対してパーティション内に作成されるインデックス。</p>
+<ul>
+<li>複合プライマリキーの場合に別のソートキーを追加する。</li>
+</ul>
+</li>
+<li>
+<p>テーブル作成時のみ作成でき、削除できない。</p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_80.png" /></p>
+<ul>
+<li>RCU/WCU はテーブルと共有。結果整合性と強い整合性をサポート。</li>
+<li>最大5個まで。</li>
+<li>項目コレクション(同じパーティションキーの全項目と LSI の項目) は同じパーティションに保存され、合計サイズが 10 GB を超えてはならない。</li>
+<li>射影されていない属性もクエリの KeyConditionExpression に指定できる。<ul>
+<li>プライマリキー属性も射影しているため、ベーステーブルの項目を参照して属性値を利用できる。</li>
+</ul>
+</li>
+</ul>
+<p>グローバルセカンダリインデックス: GSI</p>
+<ul>
+<li>異なるプライマリキーで検索するインデックス。</li>
+<li>異なるプライマリキーで作った別テーブルにレプリケーションする仕組み。</li>
+<li>RCU/WCU も個別に設定される。</li>
+<li>テーブルあたり 20 個まで (上限緩和可能)。</li>
+</ul>
+<p><img alt="" src="_attachment/File_81.png" /></p>
+<ul>
+<li>結果整合性のみサポート。GSI は異なるキャパシティを設定した結果整合性のリードレプリカとも考えられる。</li>
+<li>テーブル作成と同時に作成することも、後から作成・削除することも可能。</li>
+<li>GSI の WCU がベーステーブルより低いとレプリケーション時の書き込みエラーによりベーステーブルの書き込みでスロットリングが発生するらしい。</li>
+</ul>
+<p><img alt="" src="_attachment/File_82.png" /></p>
+<p>問題例</p>
+<ul>
+<li>The table has an attribute of <em>DocumentName</em> that acts as the partition key and another attribute called <em>Category</em> as its sort key.</li>
+<li>A DevOps Engineer was instructed to develop a feature that queries the <em>DocumentName</em> attribute yet uses a different sort key other than the existing one.</li>
+<li>To fetch the latest data, strong read consistency must be used in the database tier.</li>
+</ul>
+<p>解答</p>
+<ul>
+<li>Set up a new DynamoDB table with a Local Secondary Index that uses the DocumentName attribute with a different sort key. Migrate the data from the existing table to the new table.</li>
+</ul>
+<p>誤答</p>
+<ul>
+<li>Add a Global Secondary Index that uses the DocumentName attribute and a different sort key<ul>
+<li>is incorrect. Although it is possible to query data without using a scan command, it is still not enough because GSI does not support strong read consistency which is required in the scenario.</li>
+</ul>
+</li>
+</ul>
+<p>DynamoDB ストリーム</p>
+<ul>
+<li>テーブルに行われた過去 24 時間の追加・更新・削除の履歴を保持したストリーム。</li>
+<li>
+<p>操作が行われた順番でデータはシリアライズされ、特定パーティションキーへの変更は順序通りに取得可能。</p>
+<ul>
+<li>1秒未満のレイテンシーでストリームに反映される。(Near Real Time)</li>
+<li>スループットは WCU の２倍。WCU の２倍のスループットなのでスループットの問題はない。</li>
+</ul>
+</li>
+<li>
+<p>テーブル作成時に有効化することも、後から有効化することも可能。</p>
+</li>
+<li>
+<p>KCL (Kinesis Client Library) を利用してアプリを開発できる。</p>
+<ul>
+<li>KCL を利用することでシャード意識した低レベル API を抽象化してコードを書ける。</li>
+<li>KCL に DynamoDB  Streams Kinesis Adapter を噛ませることで、DynamoDB ストリームに対して KCL を使用できる。</li>
+<li><img alt="" src="_attachment/image_1771.png" /></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/Streams.KCLAdapter.html">https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/Streams.KCLAdapter.html</a></li>
+</ul>
+</li>
+<li>
+<p>Lambda のイベントソースマッピングのイベントソースにできる (ストリーム型)</p>
+<ul>
+<li>DynamoDB ストリームの1つのシャードに 3つ以上のリーダーが同時に読み取るとスロットリングが発生する。3つ以上の Lambda を連携させる場合は1つの Lambda から SNS で分岐する。</li>
+<li>他に統合された AWS サービスはない模様。DynamoDB のドキュメントで Lambda トリガーと言っているがこれもイベントソースマッピングのこと。</li>
+<li>Ref. </li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/with-ddb-example.html">https://docs.aws.amazon.com/ja_jp/lambda/latest/dg/with-ddb-example.html</a></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial.html">https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/Streams.Lambda.Tutorial.html</a></li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/image_1772.png" /></p>
+</li>
+<li>内部では Kinesis 使われてるので３つ以上のクライアント作ると同じシャードを読みに行ってスロットリング起こる。1つの Lambda で読んで SNS に投入する。<ul>
+<li><a href="https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html#Streams.Processing">https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html#Streams.Processing</a></li>
+</ul>
+</li>
+</ul>
+<p>グローバルテーブル</p>
+<ul>
+<li>DynamoDB ストリームを利用したマルチリージョン・マルチマスターのレプリケーション。</li>
+<li>
+<p>レプリカテーブル</p>
+<ul>
+<li>リージョン毎にレプリケーションを受けるレプリカテーブルを作成する必要がある。</li>
+<li>同一アカウントのみ。</li>
+</ul>
+</li>
+<li>
+<p>近いリージョンのレプリカにアクセスすることでレイテンシー削減。ディザスタリカバリにも。</p>
+</li>
+<li>最新書き込み優先: 同じ項目が複数リージョンで同時に変更された場合、可能な限り最新の変更が優先される。</li>
+<li><img alt="" src="_attachment/File_83.png" /></li>
+<li>整合性<ul>
+<li>強い整合性の読み込みは単一レプリカ内でのみ有効。他リージョンでの変更には保証されない。</li>
+<li>トランザクションも同様に単一レプリカ内でしか機能しない。</li>
+</ul>
+</li>
+</ul>
+<p>バックアップ</p>
+<ul>
+<li>
+<p>オンデマンドバックアップ</p>
+<ul>
+<li>テーブル全体のスナップショットを作成してアーカイブ。</li>
+</ul>
+</li>
+<li>
+<p>ポイントインタイムリカバリー</p>
+<ul>
+<li>直前 35日間の任意の時点にダウンタイムなしに復元可能。増分バックアップ。</li>
+<li>ポイントインタイムリカバリーの「有効化」で有効にする。(デフォルト無効)</li>
+</ul>
+</li>
+</ul>
+<p>オブジェクト永続性モデル</p>
+<ul>
+<li>Java SDK と .NET SDK でサポートされている O/R マッピング的な高レベル API。</li>
+<li>テーブルをクラス、項目をインスタンスとして扱える。</li>
+</ul>
+<p>CreateTable オペレーション</p>
+<p><img alt="" src="_attachment/File_84.png" /></p>
+<ul>
+<li>
+<p>テーブル作成後に変更できない属性</p>
+<ul>
+<li>テーブル名</li>
+<li>パーティションキー/ソートキー</li>
+<li>ローカルセカンダリインデックス</li>
+</ul>
+</li>
+<li>
+<p>オプション</p>
+<ul>
+<li>GSI/ストリームは後からでも設定可能。</li>
+</ul>
+</li>
+<li>
+<p>table.meta.client.get_waiter(’table_exist')</p>
+<ul>
+<li>指定したステータスまで待たせる。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_85.png" /></p>
+<ul>
+<li>KeySchema: キー属性名を指定した配列、キーの種類を HASH または RANGE で指定。</li>
+<li>AttributeDefinitions: キー属性のデータ種類を指定した配列。</li>
+<li>ProvisionedThroughput: RCU/WCU の設定。後から UpdateTable で変更できる。</li>
+<li>
+<p>GlobalSecondaryIndexes,  LocalSecondaryIndexes:</p>
+<ul>
+<li>それぞれ IndexName, KeySchema, Projection を指定。</li>
+</ul>
+</li>
+<li>
+<p>SSESpecification:</p>
+<ul>
+<li>設定しなくてもデフォで AWS owned CMK で KMS 暗号化される。</li>
+</ul>
+</li>
+<li>
+<p>StreamSpecification:</p>
+<ul>
+<li>StreamEnabled: true/false</li>
+<li>StreamViewType:<ul>
+<li>KEYS_ONLY: 変更された項目のキー属性のみ</li>
+<li>NEW_IMAGE: 変更後の項目全体</li>
+<li>OLD_IMAGE: 変更前の項目全体</li>
+<li>NEW_AND_OLD_IMAGES: 変更後と変更前の項目全体</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>PutItem オペレーション</p>
+<ul>
+<li>キーに対して項目の新規作成または上書きを行う。</li>
+<li>フールプルーフのため、更新時には使わずに UpdateItem 使うようにする。</li>
+</ul>
+<p>ConditionExpression パラメータ</p>
+<ul>
+<li>PutItem, UpdateItem, DeleteItem のパラメータ。処理が実行される条件を指定する条件式。</li>
+<li><img alt="" src="_attachment/File_86.png" /></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html">https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html</a></li>
+</ul>
+<p>ReturnValues パラメータ</p>
+<ul>
+<li>PutItem, UpdateItem, DeleteItem のパラメータ。返り値として取得する属性の指定。</li>
+<li>NONE, ALL_OLD, ALL_NEW, UPDATED_OLD, UPDATED_NEW。</li>
+</ul>
+<p>UpdateItem オペレーション</p>
+<ul>
+<li>
+<p>UpdateExpression パラメータ: 更新式</p>
+<ul>
+<li>SET, REMOVE, ADD, DELETE で属性を指定して更新。</li>
+</ul>
+</li>
+<li>
+<p>項目がなければ新規作成になる。</p>
+</li>
+<li><img alt="" src="_attachment/File_87.png" /></li>
+<li>
+<p>ExpressionAttributeNames/ExpressionAttributeValues:</p>
+<ul>
+<li>更新式で使う属性名・属性値のプレースホルダー</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/File_88.png" /></p>
+<ul>
+<li>ExpressionAttributeNames: 1文字目は &lt; # &gt;。２文字目は英字。以降は英数字。</li>
+<li>ExpressionAttributeValues: 1文字目は &lt; : &gt;。２文字目は英字。以降は英数字。</li>
+</ul>
+</li>
+</ul>
+<p>GetItem オペレーション</p>
+<ul>
+<li>Key: キーを表す属性名と値のペアのマップ。</li>
+<li>
+<p>ProjectionExpression: 取得する属性をカンマで区切りで指定。</p>
+<ul>
+<li>指定しない場合は全属性が返される。</li>
+<li>ちなみにこれで転送データ量を下げても RCU は減らないとのこと。</li>
+</ul>
+</li>
+<li>
+<p>ConsistentRead: true/false</p>
+</li>
+</ul>
+<p>Query オペレーション</p>
+<ul>
+<li>テーブル/インデックスからキーを指定してデータを取得する。</li>
+</ul>
+<p><img alt="" src="_attachment/File_89.png" /></p>
+<ul>
+<li>KeyConditionExpression: 取得する項目のキーを指定する条件式。(KeyConditions はレガシーパラメータ)</li>
+<li>ProjectionExpression: 取得する属性をカンマで区切りで指定。指定しない場合は全属性が返される。</li>
+<li>FilterExpression: クエリでローカルに取得されたデータをキー属性以外でさらにフィルタする条件式。</li>
+<li>テーブル側でキーで検索し、ローカル側 (オンメモリ) で属性でフィルタする。</li>
+</ul>
+<p>Scan オペレーション</p>
+<ul>
+<li>テーブル/インデックスの全項目を取得して FilterExpression でローカルでフィルタ。非効率。</li>
+<li>インデックスのない属性の特定の値の項目を取得するにはこの方法が必要になる。</li>
+</ul>
+<p><img alt="" src="_attachment/File_90.png" /></p>
+<p>LastEvaluatedKey: Query/Scan のページネーション</p>
+<ul>
+<li>1MB 単位のページ分割または Limit パラメータの値によってページネーションが発生する。</li>
+<li>ページネーション発生時に LastEvaluatedKey 値が Non-NULL で返される。</li>
+<li>次回リクエストの ExclusiveStartKey パラメータに値を指定して後続アイテムを取得。</li>
+</ul>
+<p>バッチオペレーション</p>
+<ul>
+<li>複数テーブルの複数項目の読み込み・書き込み処理のバッチ実行。</li>
+</ul>
+<p><img alt="" src="_attachment/File_91.png" /></p>
+<ul>
+<li>スループット向上。個々にコールすると RCU/WCU 使って無駄。</li>
+<li>スレッド作らなくても並列処理してくれる。</li>
+<li>
+<p>UnprocessedItems</p>
+<ul>
+<li>スループット超過等でエラーになったリクエストは UnprocessedItems で返るのでループで再処理。</li>
+<li>１つも処理できなかった場合は ProvisionedThroughputExceededException となる。</li>
+</ul>
+</li>
+<li>
+<p>table.batch_writer()</p>
+<ul>
+<li>使用例: <a href="https://blog.trainocate.co.jp/blog/aws_qaform_201906_022">https://blog.trainocate.co.jp/blog/aws_qaform_201906_022</a></li>
+</ul>
+</li>
+</ul>
+<p>DynamoDB トランザクション</p>
+<ul>
+<li>複数テーブルにまたがる複数項目の読み込み/書き込み処理で ACID 特性 (原子性・一貫性・分離性・耐久性) を提供。</li>
+<li>1つのオペレーション失敗すると全体が失敗する。整合性保ちたい場合はバッチではなくこちらを使う。</li>
+</ul>
+<p><img alt="" src="_attachment/File_92.png" /></p>
+<ul>
+<li>
+<p>トランザクション用に項目毎に 1 RCU/1 WCU が追加で必要となる。 </p>
+<ul>
+<li>TransactionInProgressException 例外時の SDK の挙動は再試行なのでその分も RCU/WCU 割り当てが必要。</li>
+</ul>
+</li>
+<li>
+<p>Ref.</p>
+</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/transaction-apis.html">https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/transaction-apis.html</a></li>
+<li><a href="https://dev.classmethod.jp/articles/new-release-dynamodb-transactions/">https://dev.classmethod.jp/articles/new-release-dynamodb-transactions/</a></li>
+<li><a href="https://qiita.com/silverbox/items/18036bb08f16618c21f5">https://qiita.com/silverbox/items/18036bb08f16618c21f5</a></li>
+</ul>
+<p># ベストプラクティス</p>
+<p>ホットパーティションを作らない</p>
+<p><img alt="" src="_attachment/File_93.png" /></p>
+<ul>
+<li>プロビジョニングされたキャパシティはパーティションに均等に割り当てられる。</li>
+<li>集中的にアクセスされるホットパーティションでスロットルが発生するおそれがある。</li>
+<li>
+<p>ホットパーティションを作らないようカーディナリティが高いパーティションキーを設計する。</p>
+<ul>
+<li>例: ランダム値やキーの各文字の ASCII 値を合計した値などをキーに連結する。</li>
+</ul>
+</li>
+<li>
+<p>(RCU を割り当てられるので最近はそんな気にしなくていいらしい)</p>
+</li>
+</ul>
+<p>ホットテーブルとコールドテーブル</p>
+<p><img alt="" src="_attachment/File_94.png" /></p>
+<ul>
+<li>可能ならテーブル分けてキャパシティによるコストを削減。</li>
+<li>コールドデータならオンデマンド型キャパシティモードのほうが安くなるかも</li>
+<li>過去テーブルは削除して S3 Glacier に保存することも検討。(Data Pipeline で容易)</li>
+</ul>
+<p>テーブルの分割</p>
+<ul>
+<li>1つの項目に属性多く入れず処理に応じたテーブルの分割を検討する。</li>
+<li>アクセス頻度の高い属性を別テーブルにすることでキャパシティを適切に割り当てる。</li>
+<li>配列値を持つ属性を別テーブルにするなど、RDB の正規化相当の設計を検討する。</li>
+<li>テーブルを分けることでセキュリティレベルも分けられる。</li>
+</ul>
+<p><img alt="" src="_attachment/File_95.png" /><img alt="" src="_attachment/File_96.png" /></p>
+<p>スパースなインデックス</p>
+<ul>
+<li>LSI/GSI ともにインデックスのキーとなる属性は全項目に存在しなくても構わない。</li>
+<li>インデックスキーの属性を持たない項目はインデックスされず、インデックスのサイズを小さく保てる。</li>
+</ul>
+<p>オプティミスティックロック</p>
+<ul>
+<li>読み込み-変更-書き込み設計パターン/オプティミスティック実行制御。</li>
+<li>読み込み後の書き込みの間に値が変更されていたら更新を失敗させる擬似ロックのテクニック。</li>
+<li>ConditionExpression 使って versionNum が GetItem 以降に更新されていたらエラーとなる。</li>
+<li><img alt="" src="_attachment/File_97.png" /></li>
+</ul>
+<p>アトミックカウンター</p>
+<ul>
+<li>UpdateItem による (厳密にはアトミックじゃない) アトミックカウンタの実現。</li>
+<li>例: --update-expression "SET Price = Price + :incr"</li>
+<li>現在の Price 値にかかわらず無条件に増分。ただしエラー時に再試行するのでアトミックじゃない。。。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.AtomicCounters">https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.AtomicCounters</a></li>
+</ul>
+<p>トラブルシューティング</p>
+<ul>
+<li>DynamoDB 操作は全て API なので CloudTrail で全てトラッキングされる。</li>
+<li>CloudWatch アラームを設定してモニタリング。<ul>
+<li>大量アクセスがあるとスロットリング発生してロストが発生する</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_98.png" /></p>
+<ul>
+<li>RCU/WCU 超えたときは ProvisonedTroughputExceededExpression</li>
+<li>再試行=エクスポネンシャルバックオフ</li>
+</ul>
+<p>AWS Auto Scaling</p>
+<ul>
+<li>CloudWatch メトリクスでキャパシティの 80% 等を目標にターゲットスケーリングできる。</li>
+<li>Auto Scaling によるキャパシティ増加は内部的に UpdateTable が走る。そんな早くない。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/AutoScaling.html">https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/AutoScaling.html</a></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/AutoScaling.CLI.html">https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/AutoScaling.CLI.html</a></li>
+</ul>
+<p>DAX: DynamoDB Accelerator</p>
+<ul>
+<li>VPC 内の DynamoDB のインメモリキャッシュ。</li>
+<li>EC2, Beanstalk, ECS 等からの read アクセスのスループット向上。</li>
+<li>マイクロミリ秒のレイテンシ。通常の数ミリ秒のレイテンシが問題となる場合。</li>
+<li>DynamoDB API 互換。コード改修少なく移行。</li>
+</ul>
+<p>TTL 機能</p>
+<ul>
+<li>テーブル内の項目を自動削除する TTL を設定できる。</li>
+<li>TTL を指定する属性名をテーブルに設定して、項目にその属性を含める。</li>
+<li>Ref. <a href="https://dev.classmethod.jp/articles/try-dynamodb-ttl/">https://dev.classmethod.jp/articles/try-dynamodb-ttl/</a></li>
+</ul>
+<p>問題例: 60日を過ぎたデータをアーカイブするには</p>
+<ul>
+<li>テーブルで TTL を有効にする。60 日後のタイムスタンプを保持する属性を TTL 属性にする。</li>
+<li>テーブルの DynamoDB Streams を有効にし、Lambda 関数でレコードを Kinesis Data Firehose 配信ストリームに配信する。</li>
+<li>Kinesis Data Firehose 配信ストリームを作成して S3 バケットにデータをロードする。バケットにライフサイクルポリシーを設定しゼロ (0) 日後にデータを S3 Glacier Deep Archive にアーカイブする。</li>
+</ul>
+<h2 id="usecases">Usecases</h2>
+<p><img alt="" src="_attachment/image_1773.png" /><img alt="" src="_attachment/image_1774.png" /></p>
+<hr />
+<h1 id="elasticache">ElastiCache</h1>
+<p>概要</p>
+<ul>
+<li>Key-Value ストアのインメモリキャッシュ。</li>
+<li>セッション情報や一時データのキャッシュなど。</li>
+<li>AZ サービス。</li>
+</ul>
+<p>Memcached vs. Redis</p>
+<p><img alt="" src="_attachment/File_99.png" /><img alt="" src="_attachment/SAA_4.png" /></p>
+<p>Memcached</p>
+<ul>
+<li>マルチスレッド: データアクセスをマルチスレッド処理して複数コアを活用できる。</li>
+<li>単一 AZ で可用性がなく永続性がないのでロストしてよいデータだけを扱う純粋なキャッシュ。</li>
+</ul>
+<p>Redis</p>
+<ul>
+<li>永続性があるためプライマリデータストアとしても利用できる。</li>
+<li>
+<p>データ型</p>
+<ul>
+<li>String に加えて List, Set, Sorted Set, Hash, Bit Array, HyperLogLog をサポート</li>
+</ul>
+</li>
+<li>
+<p>レプリケーション (RDS 同様)</p>
+<ul>
+<li>最大 5個のリードレプリカ (セカンダリクラスター) に非同期レプリケーション</li>
+<li>自動フェールオーバー、マルチ AZ。 </li>
+</ul>
+</li>
+<li>
+<p>スナップショット</p>
+</li>
+<li>
+<p>暗号化</p>
+<ul>
+<li>転送時と保管時の暗号化</li>
+</ul>
+</li>
+<li>
+<p>Pub/Sub</p>
+</li>
+<li>シングルスレッド</li>
+<li>
+<p>クラスターモード</p>
+<ul>
+<li>シャードクラスターによる負荷分散。</li>
+<li>シャードごとにプライマリとリードレプリカがある。</li>
+<li>最大 90 ノードまで対応。</li>
+<li>クライアントは Redis クラスタモード対応のライブラリを使用。</li>
+</ul>
+</li>
+<li>
+<p>Redis AUTH</p>
+<ul>
+<li>パスワード認証。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_100.png" /></p>
+<p>レプリケーショングループ</p>
+<ul>
+<li>Redis クラスターの集合。</li>
+<li>
+<p>プライマリクラスター</p>
+<ul>
+<li>RW の 1 個のクラスター。</li>
+<li>プライマリエンドポイント。</li>
+</ul>
+</li>
+<li>
+<p>リードレプリカ</p>
+<ul>
+<li>RO のセカンダリクラスター。最大 5 個。</li>
+<li>読み取りエンドポイント。</li>
+</ul>
+</li>
+</ul>
+<p>セキュリティ</p>
+<ul>
+<li>AZ サービスのため、セキュリティグループでコントロールできる。</li>
+</ul>
+<p>キャッシュ戦略</p>
+<ul>
+<li>キャッシュヒット/ミス、TTL。</li>
+<li>Ref. <a href="https://docs.aws.amazon.com/ja_jp/AmazonElastiCache/latest/mem-ug/Strategies.html">https://docs.aws.amazon.com/ja_jp/AmazonElastiCache/latest/mem-ug/Strategies.html</a></li>
+</ul>
+<p>遅延読み込み: Lazy Loading</p>
+<ul>
+<li>キャッシュミス(含 TTL 超過) ならマスターから取得。</li>
+<li>マスターから取得したレコードをキャッシュに書き込み。</li>
+<li><img alt="" src="_attachment/File_101.png" /></li>
+<li>利点: キャッシュのサイズが小さい</li>
+<li>欠点: 古いデータの参照</li>
+</ul>
+<p>書き込みスルー: Write Through</p>
+<ul>
+<li>マスターへの書き込み時にキャッシュも更新するので最新データが返る。</li>
+<li><img alt="" src="_attachment/File_102.png" /></li>
+<li>欠落データ: 新しいノードはそれまでのデータを持たない。</li>
+<li>キャッシュの変動: 特定データが繰り返し更新される場合にキャッシュが頻繁に更新される</li>
+<li>書き込みスルーで TTL を有効にすることで、キャッシュのデータが常に最新であることを保証するとともに、未使用データを自動的に削除してクラスターの無駄なスペースを最小限に抑えることができる。</li>
+</ul>
+<p>---</p>
+<p>可用性</p>
+<ul>
+<li>
+<p>HA: 高可用性</p>
+<ul>
+<li>サービス提供が出来なくなる事態の発生頻度が少ないこと</li>
+</ul>
+</li>
+<li>
+<p>冗長化: Redundancy</p>
+<ul>
+<li>プライマリ、セカンダリのマルチ AZ 構成</li>
+<li>フェイルオーバー</li>
+<li>フォールトトレラント(障害許容)設計</li>
+</ul>
+</li>
+<li>
+<p>可用性=稼働率</p>
+<ul>
+<li>信頼性 (Reliability) は MTBF</li>
+<li>信頼性が低いサブシステムでも冗長化によりシステム全体の可用性を高められる。</li>
+<li><a href="https://xtech.nikkei.com/it/atcl/column/17/011900625/011900007/">https://xtech.nikkei.com/it/atcl/column/17/011900625/011900007/</a></li>
+</ul>
+</li>
+</ul>
+<p>負荷分散</p>
+<ul>
+<li>パフォーマンス</li>
+<li>
+<p>ロードバランサー &amp; スケールアウト</p>
+<ul>
+<li>サーバの負荷分散</li>
+</ul>
+</li>
+<li>
+<p>リードレプリカ</p>
+<ul>
+<li>DB の負荷分散</li>
+</ul>
+</li>
+<li>
+<p>キャッシュ</p>
+</li>
+</ul>
+<p>耐久性</p>
+<ul>
+<li>データを失わないことを保証すること。</li>
+<li>バックアップ・ストレージの冗長化。</li>
+</ul>
+<p>CAP 定理</p>
+<ul>
+<li>情報システムにおいて、「以下の3要素を同時に満たすことができない」というもの。</li>
+<li>
+<p>Consistency: 一貫性</p>
+<ul>
+<li>誰かがデータを更新したら、その後は必ず更新後のデータが参照できること</li>
+</ul>
+</li>
+<li>
+<p>Availability: 可用性</p>
+<ul>
+<li>クライアントは必ずデータにアクセス可能であること</li>
+<li>データが壊れたり、ロック待ちにならないこと</li>
+</ul>
+</li>
+<li>
+<p>Partition Tolerance: ネットワーク分断耐性</p>
+<ul>
+<li>データを複数サーバに分散して保管できること</li>
+<li>1つサーバに障害が発生しデータが破損した場合でも、別サーバによりデータが参照可能であること</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/File_103.png" /></p>
+</li>
+<li><a href="https://www.atmarkit.co.jp/ait/articles/1703/01/news204_2.html">https://www.atmarkit.co.jp/ait/articles/1703/01/news204_2.html</a></li>
+</ul>
+<p>BASE 特性</p>
+<ul>
+<li>クラウドサービスではネットワーク分断耐性が必須。</li>
+<li>サービスである以上可用性を完全に捨てるわけにはいかない。</li>
+<li>可用性の一部と一貫性の多くを妥協した形で成立させた、クラウドサービス向きのトランザクション特性モデルをBASE特性と呼ぶ。</li>
+<li><img alt="" src="_attachment/File_104.png" /></li>
+<li>関係データベースのトランザクション特性がACID（酸）であるのに対して、BASE（塩基）</li>
+</ul>
+<p><br></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

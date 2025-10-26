@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS - Security - Overview - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS - Security - Overview</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <p><br></p>
+<p><img alt="" src="_attachment/image_1498.png" /></p>
+<p><a href="https://d1.awsstatic.com/events/jp/2020/innovate/pdf/S-16AWSInnovate_Online_Conference_2020_Spring_SecurityIncidnetResponse.pdf">AWS 環境におけるセキュリティインシデントの調査・対応⽅法</a></p>
+<p>Ref.</p>
+<ul>
+<li><a href="AWS/AWS%20SAA%20Index.html">AWS SAA: Index</a></li>
+<li><a href="AWS/AWS%20DVA%20Index.html">AWS DVA: Index</a></li>
+<li><a href="AWS/AWS%20SAA%20IAM,%20ID%E9%80%A3%E6%90%BA,%20%E3%82%BB%E3%82%AD%E3%83%A5%E3%83%AA%E3%83%86%E3%82%A3%E6%A9%9F%E8%83%BD.html">AWS SAA: IAM, ID連携, セキュリティ機能</a></li>
+<li><a href="AWS/AWS%20DVA%20Security.html">AWS DVA: Security</a></li>
+</ul>
+<hr />
+<h1 id="_1">アクセスコントロール</h1>
+<p><a href="AWS%20IAM,%20STS,%20Organization.html">AWS: IAM, STS, Organization</a></p>
+<h2 id="iam">IAM</h2>
+<p>認証情報レポート (Credential Reports)</p>
+<p>信頼ポリシーの外部 ID (External ID)</p>
+<p><img alt="" src="_attachment/image_1499.png" /></p>
+<p>NotPrincipal, NotAction, NotResouce</p>
+<p>NotPrincipal は Effect: Deny で使用。他の全プリンシパルが許可される Allow で使用すべきでない。</p>
+<p>信頼ポリシーに aws:MultiFactorAuthPresent を指定して MFA 必須に。</p>
+<h2 id="aws-organization">AWS Organization</h2>
+<p>SCP (Service Control Policy)</p>
+<ul>
+<li>OU,  各アカウント単位でアタッチ</li>
+<li>OU 階層に従って継承される</li>
+</ul>
+<p><img alt="" src="_attachment/image_1500.png" /></p>
+<p>統合サービス</p>
+<ul>
+<li>CloudTrail の組織証跡</li>
+<li>AWS Config アグリゲータとの統合</li>
+<li>Firewall Manager との統合</li>
+<li>CloudWatch Event Bus</li>
+<li>AWS SSO</li>
+<li>AWS Security Hub</li>
+<li>AWS Control Tower</li>
+</ul>
+<hr />
+<h1 id="_2">インスタンスの保護</h1>
+<p><a href="AWS/AWS%20Security%20EC2,%20ELB,%20VPC.html">AWS: Security: EC2, ELB, VPC</a></p>
+<p>EC2</p>
+<h3 id="aws-systems-manager">AWS Systems Manager</h3>
+<p><img alt="" src="_attachment/image_1501.png" /><img alt="" src="_attachment/image_1502.png" /></p>
+<p>ELB に ACM で証明書をデプロイする。</p>
+<p>TLS オフロードでターゲットでの TLS による負荷・運用コストをなくす。</p>
+<p>ALB で Cognito ユーザプールと連携してユーザ認証を行う。</p>
+<h2 id="vpc">VPC</h2>
+<p>独自 DNS サーバの使用</p>
+<ul>
+<li>VPC の DHCP オプションセットで設定。</li>
+</ul>
+<p>VPC フローログ</p>
+<ul>
+<li>VPC, サブネット, ENI 単位で設定にしてトラフィック情報を取得。</li>
+</ul>
+<p>VPC トラフィックミラーリング</p>
+<ul>
+<li>VXLAN, 4789/udp</li>
+</ul>
+<p>AWS Network Firewall</p>
+<p>AWS Gateway Load Balancer</p>
+<ul>
+<li>これらは ENI ベースなのでセキュリティグループによる制御が可能</li>
+</ul>
+<p>VPC エンドポイント</p>
+<ul>
+<li>ゲートウェイエンドポイント</li>
+<li>インターフェイスエンドポイント (PrivateLink)</li>
+<li>エンドポイントポリシー</li>
+</ul>
+<p>AWS Managed VPN</p>
+<p>AWS Client VPN</p>
+<ul>
+<li>クライアント VPN エンドポイント</li>
+</ul>
+<p>Direct Connect</p>
+<p><img alt="" src="_attachment/AWS_Black_Belt_Techシリーズ_AWS_Direct_Connect_2.png" /></p>
+<ul>
+<li>パブリック接続<ul>
+<li>パブリック VIF で AWS サービスに接続。</li>
+<li>カスタマールータでパブリック IP と NAT が必要。</li>
+<li>VPN over Direct Connect</li>
+</ul>
+</li>
+</ul>
+<p>Direct Connect Gateway</p>
+<ul>
+<li>Direct Connect から別リージョンの VPC に接続するためのゲートウェイ。</li>
+</ul>
+<p>AWS Transit Gateway</p>
+<ul>
+<li>VPC 同士や Direct Connect や VPN 接続をスター型接続で中継するゲートウェイ。</li>
+</ul>
+<hr />
+<h1 id="_3">ネットワーク保護</h1>
+<p><a href="AWS/AWS%20Security%20WAF,%20Shield,%20CloudFront,%20Route%2053.html">AWS: Security: WAF, Shield, CloudFront, Route 53</a></p>
+<p>CloudFront</p>
+<ul>
+<li>オリジンの保護</li>
+<li>トランスポート暗号化: ビューア → エッジ間/エッジ→ オリジン間</li>
+<li>署名付き URL/Cookie</li>
+<li>フィールドレベル暗号化 (Field-Level Encryption)</li>
+</ul>
+<p>Route53</p>
+<p>WAF</p>
+<ul>
+<li>Web ACL, ルール, ルールグループ</li>
+</ul>
+<p>Shield Advanced</p>
+<ul>
+<li>EC2(ENI), ELB, CloudFront, Route 53 と統合された高度な検出。</li>
+<li>AWS WAF が無料。L7 は WAF で対策。</li>
+</ul>
+<p>AWS Firewall Manager</p>
+<p>インテグレートされたサービス</p>
+<p>WAF</p>
+<ul>
+<li>CloudFront, ALB, API Gateway</li>
+<li>Firewall Manager</li>
+</ul>
+<p>Shield Advanced</p>
+<ul>
+<li>CloudFront, ALB/NLB, Route 53</li>
+</ul>
+<p>ACM</p>
+<ul>
+<li>CloudFront, ALB/NLB, API Gateway</li>
+</ul>
+<hr />
+<h1 id="_4">データ保護: ストレージの保護</h1>
+<p><a href="AWS/AWS%20Security%20S3,%20Glacier,%20RDS,%20DynamoDB.html">AWS: Security: S3, Glacier, RDS, DynamoDB</a></p>
+<p>ACL, オブジェクト所有者</p>
+<p>SSE-C: PUT/GET 時に HTTP ヘッダで AES-256 キーを渡す。</p>
+<p>MFA Delete: オブジェクトバージョンの削除とバージョニング無効化に MFA を要求。</p>
+<p>オブジェクトロック</p>
+<ul>
+<li>バケット作成時に有効にする</li>
+<li>ガバナンスモード、 コンプライアンスモード</li>
+</ul>
+<p>クロスリージョンレプリケーション</p>
+<ul>
+<li>非同期レプリケーション。ディザスタリカバリ。クロスアカウント可。</li>
+</ul>
+<p>S3 アクセスポイント</p>
+<ul>
+<li>アクセスポイントポリシーをアタッチできるパブリックエンドポイントを作成。</li>
+</ul>
+<p>迅速(Expedited)取り出し: 通常 1～5 分</p>
+<p>Glacier Vault</p>
+<p>ボールトロックポリシー</p>
+<p>DynamoDB の暗号化</p>
+<ul>
+<li>デフォルトで AWS 所有キーで SSE-KMS 暗号化。</li>
+<li>AWS 管理キー、カスタマー管理キーも指定可。</li>
+</ul>
+<p>DynamoDB グローバルテーブル</p>
+<ul>
+<li>DynamoDB ストリームを利用したマルチリージョン・マルチマスターのレプリケーション。</li>
+</ul>
+<hr />
+<h1 id="_5">データ保護: 暗号化</h1>
+<p><a href="AWS/AWS%20Security%20KMS,%20Secrets%20Manager,%20ACM.html">AWS: Security: KMS, Secrets Manager, ACM</a></p>
+<h2 id="kms">KMS</h2>
+<p>非対称データキーペア</p>
+<p>データキーのクロスリージョン共有: データキーを別リージョンの CMK で暗号化して渡す。</p>
+<p>マルチリージョンキー</p>
+<p>AWS Encryption SDK</p>
+<p>カスタマー管理キー、AWS 管理キー 、AWS 所有キー</p>
+<p>Encryption Context</p>
+<p>ScheduleKeyDeletion: 最短7日、デフォルト30日かかる。</p>
+<p>カスタムキーストア</p>
+<ul>
+<li>自前で VPC 内に立てる CloudHSM クラスターで CMK を保持。</li>
+<li>FIPS 140-2 レベル 3 認定</li>
+</ul>
+<p>AWS CloudHSM</p>
+<p>AWS Secrets Manager</p>
+<p>Parameter Store</p>
+<p>ACM 証明書</p>
+<p>ACM PCA</p>
+<hr />
+<h1 id="_6">ロギング・モニタリング・レスポンス</h1>
+<p><a href="AWS%20Logging,%20Monitoring.html">AWS: Logging, Monitoring</a></p>
+<p><a href="AWS/AWS%20Security%20Governance,%20Incident%20Response.html">AWS: Security: Governance, Incident Response</a></p>
+<h2 id="_7">公開リソースの確認</h2>
+<p>Trusted Advisor のセキュリティチェックで IAM 設定、セキュリティグループ、パブリックバケットを確認。</p>
+<p>IAM Access Analyzer でリソースベースポリシーで外部共有されているリソースを確認。</p>
+<p><img alt="" src="_attachment/image_1503.png" /></p>
+<p>S3 Access Analyzer でパブリックバケットや共有バケットを確認。</p>
+<h2 id="_8">ロギング</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>種類</td>
+<td>保管・送信先</td>
+<td>備考</td>
+</tr>
+<tr>
+<td>CloudWatch Logs</td>
+<td>ログストリーム,<br><br>S3(手動エクスポート)</td>
+<td>EventBridge でスケジュール実行した Lambda による Export API 実行や、サブスクリプションフィルター+Firehose で S3 への保存の自動化が可能。</td>
+</tr>
+<tr>
+<td>CloudTrail</td>
+<td>S3, CloudWatch Logs(オプショナル)</td>
+<td><br></td>
+</tr>
+<tr>
+<td>VPC Flow Logs</td>
+<td>S3, CloudWatch Logs</td>
+<td>VPC 内のトラフィックログ。</td>
+</tr>
+<tr>
+<td>DNS ログ</td>
+<td>S3, CloudWatch Logs, Kinesis Data Firehose</td>
+<td>Route 53, VPC Route53 Resolver の DNS クエリログ。<br><br>Route 53 は CloudWatch Logs のみ。</td>
+</tr>
+<tr>
+<td>S3 サーバアクセスログ</td>
+<td>S3</td>
+<td><br></td>
+</tr>
+<tr>
+<td>ELB アクセスログ</td>
+<td>S3</td>
+<td><br></td>
+</tr>
+<tr>
+<td>Web ACL トラフィックログ</td>
+<td>Kinesis Data Firehose,<br><br>S3, CloudWatch Logs</td>
+<td><br></td>
+</tr>
+<tr>
+<td>CloudFront アクセスログ</td>
+<td>S3</td>
+<td><br></td>
+</tr>
+</tbody>
+</table>
+<h3 id="cloudtrail">CloudTrail</h3>
+<p>CloudTrail で API 操作, サインイン試行をロギング。</p>
+<p>証跡としてログを S3 バケットに保管。オプションで CloudWatch Logs に送信。</p>
+<p>リアルタイム処理には CloudWatch Events で CloudTrail をイベントソースとしたルールを使用。</p>
+<p>ログは SSE-KMS とダイジェストファイルで保護される。</p>
+<p>中央アカウントのバケットへマルチアカウントのログ統合。</p>
+<p>Organizations を使用しているなら組織証跡が使える。</p>
+<p>CloudTrail Insights でリソースを変更する API 操作の異常検知。</p>
+<h3 id="cloudwatch-logs">CloudWatch Logs</h3>
+<p>CloudWatch Logs で Lambda やインスタンスのログ収集。</p>
+<p>CloudWatch エージェントでサーバのログ収集。</p>
+<p>CloudTrail, VPC フローログ, DNS ログ, Web ACL トラフィックログも収集できる。</p>
+<p>ログ保管コストを下げるため、S3 へ手動エクスポート。</p>
+<p>メトリクスフィルタで CloudWatch アラーム連携。</p>
+<p>サブスクリプションフィルタで Kinesis, Lambda によるリアルタイム処理。</p>
+<p>CloudWatch Logs Insights のダッシュボードでログのクエリと可視化。</p>
+<h3 id="_9">ログの処理</h3>
+<p>Kinesis でログをリアルタイム処理、S3, Redshift, Amazon ES 等に保管して分析。</p>
+<p>Data Stream で EC2・Lambda でカスタマイズされたデータ処理・送信を行うコンシューマを実装。</p>
+<p>Data Firehose でコンシューマ不要で S3, Redshift, ES, Splunk に送信。</p>
+<ul>
+<li>バッファリング設定に基づきバッファリング・連結。S3 でスケールしない場合等に使用。</li>
+<li>バッチで非同期に呼ばれる Lambda 関数でデータ変換も可能。</li>
+</ul>
+<p>Kinesis エージェントでサーバのログファイルを Kinesis に自動送信。</p>
+<p>CloudWatch Logs を取り込むにはサブスクリプションフィルタを使用。</p>
+<p>Data Analytics で SQL によるリアルタイムのストリーム処理を Data Stream/Firehose に挿入。</p>
+<h3 id="_10">ログ分析</h3>
+<p>Athena で S3 に保管されたログを SQL で分析。</p>
+<ul>
+<li>AWS Glue が S3 バケットをクローリングしデータカタログを作成。</li>
+<li>インメモリ BI ツール QuickSight 連携でダッシュボード表示も。</li>
+<li>暗号化された S3 ログも分析可能。</li>
+</ul>
+<p>Amazon ES に保管されたログを Kibana でダッシュボード表示。</p>
+<h2 id="_11">モニタリング・レスポンス</h2>
+<p>CloudWatch メトリクスでインスタンスの CPU 状態や Lambda のエラー回数などを監視。</p>
+<p>メトリクスにしきい値を設定し、CloudWatch アラームを発生させる。</p>
+<p>アラームから SNS 通知、EC2 アクション実施、Auto Scaling 連携。</p>
+<p>SNS でメール送信や Lambda 関数コールを実施。</p>
+<p>CloudWatch Events で CloudTrail, AWS Config 等のイベントソースとターゲットを指定したルールを設定。</p>
+<p>ターゲットは Lambda, SNS, SQS など多くのサービスと連携。レスポンス自動化。</p>
+<p>クロスアカウントの CloudWatch Event Bus をターゲットにしたイベント送信。</p>
+<p>AWS Config でリソース作成・変更の履歴とスナップショットを S3 バケットに保管。</p>
+<ul>
+<li>リソース作成・変更、Config ルール検出の SNS 通知も可能。</li>
+<li>設定変更しか分からないのでリソースに対しどこからどんな API 操作が行われたか等を調査するには CloudTrail ログ+Athena を使う。</li>
+</ul>
+<p>AWS Config ルールによるコンプライアンス違反の検出。</p>
+<ul>
+<li>修復アクションで Systems Manager Automation ランブックを実行。</li>
+<li>CloudWatch Events 経由で Lambda 関数で実装された修復や通知の実施。</li>
+<li>ベストプラクティスを集めたコンフォーマンスパック。</li>
+</ul>
+<p>Config アグリゲータでマルチアカウント/マルチリージョンの集計結果を中央アカウントに集約。</p>
+<p>Amazon Inspector でインスタンスの脆弱性・セキュリティレポートを生成。</p>
+<ul>
+<li>apt, Windows Installer でインストールされたソフトウェアのバージョンと CVE 等を照合。</li>
+<li>評価テンプレートでスケジュール、ルールパッケージ、SNS トピックを指定。</li>
+<li>ルールパッケージは CVE, CIS, ベストプラクティス, ネットワーク到達可能性ルール。</li>
+</ul>
+<p>Amazon Macie で S3 のセキュリティ監視。</p>
+<ul>
+<li>S3 オブジェクトと CloudTrail のアクセスパターンから機械学習で脅威検知。</li>
+<li>PII や知的財産などの機密データの検出。</li>
+<li>ダッシュボード表示と CloudWatch Events のトリガー。</li>
+</ul>
+<p>Amazon GuardDuty で脅威検知。</p>
+<p><img alt="" src="_attachment/image_1504.png" /></p>
+<p>CloudWatch Events 経由で Lambda による対応アクション (インスタンス隔離等)</p>
+<p>独自の脅威インテリジェンス・IP セーフリストをアップロードすることも可能。</p>
+<p>S3 Protection で S3 への脅威検知も対応。</p>
+<p>Amazon Detective のダッシュボードでインシデント調査。</p>
+<p><img alt="" src="_attachment/image_1505.png" /></p>
+<ul>
+<li>マルチアカウントのアクティビティログを集約。</li>
+<li>GuardDuty 有効化が必要。</li>
+</ul>
+<p>Security Hub で組織アカウント横断で検出結果を統合。</p>
+<p><img alt="" src="_attachment/image_1506.png" /></p>
+<ul>
+<li>Firewall Manager により WAF, Shield Advanced, セキュリティグループの検出も統合される。</li>
+<li>AWS Config のコンフォーマンスパックのコンプライアンスチェックも継続的に実施。</li>
+<li>CloudWatch Events 経由でレスポンス自動化。</li>
+</ul>
+<p>DDoS シミュレーションは Shield Advanced で保護されたリソースを対象にAWS DDoS テストパートナーに実行される必要がある。</p>
+<p>ペネトレーションテストは8つのサービスを対象に実施可能。</p>
+<ul>
+<li>VPC 内インスタンス: EC2 インスタンス, NAT ゲートウェイ, RDS, Aurora</li>
+<li>Web: ELB, CloudFront, API Gateway, Lightsail, Elastic Beanstalk</li>
+<li>Lambda/Lambda Edge 関数</li>
+</ul>
+<hr />
+<h1 id="_12">サーバレス</h1>
+<p><a href="AWS/AWS%20Security%20API%20Gateway,%20Lambda.html">AWS: Security: API Gateway, Lambda</a></p>
+<h2 id="api-gateway">API Gateway</h2>
+<p>エッジ最適化エンドポイント (デフォルト)</p>
+<ul>
+<li>CloudFront レイヤーでの地理的分散による DDoS 緩和。</li>
+</ul>
+<p>リージョン API エンドポイント</p>
+<ul>
+<li>ユーザ管理の CloudFront で WAF/Shield Advanced による保護が可能</li>
+</ul>
+<p>プライベート API エンドポイント</p>
+<ul>
+<li>特定 VPC だけに API 公開。</li>
+<li>VPC エンドポイントポリシーも併用可能。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1507.png" /></p>
+<p>WAF を API のステージ毎に設定できる。</p>
+<p>リソースベースポリシーによるアクセスコントロール</p>
+<ul>
+<li>プリンシパル、IP アドレス(範囲/CIDR)、VPC の制限。</li>
+<li>URL パスとメソッドの組み合わせを ARN で参照して制限。</li>
+</ul>
+<p>実行ロール</p>
+<ul>
+<li>API の実行ロールで統合バックエンド (Lambda 等) を呼び出す権限を指定。</li>
+</ul>
+<p>スロットリング・キャッシュによる DDoS 緩和。</p>
+<p>カスタムドメイン</p>
+<ul>
+<li>証明書設定と ACM による管理。</li>
+</ul>
+<p>ユーザ認証: オーソライザー</p>
+<ul>
+<li>
+<p>IAM アクセス権限:</p>
+<ul>
+<li>ID 連携等で IAM クリデンシャルを持つユーザの認証・認可。</li>
+</ul>
+</li>
+<li>
+<p>Cognito オーソライザー:</p>
+<ul>
+<li>Cognito ユーザープール連携。</li>
+<li>独自ユーザーアカウントやフェデレーションユーザへの API 認証。</li>
+</ul>
+</li>
+<li>
+<p>JWT オーソライザー</p>
+<ul>
+<li>OIDC/OAuth 2.0 IdP 連携。</li>
+</ul>
+</li>
+<li>
+<p>Lambda オーソライザー</p>
+<ul>
+<li>リクエスト、トークンをチェックする独自認証。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1508.png" /></p>
+<p>VPC リンク</p>
+<ul>
+<li>統合バックエンドの1つ。VPC の NLB をバックエンドとする。</li>
+</ul>
+<p>ログ</p>
+<ul>
+<li>ステージ/メソッド単位で CloudWatch Logs のロギングを有効化。</li>
+<li>実行ログとアクセスログ</li>
+</ul>
+<h2 id="lambda">Lambda</h2>
+<p>トリガーと IAM ポリシー</p>
+<ul>
+<li>イベントソース (プッシュモデル): 関数ポリシーでソースとなるサービスを許可。</li>
+<li>プルモデル(ポーリング): 実行ロールにソースへのアクセス許可が必要。</li>
+<li>Request-Response モデル: 直接呼び出し。</li>
+</ul>
+<p>環境変数の暗号化</p>
+<ul>
+<li>デフォルトで AWS 管理キーで暗号化。関数が呼び出されると復号される</li>
+<li>伝送中の暗号化のためのヘルパー: Lambda 関数内で復号を実装する。</li>
+</ul>
+<p>VPC アクセス</p>
+<ul>
+<li>関数から VPC にインターネット経由せずにアクセス。</li>
+<li>セキュリティグループを設定する。</li>
+<li>インターネットアクセスは不可 (IGW に ENI が登録されない)</li>
+<li><img alt="" src="_attachment/3EF3472F-9560-4EF0-9301-5B52B96AA8B2_2.png" /></li>
+</ul>
+<p>Lambda@Edge</p>
+<ul>
+<li>レガシーアプリケーションに HTTP セキュリティヘッダーを追加するというユースケース</li>
+</ul>
+<hr />
+<h1 id="id-ssoad">認証・ID 連携・SSO・AD</h1>
+<p><a href="AWS/AWS%20Security%20Cognito,%20STS%20ID%20%E9%80%A3%E6%90%BA,%20SSO,%20AD.html">AWS: Security: Cognito, STS ID 連携, SSO, AD</a></p>
+<h2 id="cognito">Cognito</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Service</td>
+<td>User Identity</td>
+<td>Credential</td>
+</tr>
+<tr>
+<td>ID プール</td>
+<td>Cognito ID</td>
+<td>STS 一時クリデンシャル</td>
+</tr>
+<tr>
+<td>ユーザプール</td>
+<td>ユーザディレクトリのユーザID</td>
+<td>API トークン (JWT)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cognito-id">Cognito ID プール</h3>
+<p>外部 IdP での認証でアプリに AWS サービスの利用を許可する。</p>
+<ul>
+<li>STS ID フェデレーションの置き換え。</li>
+</ul>
+<p>ID プールは渡された外部 IdP のトークンを検証し一時クリデンシャルを発行する。</p>
+<p>未認証 ID (ゲスト) をサポートする。</p>
+<p>GetCredentialsForIdentity</p>
+<ul>
+<li>IdentityID と Logins (IdP の URL とトークンのマップ) を渡して一時クリデンシャルを取得する。</li>
+<li>GetOpenIdToken と AssumeRoleWithWebIdentity を一緒にやってくれる。</li>
+</ul>
+<h3 id="cognito_1">Cognito ユーザープール</h3>
+<p>ユーザープールでアプリの認証とユーザ情報の管理を実装する。</p>
+<p>API トークン (JWT) を発行する OIDC IdP のマネージドサービス。</p>
+<p>認証に MFA も利用できる。</p>
+<p>アダプティブ認証: リスクレベルに応じて MFA を要求したりブロック・メール通知できる。</p>
+<p>API Gateway, AppSync, ALB へのアクセスに認証を追加できる。</p>
+<p><img alt="" src="_attachment/image_1509.png" /></p>
+<p>ソーシャルサインインや SAML(=ADFS), OIDC の IdP など複数の認証方法が併用できる。</p>
+<p>アプリ内でログイン画面を実装するか、ユーザプールのログイン画面 (Hosted UI) を表示できる。</p>
+<p><img alt="" src="_attachment/image_1510.png" /><img alt="" src="_attachment/image_1511.png" /></p>
+<p>ユーザープールのトークンで ID プールから一時クリデンシャルを取得することもできる。</p>
+<p><img alt="" src="_attachment/423A1354-C511-467B-9E13-A2C866205778_2.png" /></p>
+<h2 id="sts">STS</h2>
+<p>GetSessionToken</p>
+<ul>
+<li>STS に MFA 認証を依頼し、MFA-protected な API 呼び出しに使う一時的クリデンシャルを取得する。</li>
+</ul>
+<p>GetFederationToken</p>
+<ul>
+<li>カスタム ID ブローカーに設定された IAM ユーザの一時クリデンシャルを取得する。</li>
+</ul>
+<p>AssumeRoleWithSAML</p>
+<ul>
+<li>SAML 2.0 対応の IdP との ID フェデレーション。</li>
+</ul>
+<p>AssumeRoleWithWebIdentity</p>
+<ul>
+<li>Open ID Connect (OIDC) 互換 IdP との ID フェデレーション。</li>
+</ul>
+<h2 id="aws-sso">AWS SSO</h2>
+<p>SAML 2.0 IdP のマネージドサービス。</p>
+<p>SAML 2.0 をサポートする 各種 SaaS のSP にシングルサインオン。</p>
+<ul>
+<li>Office 365, G-suite, Slack, Box, Salesforce</li>
+</ul>
+<p>ID ディレクトリ</p>
+<ol>
+<li>AWS SSO 組み込みディレクトリ</li>
+<li>AWS Directory Service 統合</li>
+<li>オンプレ AD 統合:<ul>
+<li>AWS Managed Microsoft AD でオンプレ AD ドメインと信頼関係を構成</li>
+<li>AD Connector によるログイン転送</li>
+</ul>
+</li>
+</ol>
+<h2 id="aws-directory-service">AWS Directory Service</h2>
+<p>Simple AD</p>
+<ul>
+<li>Samba v4 の Active Directory Compatible Server のマネージドサービス。</li>
+<li>ドメインの信頼関係の設定はできない</li>
+</ul>
+<p>AWS Managed Microsoft AD</p>
+<ul>
+<li>Windows Server 2012 R2 上の AD によるフル機能 AD のマネージドサービス。</li>
+<li>オンプレ AD ドメインとの信頼関係の構成: オンプレのドメインアカウントで Windows インスタンスにログインしたり、ロールと紐付けたりが可能。</li>
+</ul>
+<p>AWS Directory Service AD Connector</p>
+<ul>
+<li>AWS 環境からオンプレのドメインコントローラに通信をリダイレクトするプロキシサービス。</li>
+<li>AD のグループ・ユーザを IAM ロールにマッピングしてアクセス権を与えられる？</li>
+</ul>
+<h2 id="ad">AD 連携</h2>
+<p>AWS 管理コンソールへの SSO</p>
+<ul>
+<li>
+<p>ADFS と AWS サインインエンドポイントで SAML 認証により管理コンソールへ SSO。</p>
+<ul>
+<li>エンドポイントが背後で AssumeRoleWithSAML でクリデンシャルを取得。</li>
+</ul>
+</li>
+<li>
+<p>AWS 管理コンソールの IAM 設定で ID プロバイダとして ADFS を追加する。</p>
+<ul>
+<li>この際 AssumeRoleWithSAML を許可するロールを関連づける。</li>
+</ul>
+</li>
+<li>
+<p>ユーザが組織内の ADFS サインオンページをブラウズすることでフローが開始する。</p>
+</li>
+<li><img alt="" src="_attachment/image_1512.png" /></li>
+</ul>
+<p>Cognito ユーザープールと ADFS の SAML 連携</p>
+<p>API Gateway や ALB でドメインアカウントで認証が可能。</p>
+<ol>
+<li>SAML IdP で Cognito ユーザープールを Relying Party として設定。</li>
+<li>Cognito ユーザープールに SAML IdP と属性マッピングを登録。</li>
+<li>Hosted UI から ADFS にリダイレクトして認証。</li>
+</ol>
+<p>AWS Managed Microsoft AD</p>
+<ul>
+<li>オンプレ AD ドメインとの信頼関係を構成</li>
+<li>オンプレのドメインアカウントで Windows インスタンスにログイン</li>
+<li>ロールと紐付けて AWS のサービスにアクセス</li>
+</ul>
+<p>AWS Directory Service AD Connector</p>
+<ul>
+<li>VPC の Windows インスタンスに AD Connector をドメインコントローラとして登録。</li>
+<li><img alt="" src="_attachment/image_1513.png" /></li>
+</ul>
+<p>AWS SSO で各種 SaaS やサービスにドメインアカウントでサインオン</p>
+<ul>
+<li>SSO の ID ディレクトリから AD Connector でログイン転送する</li>
+<li>SSO の ID ディレクトリとして  AWS Managed Microsoft AD を使用、オンプレ AD ドメインと信頼関係を構成</li>
+</ul>
+<hr />
+<h1 id="_13">セキュリティガバナンス</h1>
+<p><a href="AWS/AWS%20Security%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS: Security: CloudFormation, Service Catalog, Control Tower</a></p>
+<h2 id="cloudformation">CloudFormation</h2>
+<p>テンプレートに機密情報を埋め込まない</p>
+<ul>
+<li>Parameter Store や Secrets Manager で管理されている外部値を参照する。</li>
+</ul>
+<p>スタックポリシー</p>
+<ul>
+<li>指定リソースに対して実行できる更新アクションを記述した ポリシードキュメント。</li>
+<li>重要なスタックリソースを意図しない更新から保護</li>
+</ul>
+<p>DeletionPolicy 属性</p>
+<ul>
+<li>スタックが削除される時にリソースを保持または (場合によっては)バックアップする指定。</li>
+</ul>
+<h2 id="aws-service-catalog">AWS Service Catalog</h2>
+<p>セキュリティ管理者が提供する CloudFormation テンプレートをエンドユーザが自身で制約のもとでプロビジョンする。</p>
+<p><img alt="" src="_attachment/image_1514.png" /></p>
+<ul>
+<li>
+<p>テンプレート制約</p>
+<ul>
+<li>CloudFormation テンプレートのパラメータを制限。</li>
+</ul>
+</li>
+<li>
+<p>起動制約</p>
+<ul>
+<li>製品からリソースをプロビジョニングする際に使用するロールを指定。</li>
+</ul>
+</li>
+</ul>
+<h2 id="aws-control-tower">AWS Control Tower</h2>
+<p>マルチアカウント管理の問題を解決する Landing Zone を適用するサービス。</p>
+<p>アカウントの各種設定、監査ログ集約、ガードレールなどのデプロイを自動化。</p>
+<p>SCP (予防的ガードレール) と Config Rules (発見的ガードレール)。</p>
+<p><img alt="" src="_attachment/image_1515.png" /></p>
+<h2 id="aws-artifact">AWS Artifact</h2>
+<ul>
+<li>AWS インフラストラクチャとサービスのコンプライアンスレポートをダウンロードするサービス。</li>
+<li>ISO、PCI、SOCなどの第三者による監査レポートをダウンロードできる。</li>
+</ul>
+<h2 id="aws-audit-manager">AWS Audit Manager</h2>
+<ul>
+<li>監査証跡を自動収集。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1516.png" /></p>
+<hr />
+<h1 id="_14">クロスアカウント</h1>
+<p>AssumeRole</p>
+<p>Organization</p>
+<p>S3 クロスアカウントレプリケーション</p>
+<p>CloudTrail 証跡</p>
+<p>CloudWatch Logs サブスクリプションフィルター</p>
+<ul>
+<li>サブスクリプションフィルターにクロスアカウントの Destination を設定する。</li>
+<li><a href="https://aws.amazon.com/jp/premiumsupport/knowledge-center/kinesis-firehose-cloudwatch-logs/">https://aws.amazon.com/jp/premiumsupport/knowledge-center/kinesis-firehose-cloudwatch-logs/</a></li>
+</ul>
+<p>CloudWatch Event Bus</p>
+<p>CloudWatchクロスアカウントクロスリージョン設定</p>
+<ul>
+<li>CloudWatch メトリクス、アラーム、ダッシュボードを1つのアカウントにまとめる</li>
+</ul>
+<p>AWS Config アグリゲータ</p>
+<p>GuardDuty 管理者アカウントによる管理と検知の集約</p>
+<p>AWS Security Hub 組織アカウント横断で各種セキュリティサービスの検出結果をダッシュボード表示。</p>
+<p>Amazon Detective のマスターアカウントにデータ集約</p>
+<p>AWS Secrets Manager</p>
+<p>Parameter Store</p>
+<p>CloudFormation スタックセット</p>
+<ul>
+<li>マルチリージョン、マルチアカウントでリソースをデプロイ。</li>
+</ul>
+<p>AWS Control Tower: Landing Zone (アカウント設定)、監査ログ集約、ガードレール</p>
+<p><br></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

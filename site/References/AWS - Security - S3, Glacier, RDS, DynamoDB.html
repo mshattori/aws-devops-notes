@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS - Security - S3, Glacier, RDS, DynamoDB - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>AWS - Security - S3, Glacier, RDS, DynamoDB</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="s3">S3</h1>
+<p>ACL</p>
+<ul>
+<li>バケットと各オブジェクトにつけられる。</li>
+<li>読み取り・書き込み・フルコントロールのアクセス許可。細かい設定ができない。</li>
+<li>
+<p>デフォルトでは「所有者」アカウントのみ作成した S3 リソースにアクセス可能となる。</p>
+<ul>
+<li>AWS ユーザでなくアカウントであることに注意</li>
+<li>バケット所有者でなくオブジェクトを追加したアカウントが GET 可能となる</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/image_1271.png" /></p>
+<ul>
+<li>ログ配信グループは S3 サーバアクセスログを配信できる IAM グループ。これのアクセス制御については ACL がよく使われる。</li>
+</ul>
+</li>
+</ul>
+<p>オブジェクト所有者 (Object Ownership)</p>
+<ul>
+<li>デフォルトはオブジェクトの所有者はオブジェクトを追加したアカウントとなり、バケット所有者アカウントでも GET できなかったり、逆に ACL でパブリックにされたりが出来てしまう。</li>
+<li>別アカウントに追加されたオブジェクトはポリシー的にアクセスできそうに見えても ACL のせいでアクセスできない！</li>
+<li>
+<p>バケット設定の「オブジェクト所有者」でオブジェクト ACL を無効にしてバケット所有者が自動的に所有できるようにする。</p>
+<ul>
+<li>ACL は特殊な用途でしか使われないので無効にすることが推奨される。</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/image_1272.png" /></p>
+</li>
+<li>ACLs disabled: Bucket owner enforced (recommended) – ACLs are disabled, and the bucket owner automatically owns and has full control over every object in the bucket. ACLs no longer affect permissions to data in the S3 bucket. The bucket uses policies to define access control.</li>
+<li>
+<p>ACLs enabled:</p>
+<ul>
+<li>Bucket owner preferred – The bucket owner owns and has full control over new objects that other accounts write to the bucket with the bucket-owner-full-control canned ACL.</li>
+<li>Object writer (default) – The AWS account that uploads an object owns the object, has full control over it, and can grant other users access to it through ACLs.</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html">https://docs.aws.amazon.com/AmazonS3/latest/userguide/about-object-ownership.html</a></p>
+</li>
+<li>bucket-owner-full-control の使用例<ul>
+<li>オブジェクトライターがデフォルトで所有者となるが、バケット所有者を所有者としたい場合に、オブジェクトライターが bucket-owner-full-control ACL を追加してオブジェクトを PUT できる。</li>
+<li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-walkthroughs-managing-access-example3.html">https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-walkthroughs-managing-access-example3.html</a></li>
+</ul>
+</li>
+</ul>
+<p>S3 独特の所有者という概念自体が ACL の機能らしい</p>
+<pre><code>$ aws s3api get-object-acl --bucket test-bucket --key test/hello.txt
+{
+    &quot;Owner&quot;: {
+        &quot;DisplayName&quot;: &quot;mshattori&quot;,
+        &quot;ID&quot;: &quot;4774e98dae13fa3ebefacaeed0089ab527960b64aabb60aad46b183db28eea41&quot;
+    },
+    &quot;Grants&quot;: [
+        {
+            &quot;Grantee&quot;: {
+                &quot;DisplayName&quot;: &quot;mshattori&quot;,
+                &quot;ID&quot;: &quot;4774e98dae13fa3ebefacaeed0089ab527960b64aabb60aad46b183db28eea41&quot;,
+                &quot;Type&quot;: &quot;CanonicalUser&quot;
+            },
+            &quot;Permission&quot;: &quot;FULL_CONTROL&quot;
+        }
+    ]
+}
+</code></pre>
+<p>バケットポリシー</p>
+<ul>
+<li>S3 のリソースベースのポリシー。</li>
+<li><img alt="" src="_attachment/File_21.png" /></li>
+<li>オブジェクトを対象にするには Resource の ARN の末尾に /* を追加する必要がある。</li>
+<li>パブリックアクセス<ul>
+<li>バケットポリシーでバケット内の全オブジェクトへのパブリックアクセスを設定できる。</li>
+</ul>
+</li>
+</ul>
+<p>ブロックパブリックアクセス (バケット設定)</p>
+<ul>
+<li>ACL やバケットポリシーでのパブリック設定を無効化するセーフティロック。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1273.png" /><img alt="" src="_attachment/image_1274.png" /></p>
+<p>S3 Access Analyzer (Access Analyzer for S3)</p>
+<ul>
+<li>パブリックバケット・他の AWS アカウントに公開されたバケットを検出。</li>
+<li>Ref. <a href="AWS%20Security%20Logging,%20Monitoring,%20Response.html">AWS: Security: Logging, Monitoring, Response</a></li>
+</ul>
+<p>S3 Server Side Encryption</p>
+<p><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/serv-side-encryption.html">https://docs.aws.amazon.com/AmazonS3/latest/userguide/serv-side-encryption.html</a></p>
+<ul>
+<li>
+<p>SSE-S3</p>
+<ul>
+<li>バケットに作成されるキーで AES-256 で自動暗号化。</li>
+<li>AES-256 暗号化タイプと呼ばれる。</li>
+<li>ヘッダ: x-amz-server-side-encryption: AES256</li>
+</ul>
+</li>
+<li>
+<p>SSE-KMS</p>
+<ul>
+<li>KMS のキーをバケットに指定。</li>
+<li>AWS 管理キーとカスタマー管理キーをサポート。</li>
+<li>
+<p>ヘッダ:</p>
+<ul>
+<li>x-amz-server-side-encryption: aws:kms</li>
+<li>x-amz-server-side-encryption-aws-kms-key-id</li>
+<li>x-amz-server-side-encryption-context</li>
+</ul>
+</li>
+<li>
+<p>KMS API アクセスのログが残るので監査要件で鍵使用のログが必要な場合はこれを使う。</p>
+</li>
+<li>オブジェクトを取得するプリンシパルは Key ID に対して Decrypt が許可される必要がある。</li>
+<li>オブジェクトごとに別々のデータキーを使用する。</li>
+</ul>
+</li>
+<li>
+<p>SSE-C</p>
+<ul>
+<li>
+<p>SSE with Customer-Provided Encryption Keys … 顧客提供キー</p>
+<ul>
+<li>コンプライアンスで鍵の自前管理が必要な場合などに使用</li>
+</ul>
+</li>
+<li>
+<p>PUT/GET 時に HTTP ヘッダで AES-256 キーを渡す。</p>
+<ul>
+<li>PUT 時にサーバ側で暗号化、GET 時に復号。</li>
+</ul>
+</li>
+<li>
+<p>HTTPS 必須。</p>
+</li>
+<li>指定するヘッダ:<ul>
+<li>x-amz-server-side-encryption-customer-algorithm</li>
+<li>x-amz-server-side-encryption-customer-key</li>
+<li>x-amz-server-side-encryption-customer-key-MD5</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>NOTE</p>
+<ul>
+<li>メタデータは暗号化されない。機密データを書き込まない。</li>
+<li>Glacier と Storage Gateway はデフォルトで暗号化されている。</li>
+<li>転送中の暗号化には HTTPS の S3 エンドポイントを使用する。</li>
+<li>SSE 必須にするには x-amz-server-side-encryption ヘッダがないと s3:PutObject を拒否するバケットポリシーを設定する。</li>
+</ul>
+</li>
+</ul>
+<pre><code>      &quot;Effect&quot;: &quot;Deny&quot;,
+      &quot;Principal&quot;: &quot;*&quot;,
+      &quot;Action&quot;: &quot;s3:PutObject&quot;,
+      &quot;Resource&quot;: &quot;arn:aws:s3:::awsexamplebucket1/*&quot;,
+      &quot;Condition&quot;: {
+        &quot;StringNotEquals&quot;: {
+          &quot;s3:x-amz-server-side-encryption&quot;: &quot;AES256&quot;
+        }
+　　　 }
+</code></pre>
+<p>バケットのデフォルト暗号化
+- バケットのオプション。バケット作成後も随時設定・解除できる。
+    - 2023 年以降、すべての新規オブジェクトが自動的に SSE-S3で暗号化
+    - 暗号化を OFF にすることはできず、最低でも SSE-S3 が必ず適用さる
+- 指定できるのは SSE-S3, SSE-KMS だけ。SSE-C はデフォルト暗号化ではない。
+- オブジェクトのアップロード時にデフォルト暗号化を上書きできるので、バケットと同じ暗号化方式を強制したい場合はバケットポリシーで強制する。</p>
+<p>S3 暗号化のデータ保護範囲
+- 物理的に S3 のストレージ盗難によりデータが流出することに対する保護。
+- API で GET した時点で復号されるので、アプリ脆弱性や IAM のアクセスキーの漏洩からはデータは保護されない。
+- SSE-C では IAM アクセスキーが漏洩しても復号できないが、鍵管理をしっかりする必要がある。
+- SSE-KMS では復号に CMK へのアクセス権も必要となるため、ストレージ盗難やバケットが誤ってパブリックになった場合も保護できる。</p>
+<p>S3 バケットキー</p>
+<ul>
+<li>SSE-KMS の新機能 (2020)</li>
+<li>バケットレベルで KMS データキーをキャッシュして各オブジェクトのデータキーを暗号化。</li>
+<li>KMS の暗号化/復号化 API コールで発生するコストが 99% 削減されると言われている。</li>
+<li>デフォルトで ON になる。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/userguide/bucket-key.html">https://docs.aws.amazon.com/ja_jp/AmazonS3/latest/userguide/bucket-key.html</a></li>
+</ul>
+<p><img alt="" src="_attachment/image_1275.png" /></p>
+<p>バージョニング</p>
+<ul>
+<li>バージョニングはデフォルト OFF でバージョン ID は NULL になる。</li>
+<li>
+<p>削除マーカー (論理削除)</p>
+<ul>
+<li>キーのみを指定して DeleteObject すると削除マーカーが追加され、削除マーカーが最新バージョンとなる</li>
+<li>削除マーカーを削除することでロールバックが可能。</li>
+<li>物理削除するにはキーとバージョンID を指定して個別にバージョンを削除する。</li>
+</ul>
+</li>
+<li>
+<p>過去バージョンのオブジェクトのサイズの分もコストもかかる (差分バックアップではない)</p>
+</li>
+</ul>
+<p>MFA Delete</p>
+<ul>
+<li>意図しない削除からオブジェクトを保護。</li>
+<li>オブジェクトバージョンの削除とバージョニング無効化に MFA を要求。</li>
+<li>バージョニングされたバケットでのみ機能する。</li>
+</ul>
+<p>オブジェクトロック</p>
+<ul>
+<li>決められた期間、変更・削除できない WORM (Write Once Read Many) モデルの実現。</li>
+<li>監査などで誰も改ざんしてないことを証明できる。</li>
+<li>バージョニングされたバケットでのみ機能する。</li>
+<li>バケット作成時に有効にする (自動的にバージョニングも有効になる)</li>
+</ul>
+<p><img alt="" src="_attachment/image_1276.png" /></p>
+<ul>
+<li>
+<p>ガバナンスモード: 権限のあるユーザは変更できる。</p>
+<ul>
+<li>s3:BypassGovernanceRetention</li>
+</ul>
+</li>
+<li>
+<p>コンプライアンスモード: どのユーザも期間中は変更できない。</p>
+</li>
+</ul>
+<p>ライフサイクルルール</p>
+<ul>
+<li>バケットのオプション。一定期間が過ぎたオブジェクトのライフサイクルを指定。</li>
+<li>移行 (Transition): 別のストレージクラスに移行。Glacier へのアーカイブも可能。</li>
+<li>失効 (Expiration): 削除</li>
+<li>
+<p>フィルター要素</p>
+<ul>
+<li>キープレフィックスおよびタグで対象を選択できる</li>
+</ul>
+</li>
+<li>
+<p>バージョニングの最新とそれ以前で個別に設定できる。</p>
+</li>
+<li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html">https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html</a></li>
+<li>問題例: LegalHold タグ true のドキュメント以外は 90 日で削除したい<ul>
+<li>S3 イベントでオブジェクト作成時に Lambda 関数を開始する。LegalHold タグが存在しない場合は false の値を追加する。</li>
+<li>LegalHold タグが false のフィルタールールを指定した S3 ライフサイクルポリシーを作成し、90 日より古いオブジェクトを削除するよう設定する。</li>
+</ul>
+</li>
+</ul>
+<p>クロスリージョンレプリケーション</p>
+<ul>
+<li>別バケットへの非同期レプリケーション。ディザスタリカバリ。</li>
+<li>S3 Glacier をターゲットにすることもできる。</li>
+<li>レプリケーションの通信はデフォルトで SSL が使用される。</li>
+<li>クロスアカウントも可能。</li>
+<li>レプリケーション有効化以前に追加されたオブジェクトはレプリケートされない。</li>
+<li>SSE-C  で暗号化されたオブジェクトはレプリケートされない。</li>
+</ul>
+<p>レプリケーションと暗号化</p>
+<ul>
+<li>暗号化されていないオブジェクトはレプリケーション先のデフォルト暗号化で暗号化される。</li>
+<li>暗号化されたオブジェクト (SSE-S3/SSE-KMS) は送信元バケットと同じ方式で暗号化される。レプリケーション先バケットのデフォルト暗号化設定は使用されない。</li>
+<li>クロスリージョンで、SSE-KMS カスタマー管理キーで 暗号化されたオブジェクトはリモートリージョンの SSE-KMS  AWS 管理キーで暗号化された。(同じタイプの暗号化方式が使われる)</li>
+</ul>
+<p>サーバアクセスログ</p>
+<ul>
+<li>バケットレベルで有効化。トラブルシューティングや監査。</li>
+<li>リクエスタ、バケット名、リクエスト時刻、リクエストアクション、レスポンスのステータス、エラーコードなど。</li>
+<li>ターゲットバケットにログファイルが保存される (ソースバケットをターゲットにすることも可)。</li>
+</ul>
+<p>S3 アクセスポイント</p>
+<ul>
+<li>アクセスポイントポリシーをアタッチできるパブリックエンドポイントを作成できる。</li>
+<li>S3 アクセスポイント・エンドポイントともいう。</li>
+<li>バケットポリシーを変更せずにアプリケーション毎にポリシーを分けたい場合などに使う。</li>
+<li>VPC からのリクエス トのみを受け入れるよう設定できる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_1277.png" /><img alt="" src="_attachment/image_1278.png" /></p>
+<ul>
+<li>アクセスポイント名と "accesspoint" を含む URL, ARN となる。</li>
+</ul>
+<p>署名付きURL</p>
+<ul>
+<li>特定 IAM プリンシパルのクリデンシャルによる署名が付属した有効期間付きオブジェクト URL。</li>
+<li><img alt="" src="_attachment/File_22.png" /></li>
+<li>
+<p>セキュリティ認証情報</p>
+<ul>
+<li>ロールの一時クリデンシャルは有効時間が短いので IAM ユーザのクリデンシャルで作る。</li>
+</ul>
+</li>
+<li>
+<p>HTTP メソッド</p>
+<ul>
+<li>許可対象とする HTTP メソッド (GET/PUT) の指定。</li>
+</ul>
+</li>
+<li>
+<p>URL に v4 署名同様の情報が含まれる</p>
+<ul>
+<li>AWSAccessKeyId と Signature がクエリパラメタとして付属する。</li>
+</ul>
+</li>
+</ul>
+<p>静的 Web ホスティング (Static Web Hosting)</p>
+<ul>
+<li>バケットのオブション。</li>
+<li>バケットにパブリック読み取りアクセスが必要。</li>
+<li>HTTPS 利用できない。</li>
+<li>独自ドメイン名を使う場合バケット名を FQDN と同じにする必要がある</li>
+</ul>
+<p>Cross-Origin Resource Sharing (CORS) 設定</p>
+<ul>
+<li>バケットのオプション。クロスオリジンでのリソースの取得をブラウザに許可させる。</li>
+<li>静的 Web ホスティングや JavaScript、Web フォント等を S3 にホストする場合に必要。</li>
+<li>XML で設定。</li>
+</ul>
+<p>AWS Transfer Family</p>
+<ul>
+<li>FTP/SFTP/FTPS クライアントから S3, EFS と直接ファ イル転送できる</li>
+<li><a href="https://aws.amazon.com/jp/aws-transfer-family/faqs/">https://aws.amazon.com/jp/aws-transfer-family/faqs/</a></li>
+</ul>
+<p>Write-S3Object</p>
+<ul>
+<li>Powershell で S3 にオブジェクトをアップロードできる。</li>
+<li><a href="https://docs.aws.amazon.com/powershell/latest/reference/items/Write-S3Object.html">https://docs.aws.amazon.com/powershell/latest/reference/items/Write-S3Object.html</a></li>
+</ul>
+<h1 id="sg-gracier">SG Gracier によるアーカイブ</h1>
+<p>概要</p>
+<ul>
+<li>通常はアクセス不要なアーカイブデータ。5分の1くらいのコスト。</li>
+<li>
+<p>取り出しオプション: 数分から数時間の 3 つのオプション。</p>
+<ul>
+<li>迅速(Expedited)取り出し: 通常 1～5 分</li>
+<li>標準(Standard)取り出し: 通常 3～5 時間</li>
+<li>大容量(Bulk)取り出し: 大量データを 5～12 時間。最低価格。</li>
+</ul>
+</li>
+<li>
+<p>S3 Glacier Deep Archive</p>
+<ul>
+<li>取り出し: 12 時間 or 48 時間の 2 つのオプション</li>
+</ul>
+</li>
+<li>
+<p>最低保持期間 90日。</p>
+</li>
+</ul>
+<p>ボールト (Glacier Vault)</p>
+<ul>
+<li>Glacier でアーカイブを格納するコンテナ。</li>
+<li>Vault アクセスポリシーもある。</li>
+<li>Glacier Select<ul>
+<li>ボールト内のオブジェクトを取り出さずに S3 Select できる。</li>
+</ul>
+</li>
+</ul>
+<p>ボールトロックポリシー</p>
+<ul>
+<li>
+<p>有効期限等を指定して WORM (Write once read many) をサポート。</p>
+<ul>
+<li>有効期限を過ぎないと誰も変更できないように設定できる。</li>
+<li>S3 Glacier 固有の条件キー ArchiveAgeInDays を使用。</li>
+</ul>
+</li>
+<li>
+<p>MFA Delete も指定可能 (aws:MultiFactorAuthPresent)。</p>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_1279.png" /></p>
+<h1 id="rds">RDS の保護</h1>
+<p>マルチ AZ 構成</p>
+<ul>
+<li>マルチ AZ でプロビジョニングすると、プライマリ DB インスタンスと別 AZ にスタンバイ DB インスタンスが自動的に作成される。</li>
+<li>スタンバイにデータがレプリケーションされる (同期モードのデータベースミラーリング)</li>
+<li>
+<p>自動フェイルオーバー</p>
+<ul>
+<li>プライマリに障害が発生するとスタンバイに自動フェイルオーバー。</li>
+<li>DNS でエンドポイント CNAME がスタンバイの A レコードに切り替わる。</li>
+</ul>
+</li>
+<li>
+<p>クライアントからスタンバイ DB にはアクセスしない (コールドスタンバイ)。</p>
+</li>
+<li>
+<p>メンテナンス時</p>
+<ul>
+<li>スタンバイ→プライマリの順にアップグレード。スタンバイがプライマリに昇格。</li>
+</ul>
+</li>
+<li>
+<p>スナップショット取得時、マルチ AZ ではスタンバイ側から取得するため中断なし。</p>
+<ul>
+<li>シングル AZ ではストレージ I/O の中断 (通常 2～3 秒未満) あり。</li>
+</ul>
+</li>
+</ul>
+<p>リードレプリカ</p>
+<ul>
+<li>読み込みトラフィックのスループットと可用性の向上。</li>
+<li>プライマリ DB の障害時はリードレプリカがプライマリに昇格。</li>
+<li>マルチ AZ にもできる。</li>
+</ul>
+<p>バックアップ</p>
+<ul>
+<li>ストレージボリュームのスナップショットを作成。</li>
+<li>
+<p>自動バックアップ</p>
+<ul>
+<li>特定時刻 (過去 5分以内) の状態にリカバリするための機能。デフォルトで有効。</li>
+<li>毎日スナップショットを自動的に作成し、トランザクションログを取得。</li>
+<li>バックアップウィンドウと保持期間 (デフォルト7日、最大35日) を指定。</li>
+<li>DB インスタンスを削除されると同時に削除される。</li>
+<li><a href="https://aws.amazon.com/jp/rds/faqs/#Automatic_Backups_and_Database_Snapshots">https://aws.amazon.com/jp/rds/faqs/#Automatic_Backups_and_Database_Snapshots</a></li>
+</ul>
+</li>
+<li>
+<p>バックアップからのリストア</p>
+<ul>
+<li>新しいプライマリ DB インスタンスが作成され、自動スナップショットからリストアされる。</li>
+<li>新しいエンドポイントを使用して作成される。エンドポイントが変わる！</li>
+<li>アプリケーションが新しいエンドポイントに接続するよう変更してリストアが完了。</li>
+</ul>
+</li>
+<li>
+<p>DB スナップショット (手動)</p>
+<ul>
+<li>スナップショットは DB インスタンスを削除しても削除されない。</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/UserGuide/USER_WorkingWithAutomatedBackups.html">https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/UserGuide/USER_WorkingWithAutomatedBackups.html</a></p>
+</li>
+</ul>
+<p>クロスリージョンのディザスタリカバリ</p>
+<ul>
+<li>クロスリージョンのリードレプリカへのレプリケーションも可能。</li>
+<li>クロスリージョンのスナップショットコピー。</li>
+</ul>
+<p>メンテナンス (パッチ適用)</p>
+<ul>
+<li>OS や DB エンジンのバージョン更新。</li>
+<li>わずかながらパフォーマンスに影響が出る場合や DB インスタンスが少しの間オフラインになる場合も。</li>
+<li>セキュリティやインスタンスの信頼性に関連するパッチは 「必須」として自動的にスケジューリング（通常は数ヵ月ごとに一度くらい）</li>
+<li>
+<p>更新が利用可能かどうかは管理コンソール, CLI, API で確認。</p>
+<ul>
+<li>必須 – メンテナンスアクションがリソースに適用され、延期はできません。</li>
+<li>利用可能 – メンテナンスアクションは利用可能ですが、自動的にはリソースに適用されません。手動で適用できます。</li>
+<li>次のウィンドウ – メンテナンスアクションは次回のメンテナンスウィンドウ中にリソースに適用されます。</li>
+<li>進行中 – メンテナンスアクションはリソースに適用中です。</li>
+</ul>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/UserGuide/USER_UpgradeDBInstance.Maintenance.html">https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/UserGuide/USER_UpgradeDBInstance.Maintenance.html</a></p>
+</li>
+</ul>
+<p>メンテナンスウインドウ</p>
+<ul>
+<li>すべての DB インスタンスは週次 30分のメンテナンスウィンドウがある。</li>
+<li>指定しない場合はランダムに設定される。</li>
+<li>ほとんどの場合は 30分以内に終了するが、大規模なアップデートではその限りでない。</li>
+</ul>
+<p>RDS はプライベートサブネットに配置し、セキュリティグループ・ACL を適切に適用する。</p>
+<p><img alt="" src="_attachment/image_1280.png" /></p>
+<p>アクセスコントロール</p>
+<ul>
+<li>DB ネイティブのユーザ・権限設定と、RDS サービスに対する IAM ポリシーの両方で制御</li>
+</ul>
+<p><img alt="" src="_attachment/image_1281.png" /></p>
+<p>IAM データベース認証</p>
+<ul>
+<li>Aurora では DB 接続に RDS が生成する認証トークンが使用されパスワードが不要。</li>
+<li>DB 接続は TLS で暗号化される。</li>
+</ul>
+<p>DB 接続の暗号化 (TLS)</p>
+<ul>
+<li>AWS からダウンロードできる RDS の公開鍵 (PEM ファイル) をクライアントに設定して行う。</li>
+<li>DB コネクションの話。REST API (HTTPS) がある訳ではない。</li>
+<li>暗号化接続のみを受け入れるようインスタンスを設定する。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html">https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html</a></li>
+</ul>
+<p>データ保管時の暗号化</p>
+<ul>
+<li>EBS と同じ。KMS を使用した AES-256 暗号化。</li>
+<li>スナップショット・リードレプリカも暗号化される。</li>
+<li>RDS 作成時に有効にする。キーを後から変更することはできない。</li>
+</ul>
+<h1 id="dynamodb">DynamoDB の保護</h1>
+<p>概要</p>
+<ul>
+<li>NoSQL のドキュメントデータベース</li>
+</ul>
+<p><img alt="" src="_attachment/File_23.png" /></p>
+<ul>
+<li>
+<p>パーティションプライマリキー: パーティションキー(ハッシュ属性)</p>
+<ul>
+<li>テーブル内でユニークでなければならない。</li>
+</ul>
+</li>
+<li>
+<p>複合プライマリキー: パーティションキー &amp; ソートキー(範囲属性)</p>
+<ul>
+<li>同じパーティションキーに対して一意のソートキー。</li>
+<li>パーティションキーの値が同じ項目は同じパーティションに保存される。</li>
+</ul>
+</li>
+<li>
+<p>項目のデータは JSONドキュメント</p>
+<ul>
+<li>属性値としてリストやマップもある。</li>
+<li>項目サイズは最大 400KB (属性名含む)。</li>
+</ul>
+</li>
+<li>
+<p>テーブルに容量 (項目数) の制限はない。</p>
+</li>
+</ul>
+<h3 id="iam">IAM ポリシーによるきめ細かなアクセスコントロール</h3>
+<ul>
+<li>IAM ポリシーで項目や属性レベルのきめ細かなアクセスコントロールが可能。</li>
+<li>Resource にテーブルを指定して Condition で属性名と値の条件を指定する。</li>
+<li>リソースベースポリシーはないことに注意！DynamoDB はアイデンティティベースのみ。</li>
+</ul>
+<p>例:</p>
+<ul>
+<li>特定のプライマリキー値の項目のみ取得できるようにする (UserID 属性が一致する項目等)</li>
+<li><img alt="" src="_attachment/image_1282.png" /></li>
+<li>特定の属性を取得できないようにする</li>
+<li><img alt="" src="_attachment/image_1283.png" /></li>
+</ul>
+<pre><code>{
+    &quot;Version&quot;: &quot;2012-10-17&quot;,
+    &quot;Statement&quot;: [
+        {
+            &quot;Sid&quot;: &quot;ReadOnlyAccessToUserItems&quot;,
+            &quot;Effect&quot;: &quot;Allow&quot;,
+            &quot;Action&quot;: [
+                &quot;dynamodb:UpdateItem&quot;,
+                &quot;dynamodb:GetItem&quot;,
+                &quot;dynamodb:BatchGetItem&quot;,
+                &quot;dynamodb:Query&quot;
+            ],
+            &quot;Resource&quot;: [
+                &quot;arn:aws:dynamodb:us-west-2:123456789012:table/GameScores&quot;
+            ],
+            &quot;Condition&quot;: {
+                &quot;ForAllValues:StringEquals&quot;: {
+                    &quot;dynamodb:LeadingKeys&quot;: [
+                        &quot;${graph.facebook.com:id}&quot;
+                    ],
+                    &quot;dynamodb:Attributes&quot;: [
+                        &quot;UserId&quot;,
+                        &quot;TopScore&quot;
+                    ]
+                },
+                &quot;StringEqualsIfExists&quot;: {
+                    &quot;dynamodb:Select&quot;: &quot;SPECIFIC_ATTRIBUTES&quot;,
+                    &quot;dynamodb:ReturnValues&quot;: [
+                        &quot;NONE&quot;,
+                        &quot;UPDATED_OLD&quot;,
+                        &quot;UPDATED_NEW&quot;
+                    ]
+                }
+            }
+        }
+    ]
+}
+</code></pre>
+<p>後で詳細を記載。</p>
+<p>Ref.</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/using-identity-based-policies.html">https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/using-identity-based-policies.html</a></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/reference_policies_examples_dynamodb_specific-table.html">https://docs.aws.amazon.com/ja_jp/IAM/latest/UserGuide/reference_policies_examples_dynamodb_specific-table.html</a></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/specifying-conditions.html">https://docs.aws.amazon.com/ja_jp/amazondynamodb/latest/developerguide/specifying-conditions.html</a></li>
+</ul>
+<p>データ保管時の暗号化</p>
+<ul>
+<li>
+<p>デフォルトで SSE-KMS で暗号化される。</p>
+<ul>
+<li>デフォルトは AWS 所有キー。DynamoDB により所有され追加料金は発生しない。</li>
+<li>AWS 管理キー、カスタマー管理キーも指定できる。</li>
+</ul>
+</li>
+<li>
+<p>テーブルキー</p>
+<ul>
+<li>テーブル毎のデータキーでパーティション毎？のキーを暗号化。</li>
+<li>バケットキーみたいなこと？</li>
+</ul>
+</li>
+<li>
+<p><img alt="" src="_attachment/image_1284.png" /></p>
+</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/kms/latest/developerguide/services-dynamodb.html">https://docs.aws.amazon.com/ja_jp/kms/latest/developerguide/services-dynamodb.html</a></li>
+</ul>
+<p>DynamoDB 暗号化クライアント</p>
+<ul>
+<li>クライアントサイド暗号化を実装するライブラリ (Java, Python)。項目の署名も実施。</li>
+<li>鍵はクライアント管理か AWS KMS, CloudHSM などを使用。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/dynamodb-encryption-client/latest/devguide/client-server-side.html">https://docs.aws.amazon.com/ja_jp/dynamodb-encryption-client/latest/devguide/client-server-side.html</a></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/dynamodb-encryption-client/latest/devguide/what-is-ddb-encrypt.html">https://docs.aws.amazon.com/ja_jp/dynamodb-encryption-client/latest/devguide/what-is-ddb-encrypt.html</a></li>
+</ul>
+<p>バックアップ</p>
+<ul>
+<li>
+<p>オンデマンドバックアップ</p>
+<ul>
+<li>テーブル全体のスナップショットを作成してアーカイブ。</li>
+</ul>
+</li>
+<li>
+<p>ポイントインタイムリカバリー</p>
+<ul>
+<li>直前 35日間の任意の時点にダウンタイムなしに復元可能。増分バックアップ。</li>
+<li>ポイントインタイムリカバリーの「有効化」で有効にする。(デフォルト無効)</li>
+</ul>
+</li>
+</ul>
+<p>グローバルテーブルによるディザスタリカバリ</p>
+<ul>
+<li>DynamoDB ストリームを利用したマルチリージョン・マルチマスターのレプリケーション。</li>
+<li>リージョンごとに１つまでレプリカテーブルを作成できる。同一アカウントのみ。</li>
+<li>近いリージョンのレプリカにアクセスすることでのレイテンシー削減。</li>
+<li>データも暗号化されたまま (リージョン間で CMK どうしてる？)。</li>
+<li>最新書き込み優先: 同じ項目が複数リージョンで同時に変更された場合、可能な限り最新の変更が優先される。</li>
+<li><img alt="" src="_attachment/File_24.png" /></li>
+</ul>
+<p><br></p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

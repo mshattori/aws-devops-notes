@@ -87,20 +87,6 @@ git config --global credential.UseHttpPath true
     helper = !aws --profile dev codecommit credential-helper $@
     UseHttpPath = true
 </code></pre>
-<ul>
-<li>なお、SSH URL でのクローンは認証情報が求められ出来なかった。</li>
-<li>Ref. <a href="https://docs.aws.amazon.com/ja_jp/codecommit/latest/userguide/setting-up-https-unixes.html">https://docs.aws.amazon.com/ja_jp/codecommit/latest/userguide/setting-up-https-unixes.html</a></li>
-<li>NOTE: Mac, Windows とも 403 エラーになる。<ul>
-<li><a href="https://docs.aws.amazon.com/ja_jp/codecommit/latest/userguide/troubleshooting-ch.html">https://docs.aws.amazon.com/ja_jp/codecommit/latest/userguide/troubleshooting-ch.html</a></li>
-<li>Mac の場合、Git が Keychain Access で認証情報を保存するが 15 分で期限切れになるため。一番簡単な対応方法は ~/.gitconfig で次のように空の helper を指定する。</li>
-</ul>
-</li>
-</ul>
-<pre><code>[credential]
-  helper =
-  helper = !aws --profile CodeCommitProfile codecommit credential-helper $@
-  UseHttpPath = true
-</code></pre>
 <p><img alt="" src="_attachment/image_536.png" /></p>
 <ul>
 <li>AWSCodeCommitFullAccess, AWSCodeCommitPowerUser,  AWSCodeCommitReadOnly などの AWS マネージドポリシーがあるが、これらのポリシーではアカウントの全リポジ トリへのアクセスが許可されてしまう。</li>

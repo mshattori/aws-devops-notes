@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Update Note - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Update Note</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <p>&lt;%*
+  const file = tp.file.find_tfile(tp.file.path(true));
+  await tp.app.fileManager.processFrontMatter(file, (fm) =&gt; {
+    if (!fm.created) {
+      if (fm.date) {
+        fm.created = fm.date
+        delete fm.date
+      } else {
+        fm.created = tp.file.creation_date("YYYY-MM-DD HH:mm");
+      }
+    }
+    fm.updated = tp.date.now("YYYY-MM-DD HH:mm");
+    if (!fm.tags) {
+      fm.tags = []
+    }
+  });
+%&gt;</p>
+</article>
+
+    </main>
+    <footer>
+        <p>&copy; 2025 AWS DevOps Notes</p>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

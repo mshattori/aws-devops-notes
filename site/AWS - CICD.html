@@ -147,7 +147,7 @@ git config --global credential.UseHttpPath true
 - CodeCommit ではサーバ側のフックは CodeCommit イベントで処理される。</p>
 <p>CodeCommit リポジトリトリガー</p>
 <ul>
-<li>コード Push などのリポジトリイベントで SNS, Lambda をトリガー。</li>
+<li>コード Push などのリポジトリイベントで SNS, Lambda をトリガーしアクションを実行。</li>
 <li><img alt="" src="_attachment/image_539.png" /></li>
 <li>関連リソースは CodeCommit と同じリージョンにある必要がある</li>
 <li><a href="https://docs.aws.amazon.com/ja_jp/codecommit/latest/userguide/how-to-notify.html">https://docs.aws.amazon.com/ja_jp/codecommit/latest/userguide/how-to-notify.html</a></li>
@@ -160,7 +160,8 @@ git config --global credential.UseHttpPath true
 - SNS か AWS Chatbot に通知を投げる。
 - <img alt="" src="_attachment/image_542.png" />
 - <a href="https://docs.aws.amazon.com/ja_jp/codecommit/latest/userguide/how-to-repository-email.html">https://docs.aws.amazon.com/ja_jp/codecommit/latest/userguide/how-to-repository-email.html</a>
-- 通知ルールは Code シリーズ共通のリソース。通知ルールを使うと Code シリーズから CodeStar サービスにイベントを送る EventBridge ルールが自動で追加される。
+- CodeStar Notifications が提供する機能。CodeCommit/CodeBuild/CodePipeline 等のイベントに共通して適用可能。
+- 通知ルール作成時、選択イベントに一致する EventBridge ルールが自動生成され、通知先へルーティングされる。
 - <img alt="" src="_attachment/image_543.png" /></p>
 <p>CodeBuild/CodePipeline 連携</p>
 <ul>
@@ -495,45 +496,41 @@ phases:
 <h2 id="_19">デプロイグループ</h2>
 <p>EC2/オンプレではターゲットに以下が選択できる。1つのデプロイグループ内に複数の組み合わせを指定可能。</p>
 <p><img alt="" src="_attachment/image_563.png" /></p>
-<p>EC2/オンプレのインスタンスはタググループで指定できる。</p>
+<p>EC2インスタンス/オンプレインスタンスの場合はタググループで指定可能:</p>
 <p><img alt="" src="_attachment/image_564.png" /></p>
-<p>EC2 Auto Scaling グループ</p>
-<ul>
-<li>Auto Scaling グループ内の既存インスタンスにデプロイを実施する。</li>
-<li>スケールアウトで新しいインスタンスが立ち上がる際も自動的に新しいリビジョンのデプロイが行われる。</li>
-</ul>
-<p><img alt="" src="_attachment/File_13.png" /></p>
-<ul>
-<li>インプレースとBlue/Green 両方で Auto Scaling グループを選択可能。</li>
-<li>Blue/Green では Auto Scaling グループ全体の置き換えによるデプロイメントを指定できる。(Ref. AutoScalingReplacingUpdate)</li>
-<li><img alt="" src="_attachment/image_565.png" /></li>
-<li>インスタンスの手動プロビジョンは  deployment 作成時に個別にインスタンスを指定することになる。</li>
-</ul>
+<p>EC2 Auto Scaling グループと Code Deploy:
+- ASGがスケールアウトする際、新規起動インスタンスに最新リビジョンが自動デプロイ。
+    - ASGのLifecycle Hook (EC2_INSTANCE_LAUNCHING) で、起動直後のインスタンスにデプロイを実行。
+- 追加インスタンスのみが対象（既存インスタンスはそのまま）。
+- Deployment Group に ASG を関連付けるだけで利用可。
+- インプレース・Blue/Green 両方を利用可能。
+- EC2 Auto Scaling グループの自動コピー: ASG 全体の置き換えによるデプロイ (Blue/Green 専用)
+- インスタンスの手動プロビジョン:  デプロイの作成時に個別にインスタンスを指定する。
+- <img alt="" src="_attachment/image_565.png" /></p>
 <p>ECS の場合は ECS クラスター名と ELB を指定。</p>
 <p><img alt="" src="_attachment/image_566.png" /></p>
 <h2 id="_20">デプロイタイプ</h2>
-<p>デプロイグループで指定する。</p>
+<p>デプロイグループで指定する。以下の２種類。</p>
 <ul>
-<li>EC2: インプレースデプロイ, Blue/Green デプロイ</li>
-<li>オンプレ: インプレースデプロイのみ</li>
-<li>ECS, Lambda:  Blue/Green デプロイのみ</li>
+<li>インプレース ... EC2, オンプレ (ECS, Lambdaは不可)</li>
+<li>Blue/Green ... EC2, ECS, Lambda (オンプレは不可)</li>
 </ul>
 <p><img alt="" src="_attachment/image_567.png" /></p>
-<p>Blue/Green ではルーティングの設定を行う:</p>
-<ul>
-<li>EC2 インスタンス/Auto Scaling グループの Blue/Green では ELB の指定が必須</li>
-</ul>
+<h3 id="_21">デプロイ設定</h3>
+<p>Blue/Green ではルーティング開始タイミングと削除タイミングの設定がある:
+- EC2 インスタンス/Auto Scaling グループの Blue/Green では ELB 指定が必須</p>
 <p><img alt="" src="_attachment/image_568.png" /></p>
-<p>インプレース, Blue/Green ともにデプロイの単位を以下から選択する:</p>
+<p>デプロイ並行度の設定 (インプレース, Blue/Green 共通):</p>
+<p>EC2:</p>
 <p><img alt="" src="_attachment/image_569.png" /></p>
-<p>Lambda:</p>
-<p><img alt="" src="_attachment/image_570.png" /></p>
+<p>ECS:
+<img alt="" src="_attachment/image_571.png" /></p>
+<p>Lambda:
+<img alt="" src="_attachment/image_570.png" /></p>
 <ul>
-<li>Canary は2段階。Liner は10%ずつ段階的に。</li>
+<li>Liner は10%ずつを段階的に。Canary は 10%→100%の2段階。</li>
 </ul>
-<p>ECS:</p>
-<p><img alt="" src="_attachment/image_571.png" /></p>
-<h3 id="_21">トリガー (通知)</h3>
+<h3 id="_22">トリガー (通知)</h3>
 <ul>
 <li>デプロイグループ設定でイベントを SNS 通知するトリガーを設定できる。</li>
 <li>デプロイグループごとに最大 10 個。</li>
@@ -695,7 +692,7 @@ hooks:
 </li>
 </ul>
 <p>NOTE: カスタム環境変数を渡す方法はない</p>
-<h2 id="_22">ロールバック</h2>
+<h2 id="_23">ロールバック</h2>
 <p>マニュアルロールバック:</p>
 <ul>
 <li>以前のリビジョンで新しい deployment を作成してデプロイするだけ。</li>
@@ -708,7 +705,7 @@ hooks:
 <li><img alt="" src="_attachment/image_582.png" /></li>
 <li><a href="https://docs.aws.amazon.com/codedeploy/latest/userguide/deployments-rollback-and-redeploy.html#deployments-rollback-and-redeploy-automatic-rollbacks">https://docs.aws.amazon.com/codedeploy/latest/userguide/deployments-rollback-and-redeploy.html#deployments-rollback-and-redeploy-automatic-rollbacks</a></li>
 </ul>
-<h2 id="_23">ポリシー関連</h2>
+<h2 id="_24">ポリシー関連</h2>
 <p><img alt="" src="_attachment/image_583.png" /></p>
 <p>サービスロール</p>
 <ul>
@@ -774,7 +771,7 @@ Start-Process c:\temp\codedeploy-agent.msi '/qn /l**v c:\temp\host-agent-install
 </li>
 <li>インスタンス上のインストールログを CloudWatch Logs で見るには CloudWatch を別途インストールする。</li>
 </ul>
-<h3 id="_24">オンプレインスタンスの登録</h3>
+<h3 id="_25">オンプレインスタンスの登録</h3>
 <p>各インスタンス毎に IAM ユーザを作成する方法 (小規模システム)と、 IAM ロールを STS で使う方法 (大規模システム) がある。</p>
 <p>CloudDeploy エージェントの設定ファイルに認証情報を設定し、register-on-premises-instance コマンドで CodeDeploy サービスに IAM ユーザまたは STS セッションの ARN を登録する。</p>
 <ul>
@@ -810,7 +807,7 @@ region: supported-region
 <h1 id="aws-codepipeline">AWS CodePipeline</h1>
 <p>CI/CDパイプラインのオーケストレーション。</p>
 <p><img alt="" src="_attachment/File_15.png" /></p>
-<h2 id="_25">ステージ</h2>
+<h2 id="_26">ステージ</h2>
 <ul>
 <li>パイプラインの各ステージに１つ以上のアクションを追加していく。</li>
 <li>管理コンソールのウィザードでは次の3ステージが作成される。<ul>
@@ -822,7 +819,7 @@ region: supported-region
 <li>少なくとも２つ以上のステージが必要。(ビルド・デプロイ両方ともスキップはできない)</li>
 <li>ステージは後から追加できる。</li>
 </ul>
-<h3 id="_26">ソースステージ</h3>
+<h3 id="_27">ソースステージ</h3>
 <p><img alt="" src="_attachment/image_586.png" /></p>
 <ul>
 <li>入力アーティファクトが更新されると自動でパイプラインが起動される。</li>
@@ -837,19 +834,19 @@ region: supported-region
 <li>Ref. Source actions and change detection methods:</li>
 <li><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-about-starting.html#change-detection-methods">https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-about-starting.html#change-detection-methods</a></li>
 </ul>
-<h3 id="_27">ビルドステージ (オプショナル)</h3>
+<h3 id="_28">ビルドステージ (オプショナル)</h3>
 <ul>
 <li>ビルドだけでなくテストにも使われる。</li>
 </ul>
 <p><img alt="" src="_attachment/image_588.png" /></p>
-<h3 id="_28">デプロイステージ (オプショナル)</h3>
+<h3 id="_29">デプロイステージ (オプショナル)</h3>
 <p><img alt="" src="_attachment/image_589.png" /></p>
 <ul>
 <li>ECS, ECS(Blue/Green) は CodeDeploy 使わなくても直接 CodePipeline に統合されている。</li>
 </ul>
 <p>別リージョンのビルド/デプロイプロバイダーを呼び出すことも可能:</p>
 <p><img alt="" src="_attachment/image_590.png" /></p>
-<h2 id="_29">アクション</h2>
+<h2 id="_30">アクション</h2>
 <p><img alt="" src="_attachment/File_16.png" /></p>
 <ul>
 <li>Approval アクション: 手動承認 → SNS<ul>
@@ -872,13 +869,13 @@ region: supported-region
 </ul>
 </li>
 </ul>
-<h3 id="_30">パラレルアクションとシーケンシャルアクション</h3>
+<h3 id="_31">パラレルアクションとシーケンシャルアクション</h3>
 <p><img alt="" src="_attachment/image_592.png" /><img alt="" src="_attachment/image_593.png" /></p>
 <p>パラレルアクション=アクショングループ</p>
 <ul>
 <li><img alt="" src="_attachment/image_594.png" /></li>
 </ul>
-<h2 id="_31">パイプラインのコーディング</h2>
+<h2 id="_32">パイプラインのコーディング</h2>
 <p><img alt="" src="_attachment/image_595.png" /></p>
 <ul>
 <li>最初のステージにソースアクションを含める必要がある 。<ul>
@@ -892,20 +889,20 @@ region: supported-region
 </ul>
 </li>
 </ul>
-<h2 id="_32">アーティファクト</h2>
+<h2 id="_33">アーティファクト</h2>
 <p>各ステージのアーティファクトが S3 に置かれ、次のステージに渡される。S3 バージョンも使用して作成の度にバージョニングされる。</p>
 <p><img alt="" src="_attachment/image_596.png" /><img alt="" src="_attachment/image_597.png" /></p>
 <ul>
 <li>各アクションで Input/Output artifacts の名前を指定する。</li>
 </ul>
-<h3 id="_33">アーティファクトの暗号化</h3>
+<h3 id="_34">アーティファクトの暗号化</h3>
 <ul>
 <li>CodePipeline はアーティファクトを保管するための S3 バケットを作成し、デフォルトで S3 の AWS 管理キー (aws/s3) を作成して SSE-KMS で暗号化する。</li>
 <li>カスタマー管理キーでないとキーポリシーを変更できずクロスアカウントでの使用ができない。また、削除やローテーションの鍵管理ができないため、カスタマー管理キーの使用が推奨される。</li>
 <li><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/S3-artifact-encryption.html">https://docs.aws.amazon.com/codepipeline/latest/userguide/S3-artifact-encryption.html</a></li>
 <li><img alt="" src="_attachment/image_598.png" /></li>
 </ul>
-<h2 id="_34">クロスリージョンアクション</h2>
+<h2 id="_35">クロスリージョンアクション</h2>
 <p>クロスリージョンでビルドプロバイダー/デプロイプロバイダー等を呼び出すことが可能。</p>
 <ul>
 <li>ソースアクション、サードパーティーアクション、カスタムアクションはクロスリージョン不可。</li>
@@ -916,7 +913,7 @@ region: supported-region
 <p><img alt="" src="_attachment/image_599.png" /></p>
 <p><a href="https://aws.amazon.com/jp/blogs/devops/using-aws-codepipeline-to-perform-multi-region-deployments/">https://aws.amazon.com/jp/blogs/devops/using-aws-codepipeline-to-perform-multi-region-deployments/</a></p>
 <p><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/actions-create-cross-region.html">https://docs.aws.amazon.com/codepipeline/latest/userguide/actions-create-cross-region.html</a></p>
-<h2 id="_35">クロスアカウント</h2>
+<h2 id="_36">クロスアカウント</h2>
 <p>パイプラインのある開発アカウントとデプロイ先の本番アカウントでアカウントが分かれているのが普通なので、クロスアカウントアクセスを設定する必要がある。</p>
 <p><img alt="" src="_attachment/image_600.png" /></p>
 <ul>
@@ -1010,7 +1007,7 @@ region: supported-region
 <ul>
 <li><img alt="" src="_attachment/File.jpeg" /></li>
 </ul>
-<h2 id="_36">ラボで使用したパイプラインの例</h2>
+<h2 id="_37">ラボで使用したパイプラインの例</h2>
 <p><img alt="" src="_attachment/image_601.png" /></p>
 <p>Source ステージ</p>
 <ul>

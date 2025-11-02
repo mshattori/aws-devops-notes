@@ -952,10 +952,8 @@ region: supported-region
 <p><img alt="" src="_attachment/image_596.png" />
 - 各アクションで Input/Output artifacts の名前を指定する。
 - クロスリージョン指定可能。
-- KMS で暗号化される。</p>
-<ul>
-<li><img alt="" src="_attachment/image_598.png" /></li>
-</ul>
+- KMS で暗号化される。
+- <img alt="" src="_attachment/image_598.png" /></p>
 <h3 id="_34">アーティファクトの暗号化</h3>
 <ul>
 <li>CodePipeline はアーティファクトを保管するための S3 バケットを作成し、デフォルトで S3 の AWS 管理キー (aws/s3) を作成して SSE-KMS で暗号化。</li>
@@ -1008,12 +1006,16 @@ region: supported-region
 <li>CodeDeploy に設定された EC2 インスタンスロールに適用される、KMS カスタマーマネージドキーへのアクセスを許可するポリシーを作成。</li>
 <li>IAM ロールを設定し、そのロールにアカウント A がロールを引き受けることを許可する信頼ポリシーをアタッチ。（CodePipline が Assume して使うクロスアカウントロール）</li>
 <li>パイプラインで必要な CodeDeploy リソースへのアクセスを許可するポリシーを作成し、上記の IAM ロールにアタッチ。</li>
-<li>S3 バケットへのアクセスを許可するポリシーを作成し、上記の IAM ロールにアタッチ。</li>
+<li>S3 バケットへのアクセスを許可するポリシーを作成し、上記の IAM ロールにアタッチ。（CodePipline がクロスアカウントロールで CodeDeploy のデプロイ命令を実行する際にも A 側の S3 バケットへのアクセスが必要となるため）</li>
 </ol>
-<p>パイプラインの編集
-- AWS CLI を使用して作業する
-    - おそらくクロスアカウントの Deploy プロバイダの設定が管理コンソールで出来ないため。
-- パイプラインを JSON で取得する</p>
+<p>パイプラインの編集</p>
+<ul>
+<li>AWS CLI を使用して作業する<ul>
+<li>おそらくクロスアカウントの Deploy プロバイダの設定が管理コンソールで出来ないため。</li>
+</ul>
+</li>
+<li>パイプラインを JSON で取得する</li>
+</ul>
 <pre><code>aws codepipeline get-pipeline --name MyFirstPipeline &gt;pipeline.json
 </code></pre>
 <ul>
@@ -1106,9 +1108,9 @@ region: supported-region
 <p><img alt="" src="_attachment/image_602.png" /></p>
 <p>ユースケース例</p>
 <p><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/best-practices.html#use-cases">https://docs.aws.amazon.com/codepipeline/latest/userguide/best-practices.html#use-cases</a></p>
-<h2 id="cloudwatch-eventseventbridge">CloudWatch Events/EventBridge 連携</h2>
+<h2 id="eventbridge_2">EventBridge 連携</h2>
 <p>CodePipeline をイベントソースにターゲットの Lambda 等と連携。</p>
-<p>単にパイプライン中に Lambda 呼びたければ Invoke アクションがあるので、Fail の際などに呼ぶ場合にこちらを使う。</p>
+<p>単にパイプライン中に Lambda 呼びたければ Invoke アクションがあるので、FAIL などのイベント発生時にトリガーする際にこちらを使う。</p>
 <p><img alt="" src="_attachment/image_603.png" /></p>
 <ul>
 <li>CodePipeline Pipeline Execution State Change</li>
@@ -1124,7 +1126,7 @@ region: supported-region
 <ul>
 <li>Code サービスによる CI/CD パイプラインをアプリのテンプレートから簡単に作成できる。</li>
 <li>リポジトリ: CodeCommit / GitHub</li>
-<li>デプロイターゲット: EC2 / Lambda / Beanstalk</li>
+<li>デプロイターゲット: <strong>EC2 / Lambda / Beanstalk</strong></li>
 <li>パイプライン: CodePipeline</li>
 <li>ビルドプロジェクト: CodeBuild </li>
 <li>デプロイツール: CodeDeploy, CloudFormation, Beanstalk</li>
@@ -1228,14 +1230,16 @@ Resources:
 </ul>
 <p><img alt="" src="_attachment/image_607.png" /></p>
 <h3 id="amazon-ec2">Amazon EC2 プラグイン</h3>
-<p>Jenkins ワーカーノードの自動スケーリング。</p>
-<p>Jenkins プライマリの Amazon EC2 プラグインが EC2 API で負荷に応じて自動的にワーカーノードを作成・削除する。</p>
+<ul>
+<li>Jenkins CI サーバー（ワーカーノード）の自動スケーリング。</li>
+<li>Jenkins プライマリの Amazon EC2 プラグインが EC2 API で負荷に応じて自動的にワーカーノードを作成・削除する。</li>
+</ul>
 <p><img alt="" src="_attachment/image_608.png" /></p>
 <ul>
 <li>プライマリの Amazon EC2 プラグインにより、新しい EC2 インスタンスを自動的に作成して Jenkins エージェントとして接続する</li>
 <li>過負荷になると、Jenkins プライマリによって、ビルドがエージェントにオフロードされる。</li>
 <li>負荷が低下すると、Jenkins プライマリにより余分なワーカーノードが自動的に終了される。</li>
-<li>同様に ECS でエージェントを起動するプラグリンもある。</li>
+<li>同様に ECS でエージェントを起動するプラグインもある。</li>
 </ul>
 <h3 id="aws-codebuild_1">AWS CodeBuild プラグイン</h3>
 <ul>
@@ -1250,7 +1254,7 @@ Resources:
 <li>Artifact Manager on S3</li>
 </ul>
 <hr />
-<p>テスト自動化</p>
+<h1 id="cicd_1">CI/CDに関する概念・用語</h1>
 <p><img alt="" src="_attachment/image_610.png" /></p>
 <ul>
 <li>UAT: User Acceptance Test</li>
@@ -1260,37 +1264,39 @@ Resources:
 <li>Route 53 の加重ラウンドロビンなどで実現。</li>
 </ul>
 </li>
+<li>Mock サーバ<ul>
+<li>通常、モックサーバは HTTP の API コールをシミュレーションするために使用される。</li>
+<li>API Gateway の Mock 統合が使える。</li>
 </ul>
-<h2 id="mock">Mock サーバ</h2>
-<p>通常、モックサーバは HTTP の API コール をシミュレーションするために使用される。</p>
-<p>API Gateway の Mock 統合が使える。</p>
+</li>
+</ul>
 <p><img alt="" src="_attachment/image_611.png" /></p>
 <ul>
-<li>耐障害性テスト: HA が機能するか確認。プライマリインスタンスを落としてみたり。</li>
+<li>耐障害性テスト: HA が機能するか確認。プライマリインスタンスを落としてみたり。<ul>
 <li>AWS Fault Injection Simulator<ul>
 <li><a href="https://aws.amazon.com/jp/fis/">https://aws.amazon.com/jp/fis/</a></li>
 <li>スポットインスタンスの中断とかを実施できる。</li>
 </ul>
 </li>
 </ul>
+</li>
+</ul>
 <p><img alt="" src="_attachment/image_612.png" /></p>
 <ul>
-<li>ビッグバン – すべてのモジュールが同時に統合およびテストされます。</li>
-<li>トップダウン – GUI などの最上位レベルのモジュールからテストが開始さ れ、次に後続のモジュールがテストされます。</li>
-<li>ボトムアップ – 制御フローの下部からテストが実行されます。</li>
+<li>ビッグバン – すべてのモジュールを同時に統合およびテスト。</li>
+<li>トップダウン – GUI などの最上位レベルのモジュールからテストが開始され、次に後続のモジュールがテストされる。</li>
+<li>ボトムアップ – 制御フローの下部からテストが実行される。</li>
 </ul>
 <h2 id="blazemeter">BlazeMeter</h2>
 <ul>
-<li>JMeterのマネージドサービス</li>
-<li>負荷 テスト、ストレステスト、パフォーマンステストの実施。</li>
+<li>JMeter のマネージドサービス</li>
+<li>負荷テスト、ストレステスト、パフォーマンステストの実施。</li>
 <li>CodePipelineのアクションプロバイダー (テストプロバイダー)として指定できるようなっている</li>
 </ul>
 <p><img alt="" src="_attachment/image_613.png" /></p>
 <h2 id="codepipeline_1">CodePipeline のテストアクションプロバイダー</h2>
-<p><img alt="" src="_attachment/image_614.png" /></p>
-<ul>
-<li>Device Farm:  実際のスマホやタブレットで、Android, iOS, Web アプリを物理的にテストできるサービス。</li>
-</ul>
+<p><img alt="" src="_attachment/image_614.png" />
+- Device Farm:  実際のスマホやタブレットで、Android, iOS, Web アプリを物理的にテストできるサービス。</p>
 <p><br></p>
 </article>
 

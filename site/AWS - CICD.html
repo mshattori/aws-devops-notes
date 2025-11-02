@@ -1255,49 +1255,112 @@ Resources:
 </ul>
 <hr />
 <h1 id="cicd_1">CI/CDに関する概念・用語</h1>
-<p><img alt="" src="_attachment/image_610.png" /></p>
+<p>以下は、あなたの提供したスライド画像とテキスト内容をもとに再構成した
+<strong>「CI/CD に関する概念・用語」章の整理済みノート（Markdown形式）</strong> です。
+元ノートの簡潔・要点重視の文体に合わせています。</p>
+<hr />
+<h2 id="cicd_2">CI/CD に関する概念・用語</h2>
+<h3 id="cicd_3">CI/CD パイプラインでのテストシナリオ</h3>
+<p><strong>継続的インテグレーション（CI）</strong></p>
 <ul>
-<li>UAT: User Acceptance Test</li>
-<li>A/B テスト<ul>
-<li>2 つ以上のさまざまなバージョンの機能が別のユー ザに提供されるテスト方式。</li>
-<li>各実装の使用に関するメトリクスを収集し、UX エンジニアはこのデータを検証し てどの実装を採用すべきかを判断する。</li>
-<li>Route 53 の加重ラウンドロビンなどで実現。</li>
+<li>開発段階<ul>
+<li>単体テスト</li>
+<li>静的コード解析</li>
 </ul>
 </li>
-<li>Mock サーバ<ul>
-<li>通常、モックサーバは HTTP の API コールをシミュレーションするために使用される。</li>
-<li>API Gateway の Mock 統合が使える。</li>
-</ul>
-</li>
-</ul>
-<p><img alt="" src="_attachment/image_611.png" /></p>
-<ul>
-<li>耐障害性テスト: HA が機能するか確認。プライマリインスタンスを落としてみたり。<ul>
-<li>AWS Fault Injection Simulator<ul>
-<li><a href="https://aws.amazon.com/jp/fis/">https://aws.amazon.com/jp/fis/</a></li>
-<li>スポットインスタンスの中断とかを実施できる。</li>
+<li>ビルド段階<ul>
+<li>統合テスト</li>
+<li>コンポーネントテスト</li>
+<li>回帰テスト</li>
 </ul>
 </li>
 </ul>
+<p><strong>継続的デリバリー／デプロイ（CD）</strong></p>
+<ul>
+<li>ステージ環境<ul>
+<li>システムテスト</li>
+<li>パフォーマンステスト</li>
+<li>負荷テスト</li>
+<li>コンプライアンステスト</li>
+<li>UAT (User Acceptance Test)</li>
+</ul>
+</li>
+<li>本番環境<ul>
+<li>A/B テスト</li>
+<li>Canary 分析</li>
+</ul>
 </li>
 </ul>
-<p><img alt="" src="_attachment/image_612.png" /></p>
+<h3 id="_38">テストに関する用語</h3>
 <ul>
-<li>ビッグバン – すべてのモジュールを同時に統合およびテスト。</li>
-<li>トップダウン – GUI などの最上位レベルのモジュールからテストが開始され、次に後続のモジュールがテストされる。</li>
-<li>ボトムアップ – 制御フローの下部からテストが実行される。</li>
+<li>
+<p>単体テスト
+    最小ユニットの個別テスト。</p>
+</li>
+<li>
+<p>統合テスト
+    結合されたユニットやモジュール間の相互関係をテスト。</p>
+</li>
+<li>
+<p>耐障害性テスト
+    システムがコンポーネント障害に対してどのように動作するかを確認。</p>
+</li>
+<li>
+<p>負荷テスト
+    高負荷状態での性能確認。</p>
+</li>
+<li>
+<p><strong>合成テスト</strong>
+    ユーザーエクスペリエンス全体を確認。</p>
+</li>
+<li>
+<p>UAT（User Acceptance Test）
+    ユーザー視点で受け入れ基準を満たすか検証。</p>
+</li>
+<li>
+<p>Mock サーバ
+    HTTP API コールを模擬して動作確認を行う。
+    API Gateway の Mock 統合で実装可能。</p>
+</li>
+<li>
+<p>A/B テスト
+    2つ以上の機能バージョンを異なるユーザーに提供し、メトリクスを比較。
+    Route 53 の加重ラウンドロビンで実現可能。</p>
+</li>
 </ul>
-<h2 id="blazemeter">BlazeMeter</h2>
+<h4 id="_39">統合テストの手法</h4>
 <ul>
-<li>JMeter のマネージドサービス</li>
-<li>負荷テスト、ストレステスト、パフォーマンステストの実施。</li>
-<li>CodePipelineのアクションプロバイダー (テストプロバイダー)として指定できるようなっている</li>
+<li>ビッグバン方式：すべてのモジュールを同時に統合してテスト。</li>
+<li>トップダウン方式：上位（GUIなど）から下位に向けて統合テスト。</li>
+<li>ボトムアップ方式：制御フローの下層から上層へと積み上げテスト。</li>
 </ul>
-<p><img alt="" src="_attachment/image_613.png" /></p>
-<h2 id="codepipeline_1">CodePipeline のテストアクションプロバイダー</h2>
-<p><img alt="" src="_attachment/image_614.png" />
-- Device Farm:  実際のスマホやタブレットで、Android, iOS, Web アプリを物理的にテストできるサービス。</p>
-<p><br></p>
+<h4 id="_40">耐障害性テスト</h4>
+<ul>
+<li>高可用性（HA）構成が期待通りに機能するか確認。</li>
+<li>例：プライマリインスタンスを意図的に停止させるテスト。</li>
+</ul>
+<p><strong>AWS Fault Injection Simulator (FIS)</strong>
+- スポットインスタンスの中断
+- ネットワーク遅延や障害の注入
+- サービスの耐障害性確認
+- <a href="https://aws.amazon.com/jp/fis/">https://aws.amazon.com/jp/fis/</a></p>
+<h3 id="codepipeline_1">CodePipeline のテストアクションプロバイダー統合</h3>
+<ul>
+<li>AWS CodeBuild</li>
+<li>AWS Device Farm</li>
+<li>BlazeMeter</li>
+<li>Ghost Inspector</li>
+<li>Micro Focus StormRunner Load</li>
+<li>Nouvola</li>
+<li>Runscope</li>
+</ul>
+<p>Device Farm
+- 実際の Android / iOS / Web アプリを物理デバイス上でテスト。</p>
+<p>BlazeMeter
+- JMeter のマネージドサービス。負荷・性能を自動検証。
+- JMeter スクリプトを利用した負荷テスト、ストレステスト、パフォーマンステストの実施。
+- 平均レイテンシや応答時間の可視化
+- CodePipeline のテストアクションプロバイダーとして利用可能。</p>
 </article>
 
     </main>

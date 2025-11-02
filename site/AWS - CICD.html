@@ -792,7 +792,7 @@ Hooks:
 <li>SNS トピックに情報を公開。</li>
 </ul>
 </li>
-<li>**AWSCodeDeployRoleForECS<ul>
+<li><strong>AWSCodeDeployRoleForECS</strong><ul>
 <li>ECS タスクセットの読み取り・更新・削除。</li>
 <li>ELB ターゲットグループ、リスナー、ルールを更新。</li>
 <li>Lambda 関数の呼び出し。(Hooks)</li>
@@ -801,7 +801,7 @@ Hooks:
 <li>SNS トピックに情報を公開。</li>
 </ul>
 </li>
-<li>AWSCodeDeployRoleForLambda<ul>
+<li><strong>AWSCodeDeployRoleForLambda</strong><ul>
 <li>Lambda 関数およびエイリアスの読み取り・更新・呼び出し。</li>
 <li>S3 バケットのリビジョンファイルにアクセス。</li>
 <li>CloudWatch アラームに関する情報を取得。</li>
@@ -967,10 +967,14 @@ region: supported-region
 <li><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/S3-artifact-encryption.html">https://docs.aws.amazon.com/codepipeline/latest/userguide/S3-artifact-encryption.html</a></li>
 </ul>
 <h2 id="_35">クロスリージョンアクション</h2>
-<p>クロスリージョンでビルドプロバイダー/デプロイプロバイダー等を呼び出すことが可能。
-- ソースアクション、サードパーティーアクション、カスタムアクションはクロスリージョン不可。</p>
-<p>各リージョンにアーティファクトストア (S3バケット) と SSE-KMS キーが必要となる。
-- リージョン間でのアーティファクトのコピーが行われる。</p>
+<p>クロスリージョンでビルドプロバイダー/デプロイプロバイダー等を呼び出すことが可能。</p>
+<ul>
+<li>ソースアクション、サードパーティーアクション、カスタムアクションはクロスリージョン不可。</li>
+</ul>
+<p>各リージョンにアーティファクトストア (S3バケット) と SSE-KMS キーが必要となる。</p>
+<ul>
+<li>リージョン間でのアーティファクトのコピーが行われる。</li>
+</ul>
 <p>クロスリージョンのサービスをデプロイする例:</p>
 <p><img alt="" src="_attachment/image_599.png" /></p>
 <p><a href="https://aws.amazon.com/jp/blogs/devops/using-aws-codepipeline-to-perform-multi-region-deployments/">https://aws.amazon.com/jp/blogs/devops/using-aws-codepipeline-to-perform-multi-region-deployments/</a></p>
@@ -979,25 +983,33 @@ region: supported-region
 <p>パイプラインのある開発アカウントとデプロイ先の本番アカウントでアカウントが分かれているのが普通なので、クロスアカウントアクセスを設定する必要がある。</p>
 <p><img alt="" src="_attachment/image_600.png" />
 - <a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-create-cross-account.html">https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-create-cross-account.html</a></p>
-<p>アカウント A 側リソース:
-- アーティファクトが置かれる S3 バケット
-- ソースとデプロイステージがあるパイプライン</p>
-<p>アカウント B 側リソース:
-- CodeDeploy アプリケーション
-- EC2 インスタンスがあるデプロイグループ</p>
-<p>アカウント A 側ステップ :
-1. アカウント B の ARN またはアカウント ID を入手。
-2. パイプラインのリージョンで KMS カスタマーマネージドキーを作成し、キーの使用権限を  CodePipeline サービスロールとアカウント B に付与。キーはパイプラインアーティファクトの暗号化に使用される。
-3. アカウント B に S3 バケットへのアクセスを許可する S3 バケットポリシーを作成。
-4. アカウント A がアカウント B によって設定されたロールを引き受けることを許可するポリシーを作成し、そのポリシーを CodePipeline サービスロールにアタッチ。
-5. デフォルトのキーではなく KMS カスタマーマネージドキーを使用するパイプラインを編集。</p>
-<p>アカウント B 側ステップ:
-1. アカウント A の ARN またはアカウント ID を入手。
-2. CodeDeploy に設定された EC2 インスタンスロールに適用される、S3 バケットへのアクセスを許可するポリシーを作成。
-3. CodeDeploy に設定された EC2 インスタンスロールに適用される、KMS カスタマーマネージドキーへのアクセスを許可するポリシーを作成。
-4. IAM ロールを設定し、そのロールにアカウント A がロールを引き受けることを許可する信頼ポリシーをアタッチ。（CodePipline が Assume して使うクロスアカウントロール）
-5. パイプラインで必要な CodeDeploy リソースへのアクセスを許可するポリシーを作成し、上記の IAM ロールにアタッチ。
-6. S3 バケットへのアクセスを許可するポリシーを作成し、上記の IAM ロールにアタッチ。</p>
+<p>アカウント A 側リソース:</p>
+<ul>
+<li>アーティファクトが置かれる S3 バケット</li>
+<li>ソースとデプロイステージがあるパイプライン</li>
+</ul>
+<p>アカウント B 側リソース:</p>
+<ul>
+<li>CodeDeploy アプリケーション</li>
+<li>EC2 インスタンスがあるデプロイグループ</li>
+</ul>
+<p>アカウント A 側ステップ:</p>
+<ol>
+<li>アカウント B の ARN またはアカウント ID を入手。</li>
+<li>パイプラインのリージョンで KMS カスタマーマネージドキーを作成し、キーの使用権限を  CodePipeline サービスロールとアカウント B に付与。キーはパイプラインアーティファクトの暗号化に使用される。</li>
+<li>アカウント B に S3 バケットへのアクセスを許可する S3 バケットポリシーを作成。</li>
+<li>アカウント A がアカウント B によって設定されたロールを引き受けることを許可するポリシーを作成し、そのポリシーを CodePipeline サービスロールにアタッチ。</li>
+<li>デフォルトのキーではなく KMS カスタマーマネージドキーを使用するパイプラインを編集。</li>
+</ol>
+<p>アカウント B 側ステップ:</p>
+<ol>
+<li>アカウント A の ARN またはアカウント ID を入手。</li>
+<li>CodeDeploy に設定された EC2 インスタンスロールに適用される、S3 バケットへのアクセスを許可するポリシーを作成。</li>
+<li>CodeDeploy に設定された EC2 インスタンスロールに適用される、KMS カスタマーマネージドキーへのアクセスを許可するポリシーを作成。</li>
+<li>IAM ロールを設定し、そのロールにアカウント A がロールを引き受けることを許可する信頼ポリシーをアタッチ。（CodePipline が Assume して使うクロスアカウントロール）</li>
+<li>パイプラインで必要な CodeDeploy リソースへのアクセスを許可するポリシーを作成し、上記の IAM ロールにアタッチ。</li>
+<li>S3 バケットへのアクセスを許可するポリシーを作成し、上記の IAM ロールにアタッチ。</li>
+</ol>
 <p>パイプラインの編集
 - AWS CLI を使用して作業する
     - おそらくクロスアカウントの Deploy プロバイダの設定が管理コンソールで出来ないため。

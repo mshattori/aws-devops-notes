@@ -141,10 +141,14 @@ git config --global credential.UseHttpPath true
 <li><img alt="" src="_attachment/image_538.png" /></li>
 <li>プルリクのマージの承認ルールというのが追加されている。</li>
 </ul>
-<p>クライアント側フック
-- リポジトリの .git/hooks サブディレクトリにインストールされる。</p>
-<p>サーバ側フック
-- CodeCommit ではサーバ側のフックは CodeCommit イベントで処理される。</p>
+<p>クライアント側フック</p>
+<ul>
+<li>リポジトリの .git/hooks サブディレクトリにインストールされる。</li>
+</ul>
+<p>サーバ側フック</p>
+<ul>
+<li>CodeCommit ではサーバ側のフックは CodeCommit イベントで処理される。</li>
+</ul>
 <p>CodeCommit リポジトリトリガー</p>
 <ul>
 <li>コード Push などのリポジトリイベントで SNS, Lambda をトリガーしアクションを実行。</li>
@@ -156,13 +160,15 @@ git config --global credential.UseHttpPath true
 <li><img alt="" src="_attachment/image_541.png" /></li>
 <li><a href="https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-notify-lambda.html">https://docs.aws.amazon.com/codecommit/latest/userguide/how-to-notify-lambda.html</a></li>
 </ul>
-<p>通知ルール
-- SNS か AWS Chatbot に通知を投げる。
-- <img alt="" src="_attachment/image_542.png" />
-- <a href="https://docs.aws.amazon.com/ja_jp/codecommit/latest/userguide/how-to-repository-email.html">https://docs.aws.amazon.com/ja_jp/codecommit/latest/userguide/how-to-repository-email.html</a>
-- CodeStar Notifications が提供する機能。CodeCommit/CodeBuild/CodePipeline 等のイベントに共通して適用可能。
-- 通知ルール作成時、選択イベントに一致する EventBridge ルールが自動生成され、通知先へルーティングされる。
-- <img alt="" src="_attachment/image_543.png" /></p>
+<p>通知ルール</p>
+<ul>
+<li>SNS か AWS Chatbot に通知を投げる。</li>
+<li><img alt="" src="_attachment/image_542.png" /></li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/codecommit/latest/userguide/how-to-repository-email.html">https://docs.aws.amazon.com/ja_jp/codecommit/latest/userguide/how-to-repository-email.html</a></li>
+<li>CodeStar Notifications が提供する機能。CodeCommit/CodeBuild/CodePipeline 等のイベントに共通して適用可能。</li>
+<li>通知ルール作成時、選択イベントに一致する EventBridge ルールが自動生成され、通知先へルーティングされる。</li>
+<li><img alt="" src="_attachment/image_543.png" /></li>
+</ul>
 <p>CodeBuild/CodePipeline 連携</p>
 <ul>
 <li>EventBridge ルールを作成してイベントソースを CodeCommit にする。</li>
@@ -243,14 +249,18 @@ git config --global credential.UseHttpPath true
 <li>Docker Hub, ECR にあるイメージを指定。</li>
 </ul>
 </li>
-<li>マネージド型イメージで提供される OS<ul>
+<li>
+<p>マネージド型イメージで提供される OS</p>
+<ul>
 <li>Amazon Linux 2, Ubuntu, Windows Server のイメージが提供されている。<ul>
 <li>Windows Server は us-east 等、特定リージョンのみ。</li>
 </ul>
 </li>
 </ul>
 </li>
-<li><img alt="" src="_attachment/image_549.png" /></li>
+<li>
+<p><img alt="" src="_attachment/image_549.png" /></p>
+</li>
 <li>Ref.<ul>
 <li><a href="https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref.html#build-env-ref-available">https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref.html#build-env-ref-available</a></li>
 <li><a href="https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-available.html">https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-available.html</a></li>
@@ -328,43 +338,67 @@ git config --global credential.UseHttpPath true
 </li>
 </ul>
 <h4 id="_13">ビルドキャッシュの運用</h4>
-<p>CodeBuild キャッシュの失効・削除
-- S3 に保存されたキャッシュを手動で削除して失効させる
-- S3 ライフサイクルポリシーでキャッシュ失効（有効期限・削除ルール）を自動化
-プロジェクト側での無効化・上書き
-- プロジェクト設定を更新してキャッシュ動作を上書き
-- InvalidateProjectCache API でキャッシュを無効化
-    - 既存キャッシュの実体は削除されない（実行中ビルドとの不整合回避のため）
-    - 以降のビルドで新しいキーが使われ、古いキャッシュは参照されない
-キャッシュ対象の指針
-- キャッシュはビルド環境の任意フォルダに有効化できるが、頻繁に変化しない依存関係・ファイルに限定する
-- 予期しない動作を避けるため、設定ファイルや機密情報はキャッシュしない
-Ref.
-- <a href="https://docs.aws.amazon.com/codebuild/latest/userguide/build-caching.html">https://docs.aws.amazon.com/codebuild/latest/userguide/build-caching.html</a>
-- <a href="https://aws.amazon.com/jp/blogs/devops/how-to-enable-caching-for-aws-codebuild/">https://aws.amazon.com/jp/blogs/devops/how-to-enable-caching-for-aws-codebuild/</a></p>
+<p>CodeBuild キャッシュの失効・削除</p>
+<ul>
+<li>S3 に保存されたキャッシュを手動で削除して失効させる</li>
+<li>S3 ライフサイクルポリシーでキャッシュ失効（有効期限・削除ルール）を自動化</li>
+</ul>
+<p>プロジェクト側での無効化・上書き</p>
+<ul>
+<li>プロジェクト設定を更新してキャッシュ動作を上書き</li>
+<li>InvalidateProjectCache API でキャッシュを無効化<ul>
+<li>既存キャッシュの実体は削除されない（実行中ビルドとの不整合回避のため）</li>
+<li>以降のビルドで新しいキーが使われ、古いキャッシュは参照されない</li>
+</ul>
+</li>
+</ul>
+<p>キャッシュ対象の指針</p>
+<ul>
+<li>キャッシュはビルド環境の任意フォルダに有効化できるが、頻繁に変化しない依存関係・ファイルに限定する</li>
+<li>予期しない動作を避けるため、設定ファイルや機密情報はキャッシュしない</li>
+</ul>
+<p>Ref.</p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/codebuild/latest/userguide/build-caching.html">https://docs.aws.amazon.com/codebuild/latest/userguide/build-caching.html</a></li>
+<li><a href="https://aws.amazon.com/jp/blogs/devops/how-to-enable-caching-for-aws-codebuild/">https://aws.amazon.com/jp/blogs/devops/how-to-enable-caching-for-aws-codebuild/</a></li>
+</ul>
 <h2 id="buildspec-buildspecyml">BuildSpec (buildspec.yml)</h2>
 <ul>
 <li>ソースの root ディレクトリに配置。(ビルドプロジェクトで異なるパスも指定可能)</li>
 <li>各ビルドフェーズのコマンド、アーティファクトとして保存するファイルを指定。</li>
 </ul>
-<p><img alt="" src="_attachment/image_555.png" /><img alt="" src="_attachment/image_556.png" />
-phases セクション
-- install フェーズ
-    - runtime-versions でビルドランタイムのインストール指定。
-    - <img alt="" src="_attachment/File_10.png" />
-    - dotnet, java, golang, php, nodejs, python, ruby をサポート。
-    - command ブロックで install フェーズでもコマンド実行可能。
-- post_build フェーズ
-    - UT やコンテナのプッシュ等を実施。
-- run-as: Linux-user-name
-    - 全体および各フェーズに指定可能。
-- finally ブロック
-    - 各セクションに指定。command ブロックでエラーがあったときも必ず実行される。</p>
-<p>artifacts セクション
-- artifact として S3 に保存するファイルを指定。
-- **/* のようなワイルドカードも使える。</p>
-<p>env セクション
-- 環境変数設定。パラメータストアからも簡単に取得できる。</p>
+<p><img alt="" src="_attachment/image_555.png" /><img alt="" src="_attachment/image_556.png" /></p>
+<p>phases セクション</p>
+<ul>
+<li>install フェーズ<ul>
+<li>runtime-versions でビルドランタイムのインストール指定。</li>
+<li><img alt="" src="_attachment/File_10.png" /></li>
+<li>dotnet, java, golang, php, nodejs, python, ruby をサポート。</li>
+<li>command ブロックで install フェーズでもコマンド実行可能。</li>
+</ul>
+</li>
+<li>post_build フェーズ<ul>
+<li>UT やコンテナのプッシュ等を実施。</li>
+</ul>
+</li>
+<li>run-as: Linux-user-name<ul>
+<li>全体および各フェーズに指定可能。</li>
+</ul>
+</li>
+<li>finally ブロック<ul>
+<li>各セクションに指定。command ブロックでエラーがあったときも必ず実行される。</li>
+</ul>
+</li>
+</ul>
+<p>artifacts セクション</p>
+<ul>
+<li>artifact として S3 に保存するファイルを指定。</li>
+<li>**/* のようなワイルドカードも使える。</li>
+</ul>
+<p>env セクション</p>
+<ul>
+<li>環境変数設定。パラメータストアからも簡単に取得できる。</li>
+</ul>
 <pre><code>env:
   variables:
     JAVA_HOME: &quot;/usr/lib/jvm/java-8-openjdk-amd64&quot;
@@ -453,13 +487,15 @@ phases:
 </ul>
 </li>
 </ul>
-<p>例: Validating AWS CodeCommit Pull Requests with AWS CodeBuild and AWS Lambda
-- PR を契機に CodeBuild でコードの自動テストを行い、結果を PR にコメント付与する例
-- CodeCommit をイベントソースとして CodeBuild を開始、CodeBuild をイベントソースとして Lambda で結果を通知。
-- Lambda はテスト開始時とテスト結果を PR にコメント追加するのに使用されている。
-- (ClaudWatch Event → EventBridge で読み替え)
-- <img alt="" src="_attachment/image_558.png" />
-- <a href="https://aws.amazon.com/jp/blogs/devops/validating-aws-codecommit-pull-requests-with-aws-codebuild-and-aws-lambda/">https://aws.amazon.com/jp/blogs/devops/validating-aws-codecommit-pull-requests-with-aws-codebuild-and-aws-lambda/</a></p>
+<p>例: Validating AWS CodeCommit Pull Requests with AWS CodeBuild and AWS Lambda</p>
+<ul>
+<li>PR を契機に CodeBuild でコードの自動テストを行い、結果を PR にコメント付与する例</li>
+<li>CodeCommit をイベントソースとして CodeBuild を開始、CodeBuild をイベントソースとして Lambda で結果を通知。</li>
+<li>Lambda はテスト開始時とテスト結果を PR にコメント追加するのに使用されている。</li>
+<li>(ClaudWatch Event → EventBridge で読み替え)</li>
+<li><img alt="" src="_attachment/image_558.png" /></li>
+<li><a href="https://aws.amazon.com/jp/blogs/devops/validating-aws-codecommit-pull-requests-with-aws-codebuild-and-aws-lambda/">https://aws.amazon.com/jp/blogs/devops/validating-aws-codecommit-pull-requests-with-aws-codebuild-and-aws-lambda/</a></li>
+</ul>
 <hr />
 <h1 id="aws-codedeploy">AWS CodeDeploy</h1>
 <p><img alt="" src="_attachment/File_12.png" /></p>
@@ -478,8 +514,10 @@ phases:
 </ul>
 </li>
 <li>ECS (Fargate)</li>
-<li>Lambda</li>
+<li>Lambda<ul>
 <li>NOTE: CodeDeploy 自体はリソースのプロビジョニングは行わない</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -493,7 +531,9 @@ phases:
 <li>GitHub の場合は aws deploy register-application-revision で repo/commit をリビジョンとして登録</li>
 </ul>
 </li>
-<li>デプロイを作成することでデプロイプロセスが開始。(aws deploy create-deployment)<ul>
+<li>
+<p>デプロイを作成することでデプロイプロセスが開始。(aws deploy create-deployment)</p>
+<ul>
 <li>この際、アプリケーション名・デプロイグループ・リビジョンを指定。</li>
 <li>デプロイタイプ (Blue/Green 等) に応じてデプロイメントがスケジュールされ、各インスタンス内のエージェントがリビジョンを pull して AppSpec に従って展開。</li>
 </ul>
@@ -527,16 +567,22 @@ phases:
 <p><img alt="" src="_attachment/image_563.png" /></p>
 <p>「EC2インスタンス」「オンプレインスタンス」ではタググループで指定可能:</p>
 <p><img alt="" src="_attachment/image_564.png" /></p>
-<p>Auto Scaling グループと Code Deploy
-- ASGがスケールアウトする際、新規起動インスタンスに最新リビジョンが自動デプロイ。
-    - ASGのLifecycle Hook (EC2_INSTANCE_LAUNCHING) で、起動直後のインスタンスにデプロイを実行。
-- 追加インスタンスのみが対象（既存インスタンスはそのまま）。
-- Deployment Group に ASG を関連付けるだけで利用可。
-- インプレース・Blue/Green 両方を利用可能。</p>
-<p>環境設定
-- EC2 Auto Scaling グループの自動コピー: ASG 全体の置き換えによるデプロイ (Blue/Green 専用)
-- インスタンスの手動プロビジョン:  デプロイの作成時に個別にインスタンスを指定する。
-- <img alt="" src="_attachment/image_565.png" /></p>
+<p>Auto Scaling グループと Code Deploy</p>
+<ul>
+<li>ASGがスケールアウトする際、新規起動インスタンスに最新リビジョンが自動デプロイ。<ul>
+<li>ASGのLifecycle Hook (EC2_INSTANCE_LAUNCHING) で、起動直後のインスタンスにデプロイを実行。</li>
+</ul>
+</li>
+<li>追加インスタンスのみが対象（既存インスタンスはそのまま）。</li>
+<li>Deployment Group に ASG を関連付けるだけで利用可。</li>
+<li>インプレース・Blue/Green 両方を利用可能。</li>
+</ul>
+<p>環境設定</p>
+<ul>
+<li>EC2 Auto Scaling グループの自動コピー: ASG 全体の置き換えによるデプロイ (Blue/Green 専用)</li>
+<li>インスタンスの手動プロビジョン:  デプロイの作成時に個別にインスタンスを指定する。</li>
+<li><img alt="" src="_attachment/image_565.png" /></li>
+</ul>
 <p>ECS の場合は ECS クラスター名と ELB を指定。</p>
 <p><img alt="" src="_attachment/image_566.png" /></p>
 <h2 id="_19">デプロイタイプ</h2>
@@ -551,10 +597,12 @@ phases:
 </ol>
 <p><img alt="" src="_attachment/image_567.png" /></p>
 <h3 id="_20">デプロイ設定</h3>
-<p>Blue/Green に関連する設定
-- EC2 インスタンス/Auto Scaling グループの Blue/Green には ELB 指定が必要
-- トラフィック再ルーティングの開始:  即時 or 検証後に手動・承認で実行
-- デプロイ成功後の旧環境インスタンスの保持 ...  保持すればロールバックが容易</p>
+<p>Blue/Green に関連する設定</p>
+<ul>
+<li>EC2 インスタンス/Auto Scaling グループの Blue/Green には ELB 指定が必要</li>
+<li>トラフィック再ルーティングの開始:  即時 or 検証後に手動・承認で実行</li>
+<li>デプロイ成功後の旧環境インスタンスの保持 ...  保持すればロールバックが容易</li>
+</ul>
 <p><img alt="" src="_attachment/image_568.png" /></p>
 <h4 id="bluegreen">デプロイ並行度の設定 (インプレース, Blue/Green 共通)</h4>
 <p>EC2:</p>
@@ -576,10 +624,12 @@ phases:
 </ul>
 <p><a href="https://docs.aws.amazon.com/ja_jp/codedeploy/latest/userguide/monitoring-sns-event-notifications-edit-trigger.html">https://docs.aws.amazon.com/ja_jp/codedeploy/latest/userguide/monitoring-sns-event-notifications-edit-trigger.html</a></p>
 <h2 id="appspec-file-appspecyml">AppSpec File (appspec.yml)</h2>
-<p>デプロイ処理の定義
-- リビジョンの root ディレクトリに配置する。
-- CodeDeploy エージェントによって実行される。
-- コピーするファイルの source/destination と各ステップで実行する hooks スクリプトを記述</p>
+<p>デプロイ処理の定義</p>
+<ul>
+<li>リビジョンの root ディレクトリに配置する。</li>
+<li>CodeDeploy エージェントによって実行される。</li>
+<li>コピーするファイルの source/destination と各ステップで実行する hooks スクリプトを記述</li>
+</ul>
 <p>例: Linux</p>
 <pre><code>&quot;version&quot;: 0.0                     ← 必ず 0.0 であること
 os: linux                          ← Windows と Linux のサポート
@@ -641,17 +691,25 @@ hooks:
 <li>runas: 実行ユーザ指定</li>
 <li>Hooks で実行するスクリプトもリビジョンにバンドルする。</li>
 </ul>
-<p><strong>EC2 - インプレース</strong>
-- <img alt="" src="_attachment/File_14.png" />
-- ApplicationStop ... アプリの停止処理を実装する
-- ApplicationStart ... アプリの起動処理を実装する
-- ValidateService ... ApplicationStart フック完了後に実行される
-    -  アプリの初期化の完了をヘルスチェックなどで確認し、必要な検証を行う。
-- Ref. <a href="https://docs.aws.amazon.com/ja_jp/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html">https://docs.aws.amazon.com/ja_jp/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html</a></p>
-<p><strong>EC2 - Blue/Green</strong>
-- Green の AfterAllowTraffic 後に Blue の BlockTraffic に移行。
-- イミュータブルなので停止される Blue 側は BlockTraffic 関連のイベントしか走らない。
-    - <img alt="" src="_attachment/image_575.png" /></p>
+<p><strong>EC2 - インプレース</strong></p>
+<ul>
+<li><img alt="" src="_attachment/File_14.png" /></li>
+<li>ApplicationStop ... アプリの停止処理を実装する</li>
+<li>ApplicationStart ... アプリの起動処理を実装する</li>
+<li>ValidateService ... ApplicationStart フック完了後に実行される<ul>
+<li>アプリの初期化の完了をヘルスチェックなどで確認し、必要な検証を行う。</li>
+</ul>
+</li>
+<li>Ref. <a href="https://docs.aws.amazon.com/ja_jp/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html">https://docs.aws.amazon.com/ja_jp/codedeploy/latest/userguide/reference-appspec-file-structure-hooks.html</a></li>
+</ul>
+<p><strong>EC2 - Blue/Green</strong></p>
+<ul>
+<li>Green の AfterAllowTraffic 後に Blue の BlockTraffic に移行。</li>
+<li>イミュータブルなので停止される Blue 側は BlockTraffic 関連のイベントしか走らない。<ul>
+<li><img alt="" src="_attachment/image_575.png" /></li>
+</ul>
+</li>
+</ul>
 <h3 id="lambda-appspec">Lambda の AppSpec</h3>
 <pre><code>version: 0.0
 Resources:
@@ -667,12 +725,16 @@ Hooks:
   - AfterAllowTraffic: &quot;LambdaFunctionToValidateAfterTrafficShift&quot;
 
 </code></pre>
-<p>Resource セクション
-- ターゲットの Lambda 関数名・エイリアス・現在と移行先のバージョンを指定。
-- <code>CurrentVersion</code>, <code>TargetVersion</code> で移行元・移行先を指定し、リビジョン指定（S3/GitHub）は不要</p>
-<p>Hooks セクション
-- EC2/オンプレのように内部でスクリプト実行できる訳ではないので、Hook には呼び出す Lambda 関数名を指定する。
-- <img alt="" src="_attachment/image_576.png" /></p>
+<p>Resource セクション</p>
+<ul>
+<li>ターゲットの Lambda 関数名・エイリアス・現在と移行先のバージョンを指定。</li>
+<li><code>CurrentVersion</code>, <code>TargetVersion</code> で移行元・移行先を指定し、リビジョン指定（S3/GitHub）は不要</li>
+</ul>
+<p>Hooks セクション</p>
+<ul>
+<li>EC2/オンプレのように内部でスクリプト実行できる訳ではないので、Hook には呼び出す Lambda 関数名を指定する。</li>
+<li><img alt="" src="_attachment/image_576.png" /></li>
+</ul>
 <h3 id="ecs-appspec">ECS の AppSpec</h3>
 <p>ECS はコンテナイメージが別途コンテナディレクトリに登録され、AppSpec はコンテナ内に置けないため、S3 にファイル単体で置く。(または CreateDeployment API/CLI の AppSpecContent パラメータでインライン指定)</p>
 <p>ECS デプロイでは、CodeDeploy 自体が ECS の内部構成（タスク定義やロードバランサなど）を直接知らないため、<strong>AppSpec で入れ替えるサービス・コンテナ・ポートを明示的に指定する必要</strong>がある。</p>
@@ -724,13 +786,15 @@ Hooks:
 </ul>
 </li>
 </ul>
-<p>AfterAllowTestTraffic と Test Listener
-- CodeDeploy の ECS デプロイでは新しい Task Set と ELB ターゲットグループが作られる。
-- AfterAllowTestTraffic のタイミングで Test Listener のルーティング先が新しいターゲットグループになる。
-- Test Listener は Production Listener と別ポート (8080) 等でルーティングが異なるリスナー。
-- AfterAllowTestTraffic フックの Lambda で Test Listener にリクエストを投げて Validation を実施する。
-- <img alt="" src="_attachment/image_581.png" />
-- <a href="https://docs.amazonaws.cn/en_us/codedeploy/latest/userguide/tutorial-ecs-deployment-with-hooks.html">https://docs.amazonaws.cn/en_us/codedeploy/latest/userguide/tutorial-ecs-deployment-with-hooks.html</a></p>
+<p>AfterAllowTestTraffic と Test Listener</p>
+<ul>
+<li>CodeDeploy の ECS デプロイでは新しい Task Set と ELB ターゲットグループが作られる。</li>
+<li>AfterAllowTestTraffic のタイミングで Test Listener のルーティング先が新しいターゲットグループになる。</li>
+<li>Test Listener は Production Listener と別ポート (8080) 等でルーティングが異なるリスナー。</li>
+<li>AfterAllowTestTraffic フックの Lambda で Test Listener にリクエストを投げて Validation を実施する。</li>
+<li><img alt="" src="_attachment/image_581.png" /></li>
+<li><a href="https://docs.amazonaws.cn/en_us/codedeploy/latest/userguide/tutorial-ecs-deployment-with-hooks.html">https://docs.amazonaws.cn/en_us/codedeploy/latest/userguide/tutorial-ecs-deployment-with-hooks.html</a></li>
+</ul>
 <h3 id="appspec">AppSpec 内で利用できる環境変数</h3>
 <ul>
 <li>APPLICATION_NAME<ul>
@@ -754,30 +818,48 @@ Hooks:
 </ul>
 </li>
 </ul>
-<p>Bundle from S3:
-- BUNDLE_BUCKET
-    - e.g. my-s3-bucket
-- BUNDLE_KEY
-    - e.g. WordPress_App.zip
-- BUNDLE_VERSION
-    - e.g.  3sL4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo
-    - This variable is only set if the Amazon S3 bucket has object versioning enabled.
-- BUNDLE_ETAG
-    - The object etag for the bundle.
-    - e.g. b10a8db164e0754105b7a99be72e3fe5-4</p>
-<p>Bundle from GitHub:
-- BUNDLE_COMMIT
-    - e.g. d2a84f4b8b650937ec8f73cd8be2c74add5a911ba64df27458ed8229da804a26).</p>
+<p>Bundle from S3:</p>
+<ul>
+<li>BUNDLE_BUCKET<ul>
+<li>e.g. my-s3-bucket</li>
+</ul>
+</li>
+<li>BUNDLE_KEY<ul>
+<li>e.g. WordPress_App.zip</li>
+</ul>
+</li>
+<li>BUNDLE_VERSION<ul>
+<li>e.g.  3sL4kqtJlcpXroDTDmJ+rmSpXd3dIbrHY+MTRCxf3vjVBH40Nr8X8gdRQBpUMLUo</li>
+<li>This variable is only set if the Amazon S3 bucket has object versioning enabled.</li>
+</ul>
+</li>
+<li>BUNDLE_ETAG<ul>
+<li>The object etag for the bundle.</li>
+<li>e.g. b10a8db164e0754105b7a99be72e3fe5-4</li>
+</ul>
+</li>
+</ul>
+<p>Bundle from GitHub:</p>
+<ul>
+<li>BUNDLE_COMMIT<ul>
+<li>e.g. d2a84f4b8b650937ec8f73cd8be2c74add5a911ba64df27458ed8229da804a26).</li>
+</ul>
+</li>
+</ul>
 <p>NOTE: カスタム環境変数を渡す方法はない</p>
 <h2 id="_22">ロールバック</h2>
-<p>マニュアルロールバック:
-- 以前のリビジョンで新しい deployment を作成してデプロイするだけ。</p>
-<p>自動ロールバック:
-- デプロイグループの詳細設定で設定可能。
-- いずれかのインスタンスでデプロイ失敗かアラーム (CPU 使用率 80% 以上等) が発生した場合に以前のリビジョンにデプロイしなおす。
-- アラームを使用する場合、アラームもデプロイグループに指定しておく。
-- <img alt="" src="_attachment/image_582.png" />
-- <a href="https://docs.aws.amazon.com/codedeploy/latest/userguide/deployments-rollback-and-redeploy.html#deployments-rollback-and-redeploy-automatic-rollbacks">https://docs.aws.amazon.com/codedeploy/latest/userguide/deployments-rollback-and-redeploy.html#deployments-rollback-and-redeploy-automatic-rollbacks</a></p>
+<p>マニュアルロールバック:</p>
+<ul>
+<li>以前のリビジョンで新しい deployment を作成してデプロイするだけ。</li>
+</ul>
+<p>自動ロールバック:</p>
+<ul>
+<li>デプロイグループの詳細設定で設定可能。</li>
+<li>いずれかのインスタンスでデプロイ失敗かアラーム (CPU 使用率 80% 以上等) が発生した場合に以前のリビジョンにデプロイしなおす。</li>
+<li>アラームを使用する場合、アラームもデプロイグループに指定しておく。</li>
+<li><img alt="" src="_attachment/image_582.png" /></li>
+<li><a href="https://docs.aws.amazon.com/codedeploy/latest/userguide/deployments-rollback-and-redeploy.html#deployments-rollback-and-redeploy-automatic-rollbacks">https://docs.aws.amazon.com/codedeploy/latest/userguide/deployments-rollback-and-redeploy.html#deployments-rollback-and-redeploy-automatic-rollbacks</a></li>
+</ul>
 <h2 id="_23">ポリシー関連</h2>
 <p><img alt="" src="_attachment/image_583.png" /></p>
 <h3 id="_24">サービスロール</h3>
@@ -845,11 +927,15 @@ Start-Process c:\temp\codedeploy-agent.msi '/qn /l**v c:\temp\host-agent-install
 </ul>
 <h3 id="_25">オンプレインスタンスの登録</h3>
 <p>各インスタンス毎に IAM ユーザを作成してアクセスキーを発行する方法 (小規模システム)と、 IAM ロールを STS で使う方法 (大規模システム) がある。</p>
-<p>CloudDeploy エージェントの設定ファイルに認証情報を設定し、<code>aws deploy register-on-premises-instance</code> コマンドで CodeDeploy サービスに IAM ユーザまたは STS セッションの ARN を登録する。
-- Ref. <a href="https://docs.aws.amazon.com/codedeploy/latest/userguide/on-premises-instances-register.html">https://docs.aws.amazon.com/codedeploy/latest/userguide/on-premises-instances-register.html</a></p>
-<p>IAM ユーザを使用する例:
-- ユーザを作成して "s3:Get*",   "s3:List*" を許可する。
-- ユーザのアクセスキーを取得して CodeDeploy エージェントの設定ファイルに設定する。(エージェントがインストール済なら設定後リスタート)</p>
+<p>CloudDeploy エージェントの設定ファイルに認証情報を設定し、<code>aws deploy register-on-premises-instance</code> コマンドで CodeDeploy サービスに IAM ユーザまたは STS セッションの ARN を登録する。</p>
+<ul>
+<li>Ref. <a href="https://docs.aws.amazon.com/codedeploy/latest/userguide/on-premises-instances-register.html">https://docs.aws.amazon.com/codedeploy/latest/userguide/on-premises-instances-register.html</a></li>
+</ul>
+<p>IAM ユーザを使用する例:</p>
+<ul>
+<li>ユーザを作成して "s3:Get*",   "s3:List*" を許可する。</li>
+<li>ユーザのアクセスキーを取得して CodeDeploy エージェントの設定ファイルに設定する。(エージェントがインストール済なら設定後リスタート)</li>
+</ul>
 <pre><code>---
 aws_access_key_id: secret-key-id
 aws_secret_access_key: secret-access-key
@@ -893,42 +979,66 @@ region: supported-region
 <li>入力アーティファクトが更新されると自動でパイプラインが起動される。</li>
 </ul>
 <p><img alt="" src="_attachment/image_587.png" />
-ソース検出のルール設定
-- AWS リソース（CodeCommit / S3 / ECR）
-    - → EventBridge（CloudWatch Events）で自動監視・トリガ設定
-- 外部リソース（GitHub / Bitbucket）
-    - → CodeStarSourceConnection により Webhook 監視
-- AWS CodePipeline（Webhook/EventBridge 非対応の場合のオプション）
-    - → パイプラインがソースを<strong>ポーリング</strong>して変更を検出
-- 複数ソース指定可
-    - → いずれかで変更があればパイプラインが起動し、<strong>全ソースの最新リビジョンを取得</strong>して実行。
-- Ref. Source actions and change detection methods:
-    - <a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-about-starting.html#change-detection-methods">https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-about-starting.html#change-detection-methods</a></p>
+ソース検出のルール設定</p>
+<ul>
+<li>AWS リソース（CodeCommit / S3 / ECR）<ul>
+<li>→ EventBridge（CloudWatch Events）で自動監視・トリガ設定</li>
+</ul>
+</li>
+<li>外部リソース（GitHub / Bitbucket）<ul>
+<li>→ CodeStarSourceConnection により Webhook 監視</li>
+</ul>
+</li>
+<li>AWS CodePipeline（Webhook/EventBridge 非対応の場合のオプション）<ul>
+<li>→ パイプラインがソースを<strong>ポーリング</strong>して変更を検出</li>
+</ul>
+</li>
+<li>複数ソース指定可<ul>
+<li>→ いずれかで変更があればパイプラインが起動し、<strong>全ソースの最新リビジョンを取得</strong>して実行。</li>
+</ul>
+</li>
+<li>Ref. Source actions and change detection methods:<ul>
+<li><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-about-starting.html#change-detection-methods">https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-about-starting.html#change-detection-methods</a></li>
+</ul>
+</li>
+</ul>
 <h3 id="_28">ビルドステージ (オプショナル)</h3>
 <ul>
 <li>ビルドだけでなくテストにも使われる。</li>
 </ul>
 <p><img alt="" src="_attachment/image_588.png" /></p>
 <h3 id="_29">デプロイステージ (オプショナル)</h3>
-<p><img alt="" src="_attachment/image_589.png" />
-- CodeDeploy だけでなく各種リソースへのデプロイが統合されている
-    - CloudFormation, Beanstalk, OpsWorks 等
-    - ECS, ECS(Blue/Green) は CodeDeploy 使わなくても直接統合されている</p>
+<p><img alt="" src="_attachment/image_589.png" /></p>
+<ul>
+<li>CodeDeploy だけでなく各種リソースへのデプロイが統合されている<ul>
+<li>CloudFormation, Beanstalk, OpsWorks 等</li>
+<li>ECS, ECS(Blue/Green) は CodeDeploy 使わなくても直接統合されている</li>
+</ul>
+</li>
+</ul>
 <p>別リージョンのビルド/デプロイプロバイダーを呼び出すことも可能:</p>
 <p><img alt="" src="_attachment/image_590.png" /></p>
 <h2 id="_30">アクション</h2>
 <p><img alt="" src="_attachment/File_16.png" /></p>
-<p><strong>Approval アクション</strong>: 手動承認 → SNS
-- SNS 連携でパイプラインのステージに承認アクションを追加できる。
-- 必要な IAMアクセス権限を持つユーザによってアクションを承認または拒否するワークフローを設定。
-- Codepipeline コンソール上または SNS で通知される URL から Approve/Reject できる。(SNS サブスクライバは任意に追加可能)
-- <img alt="" src="_attachment/image_591.png" />
-<strong>Invoke アクション</strong>: Lambda で追加処理を実行
-- <code>codepipeline.putJobSuccessResult()</code> / <code>putJobFailureResult()</code> で結果を返す。
-    - continuationToken パラメーターが Job の識別 ID となる。
-- Lambda 実行ロールでこれらのアクションを許可する必要がある:
-    - codepipeline:PutJobSuccessResult
-    - codepipeline:PutJobFailureResult</p>
+<p><strong>Approval アクション</strong>: 手動承認 → SNS</p>
+<ul>
+<li>SNS 連携でパイプラインのステージに承認アクションを追加できる。</li>
+<li>必要な IAMアクセス権限を持つユーザによってアクションを承認または拒否するワークフローを設定。</li>
+<li>Codepipeline コンソール上または SNS で通知される URL から Approve/Reject できる。(SNS サブスクライバは任意に追加可能)</li>
+<li><img alt="" src="_attachment/image_591.png" /></li>
+</ul>
+<p><strong>Invoke アクション</strong>: Lambda で追加処理を実行</p>
+<ul>
+<li><code>codepipeline.putJobSuccessResult()</code> / <code>putJobFailureResult()</code> で結果を返す。<ul>
+<li>continuationToken パラメーターが Job の識別 ID となる。</li>
+</ul>
+</li>
+<li>Lambda 実行ロールでこれらのアクションを許可する必要がある:<ul>
+<li>codepipeline:PutJobSuccessResult</li>
+<li>codepipeline:PutJobFailureResult</li>
+</ul>
+</li>
+</ul>
 <h3 id="_31">パラレルアクションとシーケンシャルアクション</h3>
 <p><img alt="" src="_attachment/image_592.png" /><img alt="" src="_attachment/image_593.png" /></p>
 <p>パラレルアクション=アクショングループ</p>
@@ -949,20 +1059,26 @@ region: supported-region
 </ul>
 <h2 id="_33">アーティファクト</h2>
 <p>各ステージのアーティファクトが S3 に置かれ、次のステージに渡される。S3 バージョンも使用して作成の度にバージョニングされる。</p>
-<p><img alt="" src="_attachment/image_596.png" />
-- 各アクションで Input/Output artifacts の名前を指定する。
-- クロスリージョン指定可能。
-- KMS で暗号化される。
-- <img alt="" src="_attachment/image_598.png" /></p>
+<p><img alt="" src="_attachment/image_596.png" /></p>
+<ul>
+<li>各アクションで Input/Output artifacts の名前を指定する。</li>
+<li>クロスリージョン指定可能。</li>
+<li>KMS で暗号化される。</li>
+<li><img alt="" src="_attachment/image_598.png" /></li>
+</ul>
 <h3 id="_34">アーティファクトの暗号化</h3>
 <ul>
 <li>CodePipeline はアーティファクトを保管するための S3 バケットを作成し、デフォルトで S3 の AWS 管理キー (aws/s3) を作成して SSE-KMS で暗号化。</li>
-<li>カスタマー管理キーの使用を推奨:<ul>
+<li>
+<p>カスタマー管理キーの使用を推奨:</p>
+<ul>
 <li>カスタマー管理キーでないとキーポリシーを変更できずクロスアカウントでアーティファクトの使用ができない。</li>
 <li>また、削除やローテーションの鍵管理もできない</li>
 </ul>
 </li>
-<li><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/S3-artifact-encryption.html">https://docs.aws.amazon.com/codepipeline/latest/userguide/S3-artifact-encryption.html</a></li>
+<li>
+<p><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/S3-artifact-encryption.html">https://docs.aws.amazon.com/codepipeline/latest/userguide/S3-artifact-encryption.html</a></p>
+</li>
 </ul>
 <h2 id="_35">クロスリージョンアクション</h2>
 <p>クロスリージョンでビルドプロバイダー/デプロイプロバイダー等を呼び出すことが可能。</p>
@@ -979,8 +1095,10 @@ region: supported-region
 <p><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/actions-create-cross-region.html">https://docs.aws.amazon.com/codepipeline/latest/userguide/actions-create-cross-region.html</a></p>
 <h2 id="_36">クロスアカウント</h2>
 <p>パイプラインのある開発アカウントとデプロイ先の本番アカウントでアカウントが分かれているのが普通なので、クロスアカウントアクセスを設定する必要がある。</p>
-<p><img alt="" src="_attachment/image_600.png" />
-- <a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-create-cross-account.html">https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-create-cross-account.html</a></p>
+<p><img alt="" src="_attachment/image_600.png" /></p>
+<ul>
+<li><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-create-cross-account.html">https://docs.aws.amazon.com/codepipeline/latest/userguide/pipelines-create-cross-account.html</a></li>
+</ul>
 <p>アカウント A 側リソース:</p>
 <ul>
 <li>アーティファクトが置かれる S3 バケット</li>
@@ -1339,11 +1457,13 @@ Resources:
 <li>高可用性（HA）構成が期待通りに機能するか確認。</li>
 <li>例：プライマリインスタンスを意図的に停止させるテスト。</li>
 </ul>
-<p><strong>AWS Fault Injection Simulator (FIS)</strong>
-- スポットインスタンスの中断
-- ネットワーク遅延や障害の注入
-- サービスの耐障害性確認
-- <a href="https://aws.amazon.com/jp/fis/">https://aws.amazon.com/jp/fis/</a></p>
+<p><strong>AWS Fault Injection Simulator (FIS)</strong></p>
+<ul>
+<li>スポットインスタンスの中断</li>
+<li>ネットワーク遅延や障害の注入</li>
+<li>サービスの耐障害性確認</li>
+<li><a href="https://aws.amazon.com/jp/fis/">https://aws.amazon.com/jp/fis/</a></li>
+</ul>
 <h3 id="codepipeline_1">CodePipeline のテストアクションプロバイダー統合</h3>
 <ul>
 <li>AWS CodeBuild</li>
@@ -1354,13 +1474,17 @@ Resources:
 <li>Nouvola</li>
 <li>Runscope</li>
 </ul>
-<p>Device Farm
-- 実際の Android / iOS / Web アプリを物理デバイス上でテスト。</p>
-<p>BlazeMeter
-- JMeter のマネージドサービス。負荷・性能を自動検証。
-- JMeter スクリプトを利用した負荷テスト、ストレステスト、パフォーマンステストの実施。
-- 平均レイテンシや応答時間の可視化
-- CodePipeline のテストアクションプロバイダーとして利用可能。</p>
+<p>Device Farm</p>
+<ul>
+<li>実際の Android / iOS / Web アプリを物理デバイス上でテスト。</li>
+</ul>
+<p>BlazeMeter</p>
+<ul>
+<li>JMeter のマネージドサービス。負荷・性能を自動検証。</li>
+<li>JMeter スクリプトを利用した負荷テスト、ストレステスト、パフォーマンステストの実施。</li>
+<li>平均レイテンシや応答時間の可視化</li>
+<li>CodePipeline のテストアクションプロバイダーとして利用可能。</li>
+</ul>
 </article>
 
     </main>

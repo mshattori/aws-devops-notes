@@ -16,6 +16,7 @@
         
 <article>
     <h2 id="infrastructure-as-code">プロビジョニング・デプロイ自動化と Infrastructure as Code</h2>
+<p><img alt="" src="_attachment/Pasted%20image%2020251108200401.png" /></p>
 <table>
 <thead>
 <tr>
@@ -39,55 +40,25 @@
 <td>EC2, Auto Scaling, ELB, RDS, CloudWatch など</td>
 </tr>
 <tr>
-<td><strong>OpsWorks</strong></td>
+<td><strong>OpsWorks</strong><br></td>
 <td>Chef/Puppet を用いたサーバ設定管理</td>
 <td>レイヤーとスタックの概念を用いてサーバ構成を自動化。レシピに従いアプリやミドルウェアをインストールする</td>
 <td>EC2, ELB, Auto Scaling、オンプレミスサーバも管理可能</td>
 </tr>
-<tr>
-<td><img alt="" src="Pasted%20image%2020251108191008.png" /></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>- CloudFormation は AWS リソースのプロビジョニングに特化。</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>- ソフトウェアのデプロイやアップデートなどはしない。</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>- Beanstalk, OpsWorks はインフラのプロビジョニング、アプリケーションのデプロイ、運用時のモニタリングまで全体をカバー。</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>- Web アプリの定番構成 → Beanstalk</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>- Web アプリでない、定番構成でない、既に Chef/Puppet 使っている → OpsWork</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>- CloudFormation + Beanstalk/OpsWork との組み合わせもできる</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
 </tbody>
 </table>
+<ul>
+<li>CloudFormation は AWS リソースのプロビジョニングに特化。<ul>
+<li>ソフトウェアのデプロイやアップデートなどはしない。</li>
+</ul>
+</li>
+<li>Beanstalk, OpsWorks はインフラのプロビジョニング、アプリケーションのデプロイ、運用時のモニタリングまで全体をカバー。<ul>
+<li>Web アプリの定番構成 → Beanstalk</li>
+<li>Web アプリでない、定番構成でない、既に Chef/Puppet 使っている → OpsWork</li>
+</ul>
+</li>
+<li>CloudFormation + Beanstalk/OpsWork との組み合わせもできる</li>
+</ul>
 <hr />
 <h1 id="aws-cloudformation">AWS CloudFormation</h1>
 <ul>

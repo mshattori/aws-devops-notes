@@ -15,51 +15,69 @@
     <main>
         
 <article>
-    <h2 id="infrastructure-as-code">プロビジョニング・デプロイ自動化とInfrastructure as Code</h2>
-<p><img alt="" src="_attachment/File_268.png" /><img alt="" src="_attachment/File_269.png" /></p>
+    <h2 id="infrastructure-as-code">プロビジョニング・デプロイ自動化と Infrastructure as Code</h2>
+<table>
+<thead>
+<tr>
+<th>サービス名</th>
+<th>目的</th>
+<th>動作概要</th>
+<th>主要対象リソース</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CloudFormation</strong></td>
+<td>AWS インフラの自動構成</td>
+<td>JSON または YAML で記述されたテンプレートから AWS リソースを自動で作成・削除する</td>
+<td>VPC, EC2, Auto Scaling, S3, IAM など多くの AWS サービス</td>
+</tr>
+<tr>
+<td><strong>Elastic Beanstalk</strong></td>
+<td>Web アプリ実行環境の自動構成</td>
+<td>ソースコードや Docker コンテナをアップロードすると、ランタイム環境やサーバを自動で構築・デプロイする</td>
+<td>EC2, Auto Scaling, ELB, RDS, CloudWatch など</td>
+</tr>
+<tr>
+<td><strong>OpsWorks</strong></td>
+<td>Chef/Puppet を用いたサーバ設定管理</td>
+<td>レイヤーとスタックの概念を用いてサーバ構成を自動化。レシピに従いアプリやミドルウェアをインストールする</td>
+<td>EC2, ELB, Auto Scaling、オンプレミスサーバも管理可能</td>
+</tr>
+<tr>
+<td><img alt="" src="Pasted%20image%2020251108160730.png" /></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <ul>
-<li>CloudFormation は AWS リソースのプロビジョニングに特化。</li>
-<li>Beanstalk, OpsWorks はインフラのプロビジョニング、アプリケーションのデプロイ、運用時のモニタリングまで全体をカバー。</li>
-</ul>
-<p>(参考)【AWS初心者向けWebinar】AWSのプロビジョニングからデプロイまで</p>
-<p><a href="https://www.slideshare.net/AmazonWebServicesJapan/awswebinaraws-54198407">https://www.slideshare.net/AmazonWebServicesJapan/awswebinaraws-54198407</a></p>
-<p><img alt="" src="_attachment/File_270.png" /></p>
-<p>(参考) VMware でのプロビジョニングとデプロイ</p>
-<ul>
-<li>プロビジョニング<ul>
-<li>準備・予測という意味</li>
-<li>リソースを準備すること。主にディスクストレージエリアのサイズや方式（ShinやThick)、CPUやメモリのリソース予約を行う。</li>
-<li>事前にリソース消費を予測して準備することが必要。主にストレージのプロビジョニングはデプロイにも関係してくる。</li>
-</ul>
-</li>
-<li>デプロイ<ul>
-<li>展開・生成という意味</li>
-<li>プロビジョニングされたエリアにOSイメージを生成すること。テンプレート、マスターイメージよりデプロイする。</li>
-<li>もともと「デプロイ」にはS/Wをインストールするという意味もあるが、VMwareではテンプレートなどからOSイメージを生成することをいう。</li>
-</ul>
-</li>
-</ul>
-<p><img alt="" src="_attachment/File_271.png" /><img alt="" src="_attachment/File_272.png" /></p>
-<ul>
-<li>CloudFormation は AWS インフラのプロビジョニング<ul>
+<li>CloudFormation は AWS リソースのプロビジョニングに特化。<ul>
 <li>ソフトウェアのデプロイやアップデートなどはしない。</li>
 </ul>
 </li>
-<li>CloudFormation + Beanstalk/OpsWork との組み合わせもできる</li>
-<li>Beanstalk, OpsWork はプロビジョニング、デプロイ、モニタリングまで含む<ul>
+<li>Beanstalk, OpsWorks はインフラのプロビジョニング、アプリケーションのデプロイ、運用時のモニタリングまで全体をカバー。<ul>
 <li>Web アプリの定番構成 → Beanstalk</li>
 <li>Web アプリでない、定番構成でない、既に Chef/Puppet 使っている → OpsWork</li>
 </ul>
 </li>
+<li>CloudFormation + Beanstalk/OpsWork との組み合わせもできる</li>
 </ul>
 <hr />
 <h1 id="aws-cloudformation">AWS CloudFormation</h1>
 <ul>
-<li>AWS サービスのプロビジョニングを実施するサービス。</li>
-<li>テキストファイルによるテンプレート記述。</li>
+<li>AWS サービスのプロビジョニングを実施するサービス。<ul>
+<li>EC2、ELB、RDS などの AWS リソース環境を自動でセットアップ。</li>
+</ul>
+</li>
+<li>テキストファイルによるテンプレート記述。<ul>
+<li>JSON または YAML で記述。</li>
+<li>テンプレートをバージョン管理することで IaC を実現。</li>
+</ul>
+</li>
 <li>無料。</li>
 </ul>
-<p><img alt="" src="_attachment/File_273.png" /></p>
 <h2 id="cloudformation">CloudFormation テンプレート</h2>
 <ul>
 <li>JSON or YAML 形式。<ul>
@@ -82,21 +100,53 @@
 </li>
 </ul>
 <p>テンプレートの項目</p>
-<p><img alt="" src="_attachment/image_1836.png" /></p>
+<pre><code>AWSTemplateFormatVersion: '2010-09-09'
+Description: 説明を記述する
+Parameters:
+  # パラメータ定義
+Mappings:
+  # マッピング定義
+Conditions:
+  # 条件定義
+Resources:
+  # リソース定義
+Outputs:
+  # 出力定義
+</code></pre>
+<ul>
+<li><strong>AWSTemplateFormatVersion</strong> (オプション) … テンプレートのフォーマットバージョン。</li>
+<li><strong>Description</strong> (オプション) … テンプレートの説明文。</li>
+<li><strong>Parameters</strong> (オプション) … テンプレート外から受け取る入力値を定義する。</li>
+<li><strong>Mappings</strong> (オプション) … リージョンや環境に応じた定数をマッピングする。</li>
+<li><strong>Conditions</strong> (オプション) … リソース作成の条件を定義するための論理式。</li>
+<li><strong>Transform</strong> (オプション) … マクロや AWS SAM テンプレートを利用する場合に指定。</li>
+<li><strong>Resources</strong> (必須) … 作成する AWS リソースを定義する部分。</li>
+<li><strong>Outputs</strong> (オプション) … 他スタックにエクスポートしたい値や出力を定義する。</li>
+</ul>
 <h3 id="parameters">Parameters</h3>
-<p><img alt="" src="_attachment/image_1837.png" /></p>
-<h4 id="parameters_1">Parameters の項目</h4>
+<pre><code>Parameters:
+  InstanceTypeParameter:
+    Type: String
+    Default: t2.small
+    AllowedValues:
+      - t2.small
+      - a1.xlarge
+      - t3a.xlarge
+      - c5n.xlarge
+    Description: Amazon EC2 instance type
+
+</code></pre>
 <ul>
 <li><strong>Type:</strong><ul>
 <li>String</li>
 <li>Number</li>
 <li>CommaDelimitedList</li>
 <li>List\&lt;Type&gt;</li>
-<li>AWS Parameter (to help catch invalid values – match against existing values in the AWS Account)</li>
+<li>AWS 特有のタイプ (例: AWS::EC2::KeyPair::KeyName など)</li>
 </ul>
 </li>
-<li><strong>Description</strong></li>
-<li><strong>Constraints</strong><ul>
+<li><strong>Description</strong> ... 説明文</li>
+<li><strong>Constraints</strong> ... 制約条件<ul>
 <li>ConstraintDescription (String)<ul>
 <li>Constraints がエラーになった場合にエラーメッセージとして出力する文字列。</li>
 </ul>
@@ -114,15 +164,69 @@
 </li>
 <li><a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html">https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html</a></li>
 </ul>
-<p><img alt="" src="_attachment/image_1839.png" /><img alt="" src="_attachment/image_1840.png" /></p>
-<h3 id="fnref-function">Fn::Ref function</h3>
+<p><strong>パラメータ検証</strong></p>
 <ul>
-<li>パラメタやテンプレート内の他のリソースを参照する。</li>
-<li>YAML ではショートカット !Ref が使用できる。</li>
+<li><strong>AllowedPattern</strong>: 正規表現による入力制約<ul>
+<li>例: IPv4/CIDR 用のパターン <code>'^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})'$</code></li>
 </ul>
-<h3 id="ssm-parameters-store">SSM Parameters Store の参照</h3>
+</li>
+<li><strong>AllowedValues</strong>: あらかじめ許可する文字列を列挙<ul>
+<li>例: <code>[ 't2.micro', 't2.small', 'i3.16xlarge' ]</code></li>
+</ul>
+</li>
+<li><strong>Parameter Type</strong>:  AWS 固有の型を指定。例: <code>AWS::EC2::KeyPair::KeyName</code>。</li>
+<li><strong>Default</strong>: デフォルト値を設定。ユーザが入力しなかった場合の値を。</li>
+</ul>
+<p><strong>擬似パラメータ (Pseudo Parameters)</strong></p>
 <ul>
-<li>Type に AWS::SSM::Parameter::* を指定すると Value に Parameters Store のパラメータ名を指定して値を参照するようになる。</li>
+<li>CloudFormation が自動的に提供する 組み込みの読み取り専用パラメータ。</li>
+<li>すべての CloudFormation テンプレートで デフォルトで利用可能。</li>
+<li>!Ref や Fn::Sub などで参照可能。</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>疑似パラメータ</th>
+<th>説明</th>
+<th>例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AWS::AccountId</code></td>
+<td>AWS アカウント ID を返す</td>
+<td><code>123456789012</code></td>
+</tr>
+<tr>
+<td><code>AWS::NotificationARNs</code></td>
+<td>通知先 ARN のリスト</td>
+<td>[<code>arn:aws:sns:us-east-1:123456789012:mytopic</code>]</td>
+</tr>
+<tr>
+<td><code>AWS::NoValue</code></td>
+<td>値なしを返し、プロパティを削除</td>
+<td>なし</td>
+</tr>
+<tr>
+<td><code>AWS::Region</code></td>
+<td>デプロイ先リージョン</td>
+<td><code>ap-northeast-1</code></td>
+</tr>
+<tr>
+<td><code>AWS::StackId</code></td>
+<td>スタックの ARN</td>
+<td><code>arn:aws:cloudformation:ap-northeast-1:...:stack/MyStack/...</code></td>
+</tr>
+<tr>
+<td><code>AWS::StackName</code></td>
+<td>スタック名</td>
+<td><code>MyStack</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>SSM Parameters Store 参照</strong></p>
+<ul>
+<li>Parameter Type の <code>AWS::SSM::Parameter::Value&lt;Type&gt;</code> を使用すると Value に Parameters Store のパラメータ名を指定して値を参照できる。</li>
 </ul>
 <pre><code>Parameters:
   InstanceType:
@@ -135,8 +239,8 @@
 </code></pre>
 <ul>
 <li><img alt="" src="_attachment/image_1841.png" /></li>
-<li>AWS management の AMI の Parameters Store がある</li>
 </ul>
+<p>NOTE: AWS 管理の AMI の Parameters Store がある (<code>/aws/service/ami-xxx/xxx</code>)</p>
 <pre><code>Parameters:
   LatestLinuxAmiId:
     Type: 'AWS::SSM::Parameter::Value&lt;AWS::EC2::Image::Id&gt;'
@@ -151,7 +255,7 @@
     # aws ssm get-parameters-by-path --path &quot;/aws/service/ami-windows-latest&quot; --region us-east-1
     Default: '/aws/service/ami-windows-latest/Windows_Server-2016-English-Core-Base'
 </code></pre>
-<h3 id="mappings">Mappings</h3>
+<h3 id="mappings">Mappings セクション</h3>
 <ul>
 <li>リージョンごとに使用する AMI ID を指定するマッピングテーブルなどを定義する。<ul>
 <li>AMI はリージョンリソースなので、リージョンごとに AMI ID が異なる。</li>
@@ -199,13 +303,35 @@ Resources:
 <ul>
 <li><a href="https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/mappings-section-structure.html">https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/mappings-section-structure.html</a></li>
 </ul>
-<h3 id="creationpolicy">CreationPolicy 属性</h3>
+<h3 id="_1">組み込み関数</h3>
 <ul>
-<li>各リソースに指定できる属性。リソースの特性に合わせた<strong>生成完了条件を指定</strong>する。</li>
+<li><code>Fn::Ref</code>  - パラメータやテンプレート内の他のリソースを参照<ul>
+<li>リソースの場合は物理 ID (例: インスタンス ID) を返す。</li>
+</ul>
+</li>
+<li><code>Fn::GetAtt</code> – 他のリソースの属性値を取得</li>
+<li><code>Fn::FindInMap</code> – <code>Mappings</code> セクションから値を取得</li>
+<li><code>Fn::ImportValue</code> – 他スタックが <code>Outputs</code> でエクスポートした値をインポート</li>
+<li><code>Fn::Join</code> – 文字列を区切り文字で結合。<ul>
+<li>例: <code>!Join [":", ["a", "b", "c"]]</code> → <code>a:b:c</code>。</li>
+</ul>
+</li>
+<li><code>Fn::Sub</code> – 変数展開を行いながら文字列を組み立てる。<ul>
+<li>例: <code>!Sub "Your account-id is ${AWS::AccountId}."</code></li>
+</ul>
+</li>
+<li><strong>条件関数</strong> – <code>Fn::And</code>, <code>Fn::Equals</code>, <code>Fn::If</code>, <code>Fn::Not</code>, <code>Fn::Or</code>。</li>
+</ul>
+<p>NOTE: YAML ではショートカット !Ref 等が使用できる。</p>
+<h3 id="_2">リソースの生成・更新・削除を制御する属性</h3>
+<p><strong>CreationPolicy 属性</strong></p>
+<ul>
+<li>各リソースごとに特性に合わせた<strong>生成完了条件を指定</strong>できる。</li>
 <li>例) AutoScalingGroup リソースが作成された後、グループ内の2個のインスタンスからシグナルがとどくまで生成完了とならず、次に進まない。</li>
+<li>cf. WaitCondition はスタック全体の終了条件を指定するリソース</li>
 </ul>
 <p><img alt="" src="_attachment/image_1844.png" /></p>
-<h3 id="updatepolicy">UpdatePolicy 属性</h3>
+<p><strong>UpdatePolicy 属性</strong></p>
 <ul>
 <li>AWS::AutoScaling::AutoScalingGroup<ul>
 <li>AutoScalingRollingUpdate</li>
@@ -218,30 +344,9 @@ Resources:
 </li>
 <li><a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-attribute-updatepolicy.html">https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-attribute-updatepolicy.html</a></li>
 </ul>
-<h3 id="deletionpolicy">DeletionPolicy 属性</h3>
+<p><strong>DeletionPolicy 属性</strong>*</p>
 <ul>
 <li>Delete, Retain, Snapshot</li>
-</ul>
-<h3 id="_1">組み込み関数</h3>
-<p><img alt="" src="_attachment/image_1845.png" /></p>
-<h4 id="fnref">Fn::Ref</h4>
-<p><img alt="" src="_attachment/image_1846.png" /></p>
-<h4 id="fngetatt">Fn::GetAtt</h4>
-<ul>
-<li>リソースの属性を取得する。</li>
-<li><img alt="" src="_attachment/image_1847.png" /></li>
-</ul>
-<pre><code>      Role:
-        Fn::GetAtt:
-          - &quot;LambdaExecutionRole&quot;
-          - &quot;Arn&quot;
-</code></pre>
-<h4 id="fnjoin">Fn::Join</h4>
-<p><img alt="" src="_attachment/image_1848.png" /></p>
-<h4 id="fnsub">Fn::Sub</h4>
-<ul>
-<li>文字列内で参照する変数を値に置き換える(Substitute)。</li>
-<li>!Sub "Your account-id is ${AWS::AccountId}."</li>
 </ul>
 <h2 id="cloudformation_1">CloudFormation スタック</h2>
 <ul>
@@ -264,22 +369,28 @@ Resources:
 </ul>
 <p><strong>DisableRollback</strong></p>
 <ul>
-<li>スタック作成時のロールバックを無効化。（コンソールの 「<code>Rollback on failure</code>」 設定）</li>
-<li>FAIL した場合もリソースは残り、後からスタックごと削除できる。</li>
+<li>スタック作成時のロールバックを無効化。（コンソールの「Rollback on failure」設定）</li>
+<li>FAILしても作成途中のリソースはそのまま残り、後からスタックごと削除できる。</li>
 </ul>
 <p><strong>OnFailure</strong></p>
 <ul>
-<li>スタック作成に失敗した場合に実行するアクションを指定。</li>
-<li>DO_NOTHING、ROLLBACK、DELETE のいずれか。<ul>
-<li><code>ROLLBACK</code>: 失敗時にすべてのリソースを削除し元の状態に戻す (デフォルト)。</li>
-<li><code>DO_NOTHING</code>: 失敗した状態のままリソースを残す。</li>
-<li><code>DELETE</code>: スタック全体を削除する。</li>
+<li>スタック作成が失敗した場合に実行するアクションを指定。</li>
+<li>指定可能な値は <code>DO_NOTHING</code>、<code>ROLLBACK</code>、<code>DELETE</code> のいずれか。<ul>
+<li><code>ROLLBACK</code>：失敗時にすべてのリソースを削除し、元の状態に戻す（デフォルト）</li>
+<li><code>DO_NOTHING</code>：失敗した状態のままリソースを残す</li>
+<li><code>DELETE</code>：スタック全体を削除</li>
 </ul>
 </li>
-<li>スタック<strong>更新</strong>に失敗した場合は、自動的に以前の成功した状態へロールバックされる。失敗の詳細はイベントログで確認できる。</li>
-<li>DELETE ではスタックの情報そのものが消去されるのでスタックのログも見られない。</li>
-<li>OnFailure と DisableRollback の両方は有効にできない。</li>
-<li>DisableRollback が false の場合、OnFailure の指定に従ってスタックがロールバックされる。</li>
+<li>スタック<strong>更新</strong>が失敗した場合は、自動的に以前の成功状態にロールバックされる。失敗の詳細はイベントログで確認できる。</li>
+<li><code>DELETE</code> はスタック情報そのものが削除されるため、スタックのログも確認できなくなる。<ul>
+<li>DELETE のユースケースはテスト自動化などでリソースを残して環境を汚したくない場合。</li>
+</ul>
+</li>
+<li><code>OnFailure</code> と <code>DisableRollback</code> は同時に有効化できない。<ul>
+<li><code>DisableRollback</code> はロールバック機能そのものを無効にし、<code>OnFailure</code> はロールバック機能の動作タイプを指定する。</li>
+<li><code>DisableRollback</code> が <code>false</code> の場合、<code>OnFailure</code> の指定に従ってスタックがロールバックされる。</li>
+</ul>
+</li>
 </ul>
 <p>リソースのインポート</p>
 <ul>
@@ -302,7 +413,7 @@ Resources:
 <p><img alt="" src="_attachment/image_1856.png" /></p>
 <p><img alt="" src="_attachment/image_1857.png" /></p>
 <p>スタックのネストまたはクロススタックリファレンスで複数スタックを関係させることで多層アーキテクチャを実現する。</p>
-<h3 id="outputs-section">Outputs section</h3>
+<h3 id="outputs">Outputs セクション</h3>
 <p>スタック内の値をコンソールや CLI にアウトプットする。</p>
 <ul>
 <li>ネストしたスタックの Outputs は 親スタックから Stack リソースの属性として参照できる。<ul>
@@ -316,7 +427,7 @@ Resources:
 </li>
 </ul>
 <p><img alt="" src="_attachment/image_1858.png" /></p>
-<h2 id="_2">スタックのネスト</h2>
+<h2 id="_3">スタックのネスト</h2>
 <ul>
 <li><strong>AWS::CloudFormation::Stack リソース</strong>で別のテンプレートをネストする。</li>
 <li>スタック更新時は親スタック (root stack) を更新する。</li>
@@ -367,9 +478,9 @@ Resources:
           DeviceIndex: 0
 </code></pre>
 <p>他のスタックに<strong>リソースを参照されたスタックは削除できない</strong>。</p>
-<h2 id="_3">スタックの更新</h2>
+<h2 id="_4">スタックの更新</h2>
 <p>テンプレートを編集して読み直すことでリソースが更新される。</p>
-<h3 id="_4">変更セット</h3>
+<h3 id="_5">変更セット</h3>
 <ul>
 <li>スタックを更新するには先に変更セットを作成する。(<code>create-change-set</code>)</li>
 <li>変更セットの確認後に変更セットを実行する。(<code>execute-change-set</code>)</li>
@@ -390,18 +501,15 @@ Resources:
 <p>不要になった変更セットの削除</p>
 <pre><code>aws cloudformation delete-change-set --change-set-name Lab1ChangeSet --stack-name AWSStudent-Lab1
 </code></pre>
-<h3 id="_5">リソース更新の種類</h3>
+<h3 id="_6">リソース更新の種類</h3>
 <ul>
 <li>変更セットであらかじめ確認できる。</li>
 </ul>
 <p><img alt="" src="_attachment/image_1862.png" /></p>
-<p>Ref.</p>
+<p>Ref. UPDATE_ROLLBACK_FAILED</p>
 <ul>
-<li>UPDATE_ROLLBACK_FAILED<ul>
-<li>スタック更新エラー後のロールバックが失敗した場合に出るエラー。</li>
+<li>スタック更新エラー後のロールバックが失敗した場合に出るエラー</li>
 <li><a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html#troubleshooting-errors-update-rollback-failed">https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/troubleshooting.html#troubleshooting-errors-update-rollback-failed</a></li>
-</ul>
-</li>
 </ul>
 <h2 id="cloudformation_2">CloudFormation ヘルパースクリプト</h2>
 <p>EC2 インスタンスなどにインストールして使う Python ヘルパースクリプト。
@@ -482,11 +590,13 @@ Resources:
 </code></pre>
 <h3 id="cfn-signal">cfn-signal</h3>
 <ul>
-<li>CreationPolicy 属性と WaitCondition で使用されるシグナルを送信するために使用するコマンド。</li>
-</ul>
-<p><img alt="" src="_attachment/image_1864.png" /></p>
-<ul>
-<li>WaitCondition はテンプレートのリソースの1つとして作られ、このリソースが生成されるまでスタック生成が終了されないようにできる。</li>
+<li>
+<p>CreationPolicy 属性と WaitCondition で使用されるシグナルを送信するために使用するヘルパースクリプト
+<img alt="" src="_attachment/image_1864.png" /></p>
+</li>
+<li>
+<p>WaitCondition はテンプレートのリソースの1つとして作られ、このリソースが生成されるまでスタック生成が終了されないようにできる。</p>
+</li>
 </ul>
 <p>例1: WaitCondition を使用した例</p>
 <ul>
@@ -653,14 +763,14 @@ Resources:
 </ul>
 <h3 id="cfn-hup">cfn-hup</h3>
 <ul>
-<li>リソースメタデータ (Metadata 属性) の値の変更が検出されたときにカスタムフックを実行するために使用される。</li>
-<li>スタック更新で起動中インスタンス内で更新処理を実行したい場合に使う。</li>
-<li>デーモンとしてバックグラウンド動作するので通常は UserData で起動する。</li>
+<li>リソースメタデータ (Metadata 属性) の変更時にカスタムフックを実行して起動中インスタンス内で更新処理を行いたい場合に使う。<ul>
+<li>テンプレートの Metadata を変更してスタック更新してもデフォルトではリソースには何の変化も起こらない。</li>
+<li>変更を反映させたい場合、cfn-hup を設定するか cfn-init を手動で再実行する必要がある。</li>
 </ul>
-<p><img alt="" src="_attachment/image_1866.png" /></p>
-<ul>
-<li>cfn-hup.conf : 監視対象のスタックとポーリングインターバルの指定。</li>
+</li>
+<li>スタックのメタデータ変更をポーリング監視する常駐デーモン。通常は UserData から起動する。</li>
 </ul>
+<p>cfn-hup.conf : 監視対象のスタックとポーリングインターバルの指定</p>
 <pre><code># The cfn-hup.conf file stores the name of the stack and the AWS credentials that the cfn-hup daemon targets.
 &quot;/etc/cfn/cfn-hup.conf&quot;:
   content: !Sub |
@@ -673,9 +783,7 @@ Resources:
   owner: &quot;root&quot;
   group: &quot;root&quot;
 </code></pre>
-<ul>
-<li>hooks.conf: メタデータ更新時のアクションの指定</li>
-</ul>
+<p>/etc/cfn/hooks.conf: メタデータ更新時のアクションの指定</p>
 <pre><code># The user actions that the cfn-hup daemon calls periodically are defined in the hooks.conf configuration file.
 # To support composition of several applications deploying change notification hooks, cfn-hup supports a directory named hooks.d that is located in the hooks configuration directory. You can place one or more additional hooks configuration files in the hooks.d directory. The additional hooks files must use the same layout as the hooks.conf file.
 &quot;/etc/cfn/hooks.d/cfn-auto-reloader.conf&quot;:
@@ -700,9 +808,9 @@ cfn-hup でメタデータ変更をモニタリングしている場合か、cfn
 </ul>
 <pre><code># /opt/aws/bin/cfn-get-metadata --stack CfnHupDemo --resource WebServerHost --region eu-west-1
 </code></pre>
-<h2 id="_6">リソースの保護</h2>
+<h2 id="_7">リソースの保護</h2>
 <p><img alt="" src="_attachment/image_1867.png" /></p>
-<h3 id="deletionpolicy_1">DeletionPolicy 属性</h3>
+<h3 id="deletionpolicy">DeletionPolicy 属性</h3>
 <ul>
 <li>スタックが削除される時にリソースを保持(Retain)またはバックアップ(Snapshot)できる。</li>
 <li>対象リソースに DeletionPolicy 属性を指定する。</li>
@@ -730,7 +838,7 @@ cfn-hup でメタデータ変更をモニタリングしている場合か、cfn
 <li>削除保護を変更すると、ネストされたスタックにも反映される。</li>
 <li><a href="https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/using-cfn-protect-stacks.html">https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/using-cfn-protect-stacks.html</a></li>
 </ul>
-<h3 id="_7">スタックポリシー</h3>
+<h3 id="_8">スタックポリシー</h3>
 <ul>
 <li>スタックにつけられるリソースベースポリシー。</li>
 <li>重要なスタックリソースを変更する意図しないスタック更新を拒否できる。</li>
@@ -767,21 +875,21 @@ cfn-hup でメタデータ変更をモニタリングしている場合か、cfn
 <ul>
 <li>Ref. <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/protect-stack-resources.html">https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/protect-stack-resources.html</a></li>
 </ul>
-<h2 id="_8">ドリフト検出</h2>
+<h2 id="_9">ドリフト検出</h2>
 <p>CloudFormation 外部でスタックのリソースに直接変更が行われたか検出できる。</p>
 <p>AWS コンソールでスタックアクションからドリフト検出を実施し、ドリフト詳細の表示を行う。</p>
 <p>スタック全体のステータス:</p>
 <ul>
 <li>NOT_CHECKED</li>
 <li>IN_SYNC</li>
-<li>DRIFTED</li>
+<li>DRIFTED ... リソースに MODIFIED/DELETED が起きている</li>
 </ul>
 <p>リソースのステータス:</p>
 <ul>
 <li>NOT_CHECKED</li>
 <li>IN_SYNC</li>
 <li>DELETED</li>
-<li>MODIFIED</li>
+<li>MODIFIED ... CloudFormation 管理外の変更によりリソースの設定が変わってしまった状態</li>
 </ul>
 <p>ネストされたスタックのドリフトは検出しない。ネストされたスタックに対して直接ドリフト検出の実行が必要。</p>
 <p><img alt="" src="_attachment/image_1871.png" /></p>
@@ -792,14 +900,21 @@ cfn-hup でメタデータ変更をモニタリングしている場合か、cfn
 </ul>
 </li>
 </ul>
-<h2 id="_9">カスタムリソース</h2>
+<h2 id="_10">カスタムリソース</h2>
 <ul>
 <li>外部リソースをカスタムリソースプロバイダー (Lambda 等) で作成・更新・削除する。</li>
 <li>AWS::CloudFormation::CustomResource</li>
-<li>ユースケース:</li>
-<li><img alt="" src="_attachment/image_1872.png" /><ul>
+<li>ユースケース:<ul>
+<li>CloudFormation が直接サポートしていない AWS サービスや API を利用したい場合。</li>
+<li>オンプレミスのリソースや外部システムの設定を行いたい場合。</li>
+<li>S3 バケットの中身を削除するなど、標準では提供されない操作を行う場合。<ul>
 <li>空でない S3 バケットではスタック削除が FAIL するため、Lambda カスタムリソースで削除するのは頻出のユースケース。(DeletaionPolicy が Delete でも FAIL する)</li>
-<li>Fetch an AMI id はリージョン毎に異なる AMI ID を Lambda カスタムリソースで取得して、カスタムリソースの Attribute として AMI ID を返すようなユースケース。</li>
+</ul>
+</li>
+<li>特定のリージョンやアカウントで最新の AMI ID や情報を取得する場合。<ul>
+<li>リージョン毎に異なる AMI ID を Lambda カスタムリソースで取得して、カスタムリソースの Attribute として AMI ID を返すようなユースケース。</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -818,38 +933,57 @@ cfn-hup でメタデータ変更をモニタリングしている場合か、cfn
       BucketName: !Ref myBucketResource
 </code></pre>
 <p>仕組み
-- Create/Update/Delete といったリクエストを  SNS メッセージでカスタムリソースプロバイダ に送信する。
-- <img alt="" src="_attachment/image_1874.png" />
-- リクエストには以下のような値が含まれる:
-    - プロパティ属性で渡した値 (ResourceProperties)
-    - 応答用の S3 署名付き URL (ResponseURL)
-- カスタムリソースプロバイダがメッセージを処理し、Success/Fail の結果が S3 署名付き URL 経由で CloudFormation に返される。
-- Lambda を使用する場合は直接 Lambda の ARN を指定でき、SNS トピックを作成する必要がない。</p>
+- Create/Update/Delete といったリクエストを  SNS メッセージでカスタムリソースプロバイダ に送信する。</p>
+<pre><code>{
+  &quot;RequestType&quot;: &quot;Create&quot;,
+  &quot;ResponseURL&quot;: &quot;https://cloudformation-custom-resource-response...&quot;,
+  &quot;StackId&quot;: &quot;arn:aws:cloudformation:ap-northeast-1:123456789012:stack/MyStack/abcd&quot;,
+  &quot;RequestId&quot;: &quot;unique-id&quot;,
+  &quot;LogicalResourceId&quot;: &quot;MyCustomResource&quot;,
+  &quot;ResourceType&quot;: &quot;Custom::AMIInfo&quot;,
+  &quot;ResourceProperties&quot;: {
+    &quot;ServiceToken&quot;: &quot;arn:aws:lambda:ap-northeast-1:...:function:MyFunction&quot;,
+    &quot;Region&quot;: &quot;ap-northeast-1&quot;
+  }
+}
+</code></pre>
+<ul>
+<li>リクエストには以下のような値が含まれる:<ul>
+<li>プロパティ属性で渡した値 (ResourceProperties)</li>
+<li>応答用の S3 署名付き URL (ResponseURL)</li>
+</ul>
+</li>
+<li>カスタムリソースプロバイダがメッセージを処理し、Success/Fail の結果が S3 署名付き URL 経由で CloudFormation に返される。</li>
+<li>Lambda を使用する場合は直接 Lambda の ARN を指定でき、SNS トピックを作成する必要がない。</li>
+</ul>
 <h2 id="cloudformation_3">CloudFormation スタックセット</h2>
 <ul>
-<li>クロスアカウント/クロスリージョンに同一スタックを1 度のオペレーションで作成、更新、削除できる。</li>
+<li>マルチアカウント/マルチリージョンへのデプロイを単一のテンプレートで管理し、1 度のオペレーションでスタックを作成、更新、削除できる。</li>
+<li>スタック更新を実行すると、すべてのスタックインスタンスが同期して更新される。</li>
+<li>同時実行設定や失敗許容数を指定し、大規模な展開の際の制御ができる。</li>
 </ul>
 <p><img alt="" src="_attachment/image_1875.png" /></p>
 <ul>
 <li>ターゲットアカウントにスタックを作成する前に、 管理者アカウントとターゲットアカウントの間に信頼関係をセットアップする必要がある。</li>
+<li>信頼済みアカウントはスタックインスタンスの実行のみを許可。</li>
 <li>スタックセットはリージョンリソースなので、他のリージョンで表示や変更できない。</li>
 </ul>
-<p><img alt="" src="_attachment/image_1876.png" /></p>
 <p>StackSets のテンプレートがある</p>
 <p><img alt="" src="_attachment/image_1877.png" /></p>
 <p>AWS インフラの中央ロギング</p>
 <ul>
 <li>CloudFormation テンプレートにより複数アカウントやリージョンからのログファイルを Elasticsearch Service にアップロードするのに必要なコンポーネントの起動・設定が自動的に行われ、ダッシュボードでの分析と可視化を実行できます。</li>
-<li>複数のアプリケーションを立ち上げる際にも容易に中央ロギングを AWS 上で展開することが可能になります。</li>
+<li>複数アプリケーションを立ち上げる際にも容易に中央ロギングを AWS 上で展開することが可能になります。</li>
 </ul>
-<p><img alt="" src="_attachment/image_1878.png" /></p>
+<p>AWS TaskCat</p>
 <ul>
-<li>TaskCat は CloudFormation テンプレートをテストするオープンソー スツールです。</li>
-<li>TaskCat では同時に複数リージョンでスタックが作 成され、各リージョンに対して合格か失敗かの判定を示すレポートが生成されます。</li>
-<li>リージョンと AZ 数を設定して、テストする CloudFormation パラメータ値を渡すことができます。</li>
+<li>TaskCat は CloudFormation テンプレートのテストツールで、複数リージョンにスタックをデプロイして検証を行う。</li>
+<li>必要な IAM ロールやキーを自動作成し、実行後はリソースを自動的にクリーンアップする。</li>
+<li>リージョンと AZ 数を設定して、テストする CloudFormation パラメータ値を渡すことができる。</li>
+<li>同時に複数リージョンでスタックが作成され、各リージョンに対して合格か失敗かの判定を示すレポートが生成される。</li>
 </ul>
-<h2 id="lambda">Lambda 展開のテンプレート</h2>
-<p>例: ZipFile でコードを直書きする場合</p>
+<p><strong>Lambda 展開の CloudFormation テンプレート例</strong></p>
+<p>例: <code>ZipFile</code> でコードを直書き</p>
 <pre><code>Resources:
   LambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -910,7 +1044,7 @@ cfn-hup でメタデータ変更をモニタリングしている場合か、cfn
 </code></pre>
 <p>例: S3 バケットから Lamda コードをアップロードする場合</p>
 <ul>
-<li>コードを更新する場合 S3ObjectVersionParam のパラメタを更新する。</li>
+<li>コードを更新する場合は <code>S3ObjectVersionParam</code> パラメタの値を更新する。</li>
 </ul>
 <pre><code>  ListBucketsS3Lambda:
     Type: &quot;AWS::Lambda::Function&quot;
@@ -930,19 +1064,28 @@ cfn-hup でメタデータ変更をモニタリングしている場合か、cfn
           Ref: S3ObjectVersionParam
 </code></pre>
 <hr />
-<h1 id="aws-cdk-cloud-development-kit">AWS CDK (Cloud Development Kit/クラウド開発キット)</h1>
+<h1 id="aws-cdk-cloud-development-kit">AWS CDK (Cloud Development Kit)</h1>
 <ul>
-<li>プログラミング言語から CloudFormation テンプレートの構築・操作をコーディングするライブラリとツールキット。</li>
+<li>インフラストラクチャをプログラミング言語で記述。</li>
 <li>サポート言語: TypeScript, JavaScript, Python, Java, C#/.Net</li>
+<li>ループや条件分岐などのロジックを使って高レベル抽象化が可能。</li>
+<li>コンストラクト (ライブラリ) を再利用し、ベストプラクティスを簡単に取り込める。</li>
 </ul>
-<p><img alt="" src="_attachment/image_1879.png" /><img alt="" src="_attachment/image_1880.png" /></p>
+<p>cf. AWS SAM (Serverless Application Model)</p>
 <ul>
-<li>CDK アプリケーション内で、システムに必要なインフラストラクチャスタックを定義します。</li>
-<li>そのスタック内では Construct のツリーを定義でき ます。</li>
-<li>Construct は AWS CDK アプリケーションの基本的な構成要素です。</li>
-<li>Construct は「クラウドコンポーネント」のことを表し、コンポーネントの作成に CloudFormation で必要されるすべての要素をカプセル化しま す。</li>
-<li>Construct は S3 バケットなど1 つのリソースを表 すこともあれば、複数の AWS CDK リソースで構成される高レベルのコン ポーネントを表すこともあります。</li>
-<li>このようなコンポーネントの例としては、 コンピューティング性能が関連付けされたワーカーキュー、モニタリングリソースとダッシュボードを備えた cron ジョブ、さらには複数の AWS ア カウントとリージョンにまたがるアプリケーション全体などが挙げられます。</li>
+<li>SAM は CloudFormation のトランスフォーム (マクロ) であり、CDK は CloudFormation テンプレートをコード生成する SDK</li>
+</ul>
+<p><strong>CDK アプリケーションの構成</strong></p>
+<ul>
+<li><strong>App</strong> – CDK アプリ全体のエントリポイント。1 つ以上のスタックを含む。</li>
+<li><strong>Stack</strong> – CloudFormation テンプレートに相当する単位。1 つのスタックは複数のリソースで構成される。</li>
+<li><strong>Construct</strong> – 再利用可能なリソースの集まりを表すクラス。<ul>
+<li>Construct は「クラウドコンポーネント」のことを表し、コンポーネントの作成に CloudFormation で必要されるすべての要素をカプセル化。</li>
+<li>Construct は S3 バケットなど1 つのリソースを表すこともあれば、複数の AWS CDK リソースで構成される高レベルのコンポーネントを表すこともできる。</li>
+<li>低レベル (L1) から高レベル (L3) まであり、高レベルコンストラクトはベストプラクティスが組み込まれている。</li>
+</ul>
+</li>
+<li>CDK はコードを CloudFormation テンプレートに変換し、デプロイ時には通常の CloudFormation と同じ動作をする。</li>
 </ul>
 <p>コード例</p>
 <p><img alt="" src="_attachment/image_1881.png" /></p>
@@ -950,17 +1093,30 @@ cfn-hup でメタデータ変更をモニタリングしている場合か、cfn
 <li>素の CloudFormation テンプレートに比べてある程度リソースを自動で作ってくれる。</li>
 <li>例えば VPC を作ると関連するリソースも自動的に作ってくれる。</li>
 </ul>
-<p><img alt="" src="_attachment/image_1882.png" /></p>
+<p><strong>CDK CLI</strong></p>
+<ul>
+<li><code>cdk list</code> – デプロイ可能なスタック一覧を表示。</li>
+<li><code>cdk synth</code> – CloudFormation テンプレートを生成。</li>
+<li><code>cdk bootstrap</code> – 必要なリソース (CDKToolkit スタック) をアカウントに作成。</li>
+<li><code>cdk deploy</code> – スタックをデプロイ。<ul>
+<li>環境 (ランタイム環境) を作成。リソースの展開には CloudFormation が使われる。</li>
+</ul>
+</li>
+<li><code>cdk destroy</code> – スタックを削除。</li>
+<li><code>cdk diff</code> – 既存スタックとの差分を表示。</li>
+<li><code>cdk metadata</code> – メタデータを表示。</li>
+<li><code>cdk init</code> – 新規アプリケーションのひな型を生成。</li>
+<li><code>cdk context</code> – コンテキスト情報を管理。</li>
+<li><code>cdk docs</code> – API リファレンスを表示。</li>
+<li><code>cdk doctor</code> – 環境の問題を診断。</li>
+</ul>
 <hr />
 <h1 id="aws-elastic-beanstalk">AWS Elastic Beanstalk</h1>
 <ul>
-<li>Web アプリのデプロイ・プロビジョニング・モニタリング。</li>
+<li>Web アプリのプロビジョニング・デプロイメント・モニタリングまで一括管理。</li>
 <li>Beanstalk（びーんすとーく）は「豆の木」。</li>
-</ul>
-<p><img alt="" src="_attachment/File_275.png" /></p>
-<ul>
 <li>Apache, Nginx, IIS などの Web アプリケーションサーバーに対応。</li>
-<li>プロビジョニング・負荷分散・アプリケーションのモニタリングなどを自動設定:<ul>
+<li>プロビジョニング・負荷分散・モニタリングなどを自動設定:<ul>
 <li>EC2, EBS, RDS, セキュリティグループ, IAM ロール</li>
 <li>ELB, Auto Scaling</li>
 <li>CloudWatch Alarms, SNS</li>
@@ -971,91 +1127,112 @@ cfn-hup でメタデータ変更をモニタリングしている場合か、cfn
 <li>Web サーバ環境と Worker 環境 (Web server tier &amp; Worker tier)</li>
 </ul>
 <p><img alt="" src="_attachment/File_276.png" /></p>
-<p>言語とプラットフォーム</p>
-<p><img alt="" src="_attachment/File_277.png" /></p>
-<ul>
-<li>各種言語にまじって Docker もある。</li>
-<li>多様な役割のコンテナのデプロイとオーケストレーションには ECS/EKS を使用する。</li>
-</ul>
+<p><strong>言語とプラットフォーム</strong></p>
+<table>
+<thead>
+<tr>
+<th>言語</th>
+<th>開発スタック</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Java</td>
+<td>Apache Tomcat for JavaJava SE</td>
+</tr>
+<tr>
+<td>PHP</td>
+<td>Apache HTTP Server for PHP</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>Apache HTTP Server for Python</td>
+</tr>
+<tr>
+<td>Node.js</td>
+<td>Nginx or Apache HTTP Server for Node.js</td>
+</tr>
+<tr>
+<td>Ruby</td>
+<td>Passenger or Puma for Ruby</td>
+</tr>
+<tr>
+<td>.NET</td>
+<td>Microsoft IIS 7.5, 8.0, and 8.5 for .NET</td>
+</tr>
+<tr>
+<td>Docker</td>
+<td>Docker コンテナ</td>
+</tr>
+<tr>
+<td>Go</td>
+<td>Go</td>
+</tr>
+<tr>
+<td>- 各種言語にまじって Docker もある。</td>
+<td></td>
+</tr>
+<tr>
+<td>- 多様な役割のコンテナのデプロイとオーケストレーションには ECS/EKS を使用する。</td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <p><img alt="" src="_attachment/File_278.png" /></p>
-<p>アプリケーション</p>
+<p><strong>アプリケーション</strong></p>
 <ul>
 <li>環境、環境設定、バージョンの入れ物</li>
 <li>複数環境を起動できる。</li>
 </ul>
-<p>環境</p>
+<p><strong>環境</strong></p>
 <ul>
-<li>インフラ環境 (Web/Worker )</li>
+<li>インフラ環境 (Web/Worker)</li>
 <li>アプリケーションバージョン (アプリのコード) をデプロイする。</li>
 </ul>
 <p><img alt="" src="_attachment/image_1883.png" /></p>
-<p>アプリケーションバージョン</p>
-<p>eb deploy するたびにアプリケーションバージョンができる</p>
-<p><img alt="" src="_attachment/image_1884.png" /></p>
+<p><strong>アプリケーションバージョン</strong></p>
 <ul>
-<li>ライフサイクル<ul>
-<li>保持期限を個数又は日数で管理する</li>
+<li>eb deploy するたびにアプリケーションバージョンができる</li>
 </ul>
-</li>
+<p><img alt="" src="_attachment/image_1884.png" /></p>
+<p><strong>ライフサイクル</strong></p>
+<ul>
+<li>過去バージョンの保持期限を個数又は日数で管理</li>
 <li><img alt="" src="_attachment/image_1885.png" /></li>
 </ul>
-<p>環境のタイプ: 単一インスタンスと負荷分散 (Single-instance / Load balanced)</p>
-<p>Load balanced にすると ELB と Auto Scaling が付き、Multi-AZ にできる。</p>
+<p><strong>環境のタイプ</strong>: 単一インスタンスと負荷分散 (Single-instance / Load balanced)</p>
+<ul>
+<li>Load balanced にすると ELB と Auto Scaling が付き、Multi-AZ にできる。</li>
+</ul>
 <p><img alt="" src="_attachment/image_1886.png" /></p>
-<h3 id="_10"><br></h3>
-<h3 id="eb-cli">EB CLI</h3>
-<p><a href="https://docs.aws.amazon.com/ja_jp/elasticbeanstalk/latest/dg/eb-cli3.html">https://docs.aws.amazon.com/ja_jp/elasticbeanstalk/latest/dg/eb-cli3.html</a></p>
-<p>eb init</p>
-<ul>
-<li>アプリケーションを作成。</li>
-</ul>
-<p>eb create</p>
-<ul>
-<li>環境 (ランタイム環境) を作成。リソースの展開には CloudFormation が使われる。</li>
-</ul>
-<p>eb deploy</p>
-<ul>
-<li>変更を環境にデプロイ。</li>
-</ul>
-<p>eb terminate</p>
-<ul>
-<li>環境の終了。</li>
-</ul>
-<p>eb open</p>
-<p>eb status</p>
-<p>eb health</p>
-<p>eb logs</p>
-<p>保存済み設定: Saved configurations</p>
+<p><strong>保存済み設定: Saved configurations</strong></p>
 <p>起動中の環境設定を保存して他のリージョンやアカウントで展開できる</p>
-<p>eb config save dev-env --cfg prod</p>
+<p><code>eb config save dev-env --cfg prod</code></p>
 <ul>
 <li>サービス側に Saved Configuration が保存される。</li>
 <li>.elasticbeanstalk/saved_configs 配下に prod.cfg.yaml ができる。</li>
-<li>ローカルで直に yaml ファイルを編集できる。(.ebextensions でも同様)</li>
+<li>ローカルで直に yaml ファイルを編集できる。</li>
+<li><code>eb config put prod</code> でローカル編集した yaml ファイルをサービス側に保存する。</li>
 </ul>
-<p>eb config put prod</p>
-<ul>
-<li>ローカルで編集した yaml ファイルをサービス側に保存する。</li>
-</ul>
-<p>eb config dev-env --cfg prod</p>
+<p><code>eb config dev-env --cfg prod</code></p>
 <ul>
 <li>サービス側に保存された Saved Configuration を環境に適用。</li>
 </ul>
-<h2 id="ebextensions">.ebextensions ディレクトリ</h2>
-<p>環境の設定・リソースの高度なカスタマイズが可能。</p>
-<p>操作を指定した (分割された) コンフィグファイルを配置する。</p>
-<p>ローカルで編集して eb deploy で環境に適用する。</p>
-<p><img alt="" src="_attachment/image_1887.png" /></p>
-<p>services:</p>
+<h2 id="ebextensions">.ebextensions による拡張</h2>
 <ul>
-<li>各種サービスのコンフィグを設定: EC2, VPC, Auto Scaling, ELB, RDS  等。<ul>
-<li><a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/command-options-general.html">https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/command-options-general.html</a></li>
+<li>環境の設定・リソースの高度なカスタマイズが可能。</li>
+<li>.ebextensions 配下のディレクトリに操作を指定したコンフィグファイルを配置する。</li>
+<li>ローカルで編集して、eb deploy で環境に適用する。</li>
 </ul>
-</li>
+<p><img alt="" src="_attachment/image_1887.png" /></p>
+<p>services</p>
+<ul>
+<li>環境内の各種サービスのコンフィグを設定: EC2, VPC, Auto Scaling, ELB, RDS  等。</li>
+<li><a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/command-options-general.html">https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/command-options-general.html</a></li>
 </ul>
 <p>resources:</p>
 <ul>
-<li>CloudFromation テンプレートのリソース記述で任意のリソースを作成できる。</li>
+<li>CloudFromation テンプレートのリソース記述で任意のリソースを追加で作成できる。</li>
 <li>ただし DB のように消えたら困るリソースは環境外に個別に作成したほうがよい。</li>
 </ul>
 <pre><code>Resources:
@@ -1086,12 +1263,10 @@ option_settings:
     DYNAMODB_TABLE: '`{&quot;Ref&quot; : &quot;DynamoDBTable&quot;}`'
     AWS_REGION: '`{&quot;Ref&quot; : &quot;AWS::Region&quot;}`'
 </code></pre>
-<p>コマンド実行:</p>
+<p>commands:</p>
 <ul>
-<li>commands:<ul>
-<li>アプリケーションバージョンのファイルが解凍される前に実行される</li>
-</ul>
-</li>
+<li>コマンド実行</li>
+<li>アプリケーションバージョンの<strong>ファイルが展開される前に実行</strong>される</li>
 </ul>
 <pre><code># You can use the commands key to execute commands on the EC2 instance. The commands run before the application and web server are set up and the application version file is extracted.
 commands:
@@ -1101,11 +1276,11 @@ commands:
 </code></pre>
 <ul>
 <li><a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-ec2.html#linux-commands">https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-ec2.html#linux-commands</a></li>
-<li>container_commands:<ul>
-<li>アプリケーションバージョンのファイルがステージングフォルダに解凍された後に実行される</li>
-<li>設定ファイルを変更したりはできるが、デプロイよりも前であることに注意。</li>
 </ul>
-</li>
+<p>container_commands:</p>
+<ul>
+<li>アプリケーションバージョンのファイルが<strong>ステージングフォルダに展開された後に実行</strong>される</li>
+<li>設定ファイルを変更したりはできるが、デプロイよりも前であることに注意。</li>
 </ul>
 <pre><code># You can use the container_commands key to execute commands that affect your application source code. Container commands run after the application and web server have been set up and the application version archive has been extracted, but before the application version is deployed.
 container_commands:
@@ -1117,9 +1292,8 @@ container_commands:
     # You can use leader_only to only run the command on a single instance
     leader_only: true
 </code></pre>
-<pre><code>- leader\_only: true ... 複数あるインスタンスのうち１つだけで実行する。
-</code></pre>
 <ul>
+<li><code>leader\_only: true</code> ... 複数あるインスタンスのうち1つだけで実行する。</li>
 <li><a href="https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-ec2.html#linux-container-commands">https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-ec2.html#linux-container-commands</a></li>
 </ul>
 <p>Container Commands vs Commands?</p>
@@ -1151,24 +1325,47 @@ container_commands:
 <ul>
 <li>All at once</li>
 <li>Rolling</li>
-<li>Rolling with additional batch</li>
-<li>Immutable</li>
+<li>Rolling with additional batch<ul>
+<li>追加バッチにデプロイしていくのでキャパシティが減らない</li>
+</ul>
+</li>
+<li>Immutable<ul>
+<li>別のテンポラリな ASG にインスタンスを作成して新バージョンを展開</li>
+<li>一時的にインスタンスコストが二倍になるがロールバックが容易</li>
+</ul>
+</li>
 </ul>
 <h2 id="worker">Worker 環境</h2>
-<p>SQS キューのリッスンまたはスケジュールでタスクを処理する Worker アプリケーション。</p>
-<p>スケジュールは cron.yaml で設定。</p>
-<p>Web サーバ環境の背後で時間のかかる処理を非同期で行うのが目的。</p>
+<ul>
+<li>SQS キューのリッスンまたはスケジュールでタスクを処理する Worker アプリケーション。</li>
+<li>Web サーバ環境の背後で時間のかかる処理を非同期で行うのが目的。</li>
+</ul>
 <p><img alt="" src="_attachment/image_1888.png" /></p>
 <p><a href="https://docs.aws.amazon.com/ja_jp/elasticbeanstalk/latest/dg/using-features-managing-env-tiers.html">https://docs.aws.amazon.com/ja_jp/elasticbeanstalk/latest/dg/using-features-managing-env-tiers.html</a></p>
-<p>ワーカー環境では Amazon SQS キューを管理し、キューから読み取る各インスタンスでデーモンプロセスを自動的に実行します。デーモンは、キューから項目を取得すると、キューメッセージの内容を本文に含めて、HTTP POST リクエストをローカルにポート 80 の http://localhost/ に送信します。アプリケーションに必要なのは、POST に応じて実行時間が長いタスクを実行することだけです。デーモンを設定し、別のパスに送信する、application/JSON 以外の MIME タイプを使用する、既存のキューに接続する、または接続 (最大の同時リクエスト数)、タイムアウト、再試行をカスタマイズすることができます。</p>
-<p>定期的なタスクでは、cron スケジュールに基づいてメッセージをキューに入れるようワーカーデーモンを設定することもできます。定期的な各タスクでは、別のパスに POST できます。各タスクのスケジュールおよびパスを定義するソースコードに YAML ファイルを含めて、定期的なタスクを有効にします。(cron.yaml)</p>
-<p>Web Server 環境と Woker 環境の連携の図</p>
+<p><strong>SQS キュー</strong></p>
+<ul>
+<li>SQS を介して Web サーバー環境と連携。</li>
+<li>ワーカー環境が SQS キューを管理し、各インスタンスでキューを読み取るワーカーデーモンを自動実行</li>
+<li>デーモンはキューメッセージ本文を HTTP POST で localhost:80 へ送信</li>
+<li>アプリ側で POST 受信で長時間タスクを実装</li>
+<li>デーモン設定のカスタマイズ（送信先パス、MIME タイプ、既存キュー接続、同時実行数、タイムアウト、再試行）</li>
+</ul>
+<p><strong>スケジュールタスク</strong></p>
+<ul>
+<li>cron スケジュールに基づいてメッセージをキューに入れるようワーカーデーモンを設定</li>
+<li>各タスクごとに、別のパスに POST できる。</li>
+<li>ソースコードに YAML ファイル (cron.yaml) を含めて定期的なタスクを有効にする。</li>
+</ul>
+<p><strong>Web Server 環境と Woker 環境の連携の図</strong></p>
 <p><img alt="" src="_attachment/image_1889.png" /></p>
 <h2 id="docker-in-beanstalk">Docker in Beanstalk</h2>
 <p>プラットフォームに Docker を選ぶ場合 ECS を利用できる。</p>
 <p><img alt="" src="_attachment/image_1890.png" /><img alt="" src="_attachment/image_1891.png" /></p>
-<h2 id="_12"><br></h2>
-<p>環境の Web サーバなどのパッチ適用の自動化もできる:</p>
+<h3 id="managed-updates">Managed Updates</h3>
+<ul>
+<li>環境の Web サーバなどのパッチ適用の自動化</li>
+<li>メンテナンスウィンドウを指定する</li>
+</ul>
 <p><img alt="" src="_attachment/image_1892.png" /></p>
 <hr />
 <h1 id="aws-opsworks">AWS OpsWorks</h1>
@@ -1227,7 +1424,7 @@ container_commands:
 <li>アプリケーションコードは Git, S3 などのリポジ トリに保存される。</li>
 <li>インスタンスにアプリケーションをデプロイする際、OpsWorks スタックによって「Deploy」ライフサイクルイベントがトリガーさ れ、レイヤーのデプロイレシピがそのインスタンスで実行される。</li>
 </ul>
-<h3 id="_13">ライフサイクルイベント/レシピ</h3>
+<h3 id="_12">ライフサイクルイベント/レシピ</h3>
 <p>各レイヤーでライフサイクルイベントごとに実行するレシピ (Chef cookbook) を指定できる。</p>
 <p><a href="https://docs.aws.amazon.com/opsworks/latest/userguide/workingcookbook-events.html">https://docs.aws.amazon.com/opsworks/latest/userguide/workingcookbook-events.html</a></p>
 <p>Each layer has a set of five lifecycle events, each of which has an associated set of recipes that are specific to the layer. When an event occurs on a layer's instance, AWS OpsWorks Stacks automatically runs the appropriate set of recipes.</p>

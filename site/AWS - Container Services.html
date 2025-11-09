@@ -35,12 +35,14 @@
 <li>最後のは大きいベースイメージを使わないということでサイズに関することでもあるが、構成管理やセキュリティにも関わる。</li>
 </ul>
 <p>コンテナを使った CI/CD でのアーティファクト・デプロイは Docker イメージ単位となり、そのバージョニングはタグで行える。</p>
-<p><img alt="" src="_attachment/image_469.png" /><img alt="" src="_attachment/image_470.png" /></p>
+<p><img alt="" src="_attachment/image_469.png" /></p>
+<p><img alt="" src="_attachment/image_470.png" /></p>
 <ul>
 <li>ベースイメージをセキュリティチームが提供している。</li>
 </ul>
 <h1 id="aws">AWS のコンテナサービス</h1>
-<p><img alt="" src="_attachment/image_471.png" /><img alt="" src="_attachment/image_472.png" /></p>
+<p><img alt="" src="_attachment/image_471.png" /></p>
+<p><img alt="" src="_attachment/image_472.png" /></p>
 <p>コントロールプレーン</p>
 <ul>
 <li>ECS/EKS</li>
@@ -264,7 +266,9 @@
 <h3 id="service-auto-scaling">Service Auto Scaling</h3>
 <p>平均 CPU 使用率などのメトリクスで Auto Scaling で Service の維持タスク数を増減する。</p>
 <p>EC2 クラスタの場合、EC2 インスタンスも自動で増える訳ではないので自前で EC2 Auto Scaling も設定する必要がある。(Beanstalk の Docker ECS を使うと両方のスケーリングを設定してくれる)</p>
-<p><img alt="" src="_attachment/image_493.png" /><img alt="" src="_attachment/image_494.png" /><img alt="" src="_attachment/image_495.png" /></p>
+<p><img alt="" src="_attachment/image_493.png" /></p>
+<p><img alt="" src="_attachment/image_494.png" /></p>
+<p><img alt="" src="_attachment/image_495.png" /></p>
 <h2 id="_2">インスタンスへのタスク配置</h2>
 <p><img alt="" src="_attachment/image_496.png" /></p>
 <p>例: ポートマッピングでホストのポートを占有するタスクを複数個起動するには、その個数分のインスタンスが必要。</p>
@@ -409,7 +413,8 @@
 <li>ボリュームストレージ ... タスク定義でボリュームマウントを構成し、コンテナ間で共有する。</li>
 <li>どちらも揮発性でタスク停止で消去される。</li>
 </ul>
-<p><img alt="" src="_attachment/image_499.png" /><img alt="" src="_attachment/image_500.png" /></p>
+<p><img alt="" src="_attachment/image_499.png" /></p>
+<p><img alt="" src="_attachment/image_500.png" /></p>
 <h4 id="fargate-awsvpc">Fargate のネットワークモード (awsvpc ネットワークモード)</h4>
 <p>タスク毎に ENI が割り当てられ、VPC に接続される。</p>
 <p><img alt="" src="_attachment/image_501.png" /></p>

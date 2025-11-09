@@ -180,9 +180,10 @@
 <p>Ref. <a href="https://d1.awsstatic.com/whitepapers/AWS_Blue_Green_Deployments.pdf">https://d1.awsstatic.com/whitepapers/AWS_Blue_Green_Deployments.pdf</a></p>
 <h3 id="route53-cname-allatonce">Route53 CNAME 切り替え (AllAtOnce)</h3>
 <ul>
-<li>エイリアス (CNAME) が指す ELB の DNS 名を切り替える。</li>
+<li>エイリアス (or CNAME) が指す ELB の DNS 名を切り替える。</li>
 </ul>
-<p><img alt="" src="_attachment/File_3.png" /><img alt="" src="_attachment/image_513.png" /></p>
+<p><img alt="" src="_attachment/File_3.png" /></p>
+<p><img alt="" src="_attachment/image_513.png" /></p>
 <h3 id="route53">Route53 加重ラウンドロビン</h3>
 <ul>
 <li><img alt="" src="_attachment/File_4.png" /></li>
@@ -315,18 +316,32 @@
 <h3 id="opsworsk">OpsWorsk</h3>
 <hr />
 <h1 id="codedeploy_1">CodeDeploy のデプロイタイプ</h1>
-<p>EC2/オンプレ</p>
+<ol>
+<li><strong>インプレース</strong> ... EC2, オンプレ (ECS, Lambdaは不可)</li>
+<li>
+<p><strong>Blue/Green</strong> ... EC2, ECS, Lambda (オンプレは不可)</p>
+</li>
+<li>
+<p>基本的に複数台なのでインプレース=ローリング更新となる</p>
+</li>
+<li>仕組み的にコンテナやLambdaはインプレース更新の概念がないのでBlue/Greenのみ</li>
+</ol>
+<p><strong>デプロイ並行度の設定</strong></p>
 <ul>
-<li>インプレース (=ローリング)</li>
-<li>Blue/Green (=イミュータブル)</li>
+<li>Amazon EC2／オンプレミス</li>
+<li>AllAtOnce</li>
+<li>HalfAtATime</li>
+<li>OneAtATime</li>
+<li>Amazon ECS</li>
+<li>Canary</li>
+<li>Linear</li>
+<li>All-at-once</li>
+<li>AWS Lambda</li>
+<li>Canary</li>
+<li>Linear</li>
+<li>All-at-once</li>
 </ul>
-<p>ECS, Lamda</p>
-<ul>
-<li>Blue/Green (仕組み的にコンテナやLambdaはインプレース切り替えの概念がない)</li>
-</ul>
-<p>デプロイ設定</p>
-<p><img alt="" src="_attachment/image_516.png" /></p>
-<h3 id="ec2">EC2/オンプレ</h3>
+<h3 id="ec2">EC2（オンプレ）</h3>
 <p>インプレース(=ローリング)</p>
 <ul>
 <li>稼働中サーバを停止せずに新バージョンのアプリを配置/起動する。</li>
@@ -341,8 +356,9 @@
 <li>Auto Scaling グループの自動コピー: デプロイグループに Auto Scaling グループを指定した場合。Auto Scaling グループ全体の置き換えによるデプロイメントを行う。</li>
 <li>Auto Scaling グループの自動コピーを指定しない場合、deployment 作成時に個別にインスタンスを指定することになる。</li>
 <li><img alt="" src="_attachment/image_517.png" /></li>
+<li><img alt="" src="_attachment/image_518.png" /></li>
+<li><img alt="" src="_attachment/image_519.png" /></li>
 </ul>
-<p><img alt="" src="_attachment/image_518.png" /><img alt="" src="_attachment/image_519.png" /></p>
 <p>カスタム</p>
 <ul>
 <li>Half の代わりの割合か台数で必要な稼働中インスタンス数を指定する。</li>
@@ -404,7 +420,9 @@
 <li>eb clone で既存スタックのクローンを作成後、新バージョンをデプロイしてテスト。</li>
 <li>eb swap で内部の CNAME を既存スタックから新スタックに切り替え。(DNS カットオーバー)</li>
 </ul>
-<p><img alt="" src="_attachment/File_7.png" /><img alt="" src="_attachment/image_528.png" /><img alt="" src="_attachment/image_529.png" /></p>
+<p><img alt="" src="_attachment/File_7.png" /></p>
+<p><img alt="" src="_attachment/image_528.png" /></p>
+<p><img alt="" src="_attachment/image_529.png" /></p>
 <h1 id="ecs_1">ECS のデプロイ</h1>
 <h2 id="deploymentcontroller">サービスの deploymentController 設定</h2>
 <p>次のいずれかに設定する:</p>

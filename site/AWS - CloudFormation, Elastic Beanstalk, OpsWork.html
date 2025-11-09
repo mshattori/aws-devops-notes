@@ -357,7 +357,8 @@ Resources:
 <li>CreateStack リクエストの一意の識別子。</li>
 <li>マネジメントコンソールは自動でつけてくれるが、CLIやAPIで実行する場合は自分で指定する。</li>
 </ul>
-<p><img alt="" src="_attachment/image_1851.png" /><img alt="" src="_attachment/image_1852.png" /></p>
+<p><img alt="" src="_attachment/image_1851.png" /></p>
+<p><img alt="" src="_attachment/image_1852.png" /></p>
 <p><strong>TimeoutInMinutes</strong></p>
 <ul>
 <li>スタックのステータスが CREATE_FAILED になる までに待機可能な時間。</li>
@@ -432,7 +433,8 @@ Resources:
 </ul>
 </li>
 </ul>
-<p><img alt="" src="_attachment/image_1859.png" /><img alt="" src="_attachment/image_1860.png" /></p>
+<p><img alt="" src="_attachment/image_1859.png" /></p>
+<p><img alt="" src="_attachment/image_1860.png" /></p>
 <h2 id="exportimportvalue">クロススタックリファレンス (Export/ImportValue)</h2>
 <p>ネストと異なり同時にスタックを作らない場合のスタックの関連付け。</p>
 <p>下記の例はネットワークスタックが作ったサブネット ID をアプリケーションスタックで参照している。</p>
@@ -1261,7 +1263,7 @@ option_settings:
 <p>commands:</p>
 <ul>
 <li>コマンド実行</li>
-<li>アプリケーションバージョンの<strong>ファイルが展開される前に実行</strong>される</li>
+<li>アプリケーションバージョンの<strong>ファイルが展開される前に実行</strong>される。バックアップや旧ファイルのクリーンアップなど。</li>
 </ul>
 <pre><code># You can use the commands key to execute commands on the EC2 instance. The commands run before the application and web server are set up and the application version file is extracted.
 commands:
@@ -1275,7 +1277,7 @@ commands:
 <p>container_commands:</p>
 <ul>
 <li>アプリケーションバージョンのファイルが<strong>ステージングフォルダに展開された後に実行</strong>される</li>
-<li>設定ファイルを変更したりはできるが、デプロイよりも前であることに注意。</li>
+<li>デプロイ前の DB マイグレーションや設定ファイルの更新などに使用する</li>
 </ul>
 <pre><code># You can use the container_commands key to execute commands that affect your application source code. Container commands run after the application and web server have been set up and the application version archive has been extracted, but before the application version is deployed.
 container_commands:
@@ -1355,7 +1357,8 @@ container_commands:
 <p><img alt="" src="_attachment/image_1889.png" /></p>
 <h2 id="docker-in-beanstalk">Docker in Beanstalk</h2>
 <p>プラットフォームに Docker を選ぶ場合 ECS を利用できる。</p>
-<p><img alt="" src="_attachment/image_1890.png" /><img alt="" src="_attachment/image_1891.png" /></p>
+<p><img alt="" src="_attachment/image_1890.png" /></p>
+<p><img alt="" src="_attachment/image_1891.png" /></p>
 <h3 id="managed-updates">Managed Updates</h3>
 <ul>
 <li>環境の Web サーバなどのパッチ適用の自動化</li>
@@ -1475,7 +1478,6 @@ container_commands:
 <li>問題例: The DevOps team should receive an email whenever AWS OpsWorks restarts an instance that is considered unhealthy or unable to communicate with the service endpoint.</li>
 <li><img alt="" src="_attachment/image_1897.png" /></li>
 </ul>
-<p><br></p>
 </article>
 
     </main>

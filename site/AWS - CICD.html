@@ -225,7 +225,8 @@ git config --global credential.UseHttpPath true
 </ul>
 </li>
 </ul>
-<p><img alt="" src="_attachment/image_546.png" /><img alt="" src="_attachment/File_9.png" /></p>
+<p><img alt="" src="_attachment/image_546.png" />
+<img alt="" src="_attachment/File_9.png" /></p>
 <h2 id="_7">ビルドプロジェクト</h2>
 <p>ソース、ビルド環境、buildspec ファイル名、アーティファクト (出力先 S3 バケット名) 等を指定する。</p>
 <p>Ref. <a href="https://docs.aws.amazon.com/ja_jp/codebuild/latest/userguide/create-project-console.html">https://docs.aws.amazon.com/ja_jp/codebuild/latest/userguide/create-project-console.html</a></p>
@@ -233,8 +234,8 @@ git config --global credential.UseHttpPath true
 <ul>
 <li>ソースプロバイダーの種類<ul>
 <li>S3, CodeCommit, GitHub, GitHub Enterprise, Bitbucket</li>
-<li><img alt="" src="_attachment/image_547.png" /><img alt="" src="_attachment/image_548.png" /></li>
-<li><br></li>
+<li><img alt="" src="_attachment/image_547.png" /></li>
+<li><img alt="" src="_attachment/image_548.png" /></li>
 </ul>
 </li>
 </ul>
@@ -274,7 +275,7 @@ git config --global credential.UseHttpPath true
 <li>ECR ... ビルドサーバのカスタムイメージ取得、ビルドしたイメージのプッシュ</li>
 </ul>
 </li>
-<li>NOTE: ビルドサーバに権限が必要なら環境変数からクリデンシャルを渡す必要がある。</li>
+<li><strong>ビルドサーバのコンテナ環境にもサービスロールの権限が引き継がれる</strong> (クリデンシャルが環境変数経由で渡される)</li>
 </ul>
 </li>
 <li>タイムアウト<ul>
@@ -367,7 +368,8 @@ git config --global credential.UseHttpPath true
 <li>ソースの root ディレクトリに配置。(ビルドプロジェクトで異なるパスも指定可能)</li>
 <li>各ビルドフェーズのコマンド、アーティファクトとして保存するファイルを指定。</li>
 </ul>
-<p><img alt="" src="_attachment/image_555.png" /><img alt="" src="_attachment/image_556.png" /></p>
+<p><img alt="" src="_attachment/image_555.png" />
+<img alt="" src="_attachment/image_556.png" /></p>
 <p>phases セクション</p>
 <ul>
 <li>install フェーズ<ul>
@@ -587,14 +589,16 @@ phases:
 <p><img alt="" src="_attachment/image_566.png" /></p>
 <h2 id="_19">デプロイタイプ</h2>
 <p>デプロイグループで指定する。以下の２種類。</p>
-<ol>
-<li><strong>インプレース</strong> ... EC2, オンプレ (ECS, Lambdaは不可)</li>
-<li>複数台なら段階的にローリングデプロイできる。</li>
-<li><strong>Blue/Green</strong> ... EC2, ECS, Lambda (オンプレは不可)</li>
+<p>1) <strong>インプレース</strong> ... EC2, オンプレ (ECS, Lambdaは不可)</p>
+<ul>
+<li>複数台なら段階的にローリングデプロイできる</li>
+</ul>
+<p>2) <strong>Blue/Green</strong> ... EC2, ECS, Lambda (オンプレは不可)</p>
+<ul>
 <li>トラフィックルーティングで並行環境を切り替え</li>
 <li>Lambda：エイリアスの加重ルーティング</li>
 <li>EC2/ECS：ELBのターゲットグループ切替</li>
-</ol>
+</ul>
 <p><img alt="" src="_attachment/image_567.png" /></p>
 <h3 id="_20">デプロイ設定</h3>
 <p>Blue/Green に関連する設定</p>
@@ -605,14 +609,22 @@ phases:
 </ul>
 <p><img alt="" src="_attachment/image_568.png" /></p>
 <h4 id="bluegreen">デプロイ並行度の設定 (インプレース, Blue/Green 共通)</h4>
-<p>EC2:</p>
-<p><img alt="" src="_attachment/image_569.png" /></p>
-<p>ECS:
-<img alt="" src="_attachment/image_571.png" /></p>
-<p>Lambda:
-<img alt="" src="_attachment/image_570.png" /></p>
+<p>EC2</p>
 <ul>
-<li>Liner は10%ずつを段階的に。Canary は 10%→100%の2段階。</li>
+<li><img alt="" src="_attachment/image_569.png" /></li>
+</ul>
+<p>ECS</p>
+<ul>
+<li><img alt="" src="_attachment/image_571.png" /></li>
+</ul>
+<p>Lambda</p>
+<ul>
+<li>
+<p><img alt="" src="_attachment/image_570.png" /></p>
+</li>
+<li>
+<p>Liner は10%ずつを段階的に。Canary は 10%→100%の2段階。</p>
+</li>
 </ul>
 <h3 id="_21">トリガー (通知)</h3>
 <ul>
@@ -694,8 +706,10 @@ hooks:
 <p><strong>EC2 - インプレース</strong></p>
 <ul>
 <li><img alt="" src="_attachment/File_14.png" /></li>
-<li>ApplicationStop ... アプリの停止処理を実装する</li>
-<li>ApplicationStart ... アプリの起動処理を実装する</li>
+<li>ApplicationStop ... アプリの停止処理を実装</li>
+<li>BeforeInstall ... 旧アプリのバックアップや旧ファイルの削除、インストール前の前処理を実装</li>
+<li>AfterInstall ... 依存関係のインストールやビルド・展開、バックアップからのマイグレーションなど、実質的なセットアップを実装</li>
+<li>ApplicationStart ... アプリの起動処理を実装</li>
 <li>ValidateService ... ApplicationStart フック完了後に実行される<ul>
 <li>アプリの初期化の完了をヘルスチェックなどで確認し、必要な検証を行う。</li>
 </ul>
@@ -1040,7 +1054,8 @@ region: supported-region
 </li>
 </ul>
 <h3 id="_31">パラレルアクションとシーケンシャルアクション</h3>
-<p><img alt="" src="_attachment/image_592.png" /><img alt="" src="_attachment/image_593.png" /></p>
+<p><img alt="" src="_attachment/image_592.png" /></p>
+<p><img alt="" src="_attachment/image_593.png" /></p>
 <p>パラレルアクション=アクショングループ</p>
 <ul>
 <li><img alt="" src="_attachment/image_594.png" /></li>

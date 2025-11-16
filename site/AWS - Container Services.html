@@ -26,6 +26,9 @@
 </code></pre>
 <ul>
 <li><a href="https://aws.amazon.com/jp/blogs/news/build-a-continuous-delivery-pipeline-for-your-container-images-with-amazon-ecr-as-source/">https://aws.amazon.com/jp/blogs/news/build-a-continuous-delivery-pipeline-for-your-container-images-with-amazon-ecr-as-source/</a></li>
+<li>docker build を行う環境で ECR から pull する権限 を付ける必要がある</li>
+<li>開発者の IAM ユーザー／ロール</li>
+<li>CodeBuild プロジェクトのサービスロール</li>
 </ul>
 <p>コンテナイメージ作成のベストプラクティス？</p>
 <p><img alt="" src="_attachment/image_468.png" /></p>
@@ -35,14 +38,12 @@
 <li>最後のは大きいベースイメージを使わないということでサイズに関することでもあるが、構成管理やセキュリティにも関わる。</li>
 </ul>
 <p>コンテナを使った CI/CD でのアーティファクト・デプロイは Docker イメージ単位となり、そのバージョニングはタグで行える。</p>
-<p><img alt="" src="_attachment/image_469.png" /></p>
-<p><img alt="" src="_attachment/image_470.png" /></p>
+<p><img alt="" src="_attachment/image_469.png" /><img alt="" src="_attachment/image_470.png" /></p>
 <ul>
 <li>ベースイメージをセキュリティチームが提供している。</li>
 </ul>
 <h1 id="aws">AWS のコンテナサービス</h1>
-<p><img alt="" src="_attachment/image_471.png" /></p>
-<p><img alt="" src="_attachment/image_472.png" /></p>
+<p><img alt="" src="_attachment/image_471.png" /><img alt="" src="_attachment/image_472.png" /></p>
 <p>コントロールプレーン</p>
 <ul>
 <li>ECS/EKS</li>
@@ -90,12 +91,16 @@
 <li>(複数の)コンテナ定義、コンテナの CPU/メモリサイズ、タスク実行ロール</li>
 <li>コンテナへのボリュームマッピングやポートマッピング</li>
 <li>ネットワークモード (VPC)</li>
+<li>docker-compose.yaml 相当の設定</li>
 </ul>
 <p>Service</p>
 <ul>
-<li>Task の並列実行数を定義。異常終了した Task の再起動</li>
-<li>ELB と連携してトラフィックを分散</li>
-<li>起動タイプ (Launch Type: EC2, Fargate) の指定</li>
+<li>Task の希望実行数（desired count）の維持</li>
+<li>異常終了した Task の自動再起動（自己修復 / Auto Healing）</li>
+<li>ELB と連携してトラフィックをルーティング</li>
+<li>起動方式を指定:   Launch Type（EC2 / Fargate）または Capacity Provider Strategy</li>
+<li>デプロイ管理: Rolling update / Blue-Green（CodeDeploy）</li>
+<li>Service Auto Scaling</li>
 </ul>
 <p>Cluster</p>
 <ul>
@@ -151,7 +156,7 @@
 </code></pre>
 <h4 id="family">family</h4>
 <ul>
-<li>タスク定義の名前。family + revision でタスク定義を特定する。</li>
+<li>タスク定義の名前。family + revision でタスク定義を特定する。(revision はタスク定義に記述されない)</li>
 <li>タスク定義はイミュータブルなので、タスク定義更新時は新しい revision を作成する必要がある。</li>
 </ul>
 <p><img alt="" src="_attachment/image_478.png" /></p>
@@ -179,7 +184,7 @@
 <p><img alt="" src="_attachment/image_480.png" /></p>
 <ul>
 <li>logConfiguration: docker run --log-driver オプションの指定。<ul>
-<li>"awslogs" は CloudWatch agent 不要でログを送れる。</li>
+<li><code>logConfiguration: awslogs</code> は CloudWatch agent 不要でログを送れる。</li>
 <li><img alt="" src="_attachment/image_481.png" /></li>
 </ul>
 </li>
@@ -266,9 +271,7 @@
 <h3 id="service-auto-scaling">Service Auto Scaling</h3>
 <p>平均 CPU 使用率などのメトリクスで Auto Scaling で Service の維持タスク数を増減する。</p>
 <p>EC2 クラスタの場合、EC2 インスタンスも自動で増える訳ではないので自前で EC2 Auto Scaling も設定する必要がある。(Beanstalk の Docker ECS を使うと両方のスケーリングを設定してくれる)</p>
-<p><img alt="" src="_attachment/image_493.png" /></p>
-<p><img alt="" src="_attachment/image_494.png" /></p>
-<p><img alt="" src="_attachment/image_495.png" /></p>
+<p><img alt="" src="_attachment/image_493.png" /><img alt="" src="_attachment/image_494.png" /><img alt="" src="_attachment/image_495.png" /></p>
 <h2 id="_2">インスタンスへのタスク配置</h2>
 <p><img alt="" src="_attachment/image_496.png" /></p>
 <p>例: ポートマッピングでホストのポートを占有するタスクを複数個起動するには、その個数分のインスタンスが必要。</p>
@@ -285,7 +288,6 @@
 <h2 id="ecs-cluster">ECS Cluster</h2>
 <p>コンテナの実行環境となるインスタンスのクラスタを抽象化したもの。</p>
 <h3 id="ecs-capacity-provider-launch-type">ECS クラスタと実行方式（Capacity Provider / Launch Type）の関係</h3>
-<p><strong>要点</strong></p>
 <ul>
 <li><strong>同一クラスタで EC2 と Fargate を共存</strong>できる。</li>
 <li><strong>クラスタ = 論理的入れ物</strong>、<strong>Capacity Provider = どこで動かすかの規則</strong>。</li>
@@ -293,13 +295,13 @@
 </ul>
 <p><strong>全体像（レイヤ分離の考え方）</strong></p>
 <ul>
-<li><strong>クラスタ</strong><ul>
-<li>タスク実行の論理スコープ。ネットワーク/監視/権限の“枠”を提供。</li>
+<li><strong>Capacity Provider（CP）</strong><ul>
+<li>タスク実行インフラの抽象化。<code>FARGATE</code> / <code>FARGATE_SPOT</code> / <code>EC2（ASG）</code> を“戦略”で配分。</li>
+<li>旧来の<strong>Launch Type</strong>（Fargate / EC2）より柔軟で、現在の<strong>推奨方式</strong>。</li>
 </ul>
 </li>
-<li><strong>Capacity Provider（CP）</strong><ul>
-<li>実行基盤の抽象化。<code>FARGATE</code> / <code>FARGATE_SPOT</code> / <code>EC2（ASG）</code> を“戦略”で配分。</li>
-<li>旧来の<strong>Launch Type</strong>（Fargate / EC2）より柔軟で、現在は <strong>推奨方式</strong>。</li>
+<li><strong>クラスタ</strong><ul>
+<li>タスク実行環境の論理スコープ。ネットワーク/監視/権限の“枠”を提供。</li>
 </ul>
 </li>
 <li><strong>タスク / サービス</strong><ul>
@@ -317,14 +319,14 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>クラスタ</strong></td>
-<td>タスク実行の論理的な入れ物</td>
-<td>1クラスタ内に <strong>Fargate CP</strong> と <strong>EC2(ASG) CP</strong> を<strong>両方登録可</strong>。デフォルト戦略をクラスタ側に設定しておくと便利。</td>
+<td><strong>Capacity Provider</strong></td>
+<td>実行基盤の定義</td>
+<td>種別: <strong>Fargate / Fargate Spot / EC2(ASG)</strong>。EC2は <strong>Managed Scaling</strong> で ASG を自動増減可、<strong>Termination Protection</strong> で実行中タスクを保護。</td>
 </tr>
 <tr>
-<td><strong>Capacity Provider</strong></td>
-<td>タスクを<strong>どこで</strong>起動するかを決める</td>
-<td>種別: <strong>Fargate / Fargate Spot / EC2(ASG)</strong>。EC2は <strong>Managed Scaling</strong> で ASG を自動増減可、<strong>Termination Protection</strong> で実行中タスクを保護。</td>
+<td><strong>クラスタ</strong></td>
+<td>実行環境の論理的な入れ物</td>
+<td>1クラスタ内に <strong>Fargate CP</strong> と <strong>EC2(ASG) CP</strong> を<strong>両方登録可</strong>。デフォルト戦略をクラスタ側に設定しておくと便利。</td>
 </tr>
 <tr>
 <td><strong>タスク / サービス</strong></td>
@@ -365,79 +367,6 @@
 </ul>
 </li>
 </ul>
-<p>同じ ECS クラスタに Fargate で動くタスクと、EC2 インスタンス上で動くタスクを共存させることができる。</p>
-<table>
-<thead>
-<tr>
-<th>レイヤ</th>
-<th>役割</th>
-<th>補足</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>クラスタ</strong></td>
-<td>タスク実行の「論理的な入れ物」。</td>
-<td>1 クラスタ内に <strong>Fargate Capacity Provider</strong> と <strong>Auto Scaling Group (EC2) Capacity Provider</strong> を<strong>両方登録</strong>できる。 <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/clusters.html?utm_source=chatgpt.com">docs.aws.amazon.com</a></td>
-</tr>
-<tr>
-<td><strong>Capacity Provider</strong></td>
-<td>タスクを <strong>どこで</strong>起動するかを決める設定。</td>
-<td>- Fargate / Fargate Spot  <br>- EC2（ASG で管理するコンテナインスタンス）</td>
-</tr>
-<tr>
-<td><strong>タスク / サービス</strong></td>
-<td>実行単位。</td>
-<td>起動時に <strong>Launch Type</strong> か <strong>Capacity Provider Strategy</strong> を指定して「Fargate で走るか / EC2 で走るか」を決定する。</td>
-</tr>
-</tbody>
-</table>
-<p>運用パターン: 基幹 API サービスを Auto Scaling Group（EC2）で常時稼働させ、バッチ処理や一時的負荷対応を Fargate Spot でコスト最適化</p>
-<h3 id="fargate">Fargate</h3>
-<ul>
-<li>インスタンスのプロビジョニング・スケーリング不要</li>
-<li>パッチ適用やアップグレードのメンテナンス不要</li>
-<li>ECS と Amazon EKS の両方をサポート</li>
-<li>1 秒単位の 使用量をベースとして課金</li>
-<li>Ref. <a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20190925_AWS-BlackBelt_AWSFargate.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20190925_AWS-BlackBelt_AWSFargate.pdf</a></li>
-</ul>
-<p><strong>リソースサイズの指定</strong></p>
-<ul>
-<li>タスク毎にCPUとメモリサイズの組み合わせを指定する。</li>
-<li>オプションでコンテナレベルの cpu, memory 指定もできる。</li>
-</ul>
-<p><img alt="" src="_attachment/image_498.png" /></p>
-<h4 id="fargate_1">Fargate のストレージ</h4>
-<ul>
-<li>レイヤストレージ ... コンテナ毎に独立。</li>
-<li>ボリュームストレージ ... タスク定義でボリュームマウントを構成し、コンテナ間で共有する。</li>
-<li>どちらも揮発性でタスク停止で消去される。</li>
-</ul>
-<p><img alt="" src="_attachment/image_499.png" /></p>
-<p><img alt="" src="_attachment/image_500.png" /></p>
-<h4 id="fargate-awsvpc">Fargate のネットワークモード (awsvpc ネットワークモード)</h4>
-<p>タスク毎に ENI が割り当てられ、VPC に接続される。</p>
-<p><img alt="" src="_attachment/image_501.png" /></p>
-<p>外部からのインバウンド接続は ELB で受け付ける:</p>
-<ul>
-<li>ALB/NLB が使用可能。</li>
-<li>ターゲットグループでタスクに割り当てられた ENI の IP を設定する。</li>
-<li>ELB からタスクへのインバウンド通信を受け付けるセキュリティグループ設定も必要。</li>
-</ul>
-<p><img alt="" src="_attachment/image_502.png" /></p>
-<ul>
-<li>ホストのインスタンスへの<strong>SSH 接続は提供していない</strong>。</li>
-</ul>
-<p>アウトバウンド接続はサブネット内の EC2 インスタンスと同様:</p>
-<ul>
-<li>パブリック/プライベートサブネット</li>
-<li>NAT ゲートウェイでプライベートサブネットから外部ネットワークへアクセス</li>
-<li>VPC エンドポイントによるプライベートサブネットからの AWS サービスへのアクセス</li>
-</ul>
-<p><img alt="" src="_attachment/image_503.png" /></p>
-<h4 id="iam">IAM ポリシー</h4>
-<p><img alt="" src="_attachment/image_504.png" /></p>
-<p>なお、タスク実行ロールで行うイメージのプル、CloudWatch Logs へのログ書き込みについても VPC 内から行われるため、IGW や VPC エンドポイントによるアウトバウンド接続となる。</p>
 <h2 id="capacity-provider">Capacity Provider（キャパシティプロバイダ）</h2>
 <p><strong>概要</strong></p>
 <ul>
@@ -448,7 +377,7 @@
 </ul>
 </li>
 <li><strong>登場背景</strong><ul>
-<li>以前は「Service → Launch Type → Auto Scaling Group (ASG)」の固定リンク構造。</li>
+<li>以前は「Service → Launch Type → Auto Scaling Group (ASG)」の固定構造。</li>
 <li>Capacity Provider により、<strong>複数の ASG や Fargate の混在利用</strong>が可能になった。</li>
 </ul>
 </li>
@@ -457,7 +386,8 @@
 <ul>
 <li><strong>Capacity Provider</strong><ul>
 <li>実際のキャパシティ供給源を表す抽象レイヤ。</li>
-<li>ECS クラスタに <strong>1つ以上登録</strong> できる。</li>
+<li>ECS クラスタ関連づけられ、クラスタごとに <strong>1つ以上登録</strong> できる。</li>
+<li>例：Fargate + Fargate Spot + EC2(ASG) を同一クラスターに混在</li>
 <li>代表的なタイプ:<ul>
 <li><strong>EC2 Capacity Provider</strong><ul>
 <li>Auto Scaling Group（ASG）を基盤として使用。</li>
@@ -473,7 +403,7 @@
 </ul>
 </li>
 <li><strong>Capacity Provider Strategy</strong><ul>
-<li>サービスまたはタスク起動時に、どのプロバイダをどの比率で使うかを指定。</li>
+<li>タスク配置時に、どのキャパシティプロバイダをどの比率で使うかを指定。</li>
 <li>各要素：<ul>
 <li><code>base</code>：まず最初に確保するタスク数。</li>
 <li><code>weight</code>：相対的な分配比率。</li>
@@ -548,7 +478,7 @@
 <td>クラスタデフォルト戦略を設定可</td>
 </tr>
 <tr>
-<td>タスク実行時<br></td>
+<td>タスク実行時</td>
 <td>低</td>
 <td><code>run-task</code> コマンド等で個別指定可</td>
 </tr>
@@ -587,6 +517,50 @@
       - CapacityProvider: FARGATE_SPOT
         Weight: 2
 </code></pre>
+<h3 id="fargate">Fargate</h3>
+<ul>
+<li>インスタンスのプロビジョニング・スケーリング不要</li>
+<li>パッチ適用やアップグレードのメンテナンス不要</li>
+<li>ECS と Amazon EKS の両方をサポート</li>
+<li>1 秒単位の 使用量をベースとして課金</li>
+<li>Ref. <a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20190925_AWS-BlackBelt_AWSFargate.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20190925_AWS-BlackBelt_AWSFargate.pdf</a></li>
+</ul>
+<p><strong>リソースサイズの指定</strong></p>
+<ul>
+<li>タスク毎にCPUとメモリサイズの組み合わせを指定する。</li>
+<li>オプションでコンテナレベルの cpu, memory 指定もできる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_498.png" /></p>
+<h4 id="fargate_1">Fargate のストレージ</h4>
+<ul>
+<li>レイヤストレージ ... コンテナ毎に独立。</li>
+<li>ボリュームストレージ ... タスク定義でボリュームマウントを構成し、コンテナ間で共有する。</li>
+<li>どちらも揮発性でタスク停止で消去される。</li>
+</ul>
+<p><img alt="" src="_attachment/image_499.png" /><img alt="" src="_attachment/image_500.png" /></p>
+<h4 id="fargate-awsvpc">Fargate のネットワークモード (awsvpc ネットワークモード)</h4>
+<p>タスク毎に ENI が割り当てられ、VPC に接続される。</p>
+<p><img alt="" src="_attachment/image_501.png" /></p>
+<p>外部からのインバウンド接続は ELB で受け付ける:</p>
+<ul>
+<li>ALB/NLB が使用可能。</li>
+<li>ターゲットグループでタスクに割り当てられた ENI の IP を設定する。</li>
+<li>ELB からタスクへのインバウンド通信を受け付けるセキュリティグループ設定も必要。</li>
+</ul>
+<p><img alt="" src="_attachment/image_502.png" /></p>
+<ul>
+<li>ホストのインスタンスへの<strong>SSH 接続は提供していない</strong>。</li>
+</ul>
+<p>アウトバウンド接続はサブネット内の EC2 インスタンスと同様:</p>
+<ul>
+<li>パブリック/プライベートサブネット</li>
+<li>NAT ゲートウェイでプライベートサブネットから外部ネットワークへアクセス</li>
+<li>VPC エンドポイントによるプライベートサブネットからの AWS サービスへのアクセス</li>
+</ul>
+<p><img alt="" src="_attachment/image_503.png" /></p>
+<h4 id="iam">IAM ポリシー</h4>
+<p><img alt="" src="_attachment/image_504.png" /></p>
+<p>なお、タスク実行ロールで行うイメージのプル、CloudWatch Logs へのログ書き込みについても VPC 内から行われるため、IGW や VPC エンドポイントによるアウトバウンド接続となる。</p>
 <hr />
 <h1 id="eks">EKS</h1>
 <p><strong>Kubernetes に関する基本用語</strong></p>
@@ -607,15 +581,12 @@
 <td>Kubernetes クラスタ全体を制御する中枢構成。API サーバ、スケジューラ、etcd、コントローラマネージャなどから構成され、マスターとして機能。高可用性構成では複数のマスターノードに分散可能。</td>
 </tr>
 <tr>
-<td><strong>Node（ノード）</strong></td>
+<td><strong>Node</strong></td>
 <td>ワーカーノード。指定された数の Pod を実行・維持。EC2 や Fargate がこれに該当。</td>
-</tr>
-<tr>
-<td><strong>EKS 概要</strong></td>
-<td></td>
 </tr>
 </tbody>
 </table>
+<p><strong>EKS 概要</strong></p>
 <ul>
 <li><strong>Amazon EKS（Elastic Kubernetes Service）</strong></li>
 <li><strong>マネージド型 Kubernetes サービス</strong>。</li>
@@ -644,6 +615,11 @@
 <li>コントロールプレーンは AWS 管理（SLA 対象）</li>
 <li>ノード（データプレーン）はユーザ管理または AWS 管理（構成方式による）</li>
 </ul>
+<p>**IAM Roles for Service Accounts (IRSA)
+- Pod に IAM ロールを割り当てられる仕組み
+- Node ロール（EC2）に依存しない、最小権限の実現
+- OIDC Provider を EKS クラスタに関連付ける必要あり
+→ 「Pod 単位で AWS API を安全にコールさせたい」＝ IRSA が正解</p>
 <p><strong>オンプレでの運用</strong></p>
 <ul>
 <li><strong>Amazon EKS on Outposts</strong>: ノード（データプレーン）をオンプレで実行。低レイテンシが必要な場合。</li>
@@ -671,6 +647,36 @@
 </li>
 </ul>
 <p><img alt="" src="_attachment/image_507.png" /></p>
+<p>タスク実行ロールなどで ECR からイメージを pull するためのポリシー例</p>
+<pre><code>{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: [
+    {
+      &quot;Sid&quot;: &quot;AllowECRGetAuthToken&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: [
+        &quot;ecr:GetAuthorizationToken&quot;
+      ],
+      &quot;Resource&quot;: &quot;*&quot;
+    },
+    {
+      &quot;Sid&quot;: &quot;AllowECRPull&quot;,
+      &quot;Effect&quot;: &quot;Allow&quot;,
+      &quot;Action&quot;: [
+        &quot;ecr:BatchCheckLayerAvailability&quot;,
+        &quot;ecr:GetDownloadUrlForLayer&quot;,
+        &quot;ecr:BatchGetImage&quot;
+      ],
+      &quot;Resource&quot;: &quot;arn:aws:ecr:us-east-1:012345678910:repository/base-image&quot;
+    }
+  ]
+}
+
+</code></pre>
+<ul>
+<li><code>ecr:GetAuthorizationToken</code> はリポジトリ単位で絞れないので <code>Resource: "*"</code></li>
+<li><code>BatchCheckLayerAvailability</code> / <code>GetDownloadUrlForLayer</code> / <code>BatchGetImage</code>:  実際にレイヤやイメージを取る権限</li>
+</ul>
 <hr />
 <h1 id="cicd">CI/CD パイプラインとコンテナサービスの連携</h1>
 <p><strong>CI フェーズ</strong></p>

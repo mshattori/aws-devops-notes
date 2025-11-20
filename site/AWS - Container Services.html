@@ -615,15 +615,109 @@
 <li>コントロールプレーンは AWS 管理（SLA 対象）</li>
 <li>ノード（データプレーン）はユーザ管理または AWS 管理（構成方式による）</li>
 </ul>
-<p>**IAM Roles for Service Accounts (IRSA)
-- Pod に IAM ロールを割り当てられる仕組み
-- Node ロール（EC2）に依存しない、最小権限の実現
-- OIDC Provider を EKS クラスタに関連付ける必要あり
-→ 「Pod 単位で AWS API を安全にコールさせたい」＝ IRSA が正解</p>
-<p><strong>オンプレでの運用</strong></p>
+<p><strong>CI/CD・デプロイ</strong></p>
 <ul>
-<li><strong>Amazon EKS on Outposts</strong>: ノード（データプレーン）をオンプレで実行。低レイテンシが必要な場合。</li>
-<li><strong>EKS-D (Amazon EKS Distro)</strong>: AWS外でも利用可能なKubernetesディストリビューション (コントロールプレーン含む)</li>
+<li><strong>CodeBuild によるデプロイ</strong><ul>
+<li>CodeDeploy は EKS をサポートしないため、CodeBuild でデプロイ （AWS公式チュートリアルがそうなっている）</li>
+<li><code>buildspec.yml</code> 内で <code>kubectl apply</code> 実行して Kubernetes マニフェストを反映</li>
+<li>CodeBuild のサービスロールに EKS の API を操作できる権限（例: <code>eks:DescribeCluster</code>,<code>sts:AssumeRole</code>）を付与</li>
+</ul>
+</li>
+<li><strong>kubeconfig の更新</strong><ul>
+<li>CI/CD 環境から EKS に接続できるようにするため <code>aws eks update-kubeconfig</code> を実行してクラスタ認証情報を取得・設定</li>
+<li>これにより kubectl コマンドが EKS API サーバにアクセス可能になる</li>
+</ul>
+</li>
+<li><strong>Helm の活用</strong><ul>
+<li>Helm は Kubernetes アプリをパッケージ化した「チャート」を管理するツール。</li>
+<li>依存関係の多いアプリでも、1コマンドでデプロイや更新が可能になる。</li>
+</ul>
+</li>
+</ul>
+<p>buildspec.yml 例</p>
+<pre><code>version: 0.2
+
+phases:
+  install:
+    commands:
+      - curl -o kubectl https://amazon-eks.s3.amazonaws.com/1.29.0/2024-01-11/bin/linux/amd64/kubectl
+      - chmod +x ./kubectl
+      - mv ./kubectl /usr/local/bin/
+      - pip install awscli
+
+  pre_build:
+    commands:
+      - echo &quot;Update kubeconfig&quot;
+      - aws eks update-kubeconfig --name my-eks --region ap-northeast-1
+
+  build:
+    commands:
+      - echo &quot;Apply manifests&quot;
+      - kubectl apply -f k8s/deployment.yaml
+      - kubectl apply -f k8s/service.yaml
+</code></pre>
+<p><strong>監視・ロギング</strong></p>
+<ul>
+<li><strong>CloudWatch Container Insights</strong><ul>
+<li>クラスタ、ノード、Pod の CPU/メモリ・ネットワークなどのメトリクスを CloudWatch ダッシュボードに表示</li>
+<li>CloudWatch エージェントを DaemonSet としてノードに展開、ノード、Pod の詳細メトリクス収集、CloudWatch が クラスタ単位に集計</li>
+</ul>
+</li>
+<li><strong>ログ転送構成</strong><ul>
+<li>Fluent Bit (軽量版 Fluentd) を DaemonSet として各ノードに展開</li>
+<li>コンテナの標準出力・標準エラー出力を CloudWatch Logs へ自動転送</li>
+</ul>
+</li>
+<li>ECS では有効化するだけだが、EKS では CloudWatch エージェントや Fluent Bit を DeamonSet としてデプロイする必要<ul>
+<li>ログドライバ（awslogs / firelens）を設定する程度</li>
+</ul>
+</li>
+</ul>
+<p><strong>セキュリティ・ネットワーク</strong></p>
+<ul>
+<li><strong>IAM Roles for Service Accounts (IRSA)</strong><ul>
+<li>Pod に IAM ロールを割り当てる仕組み。</li>
+<li>Node ロール (EC2) に権限を追加しなくても、Pod 単位で最小権限を実現。</li>
+<li>EKS クラスタと OIDC Provider を関連付けて利用。</li>
+<li>AWS API をコールするアプリ（S3 / DynamoDB / SQS など）では IRSA が推奨。</li>
+</ul>
+</li>
+<li><strong>Secrets Store CSI Driver</strong><ul>
+<li>Secrets Manager や Parameter Store の機密情報をボリュームとして Pod にマウント、ファイルとして読み込み可能にする仕組み</li>
+</ul>
+</li>
+</ul>
+<p><strong>ロードバランシング・スケーリング・更新管理</strong></p>
+<ul>
+<li><strong>AWS Load Balancer Controller</strong><ul>
+<li>Kubernetes の Ingress リソース作成時に ALB を自動でプロビジョニングする</li>
+<li>Ingress リソースは外部からサービスへ入ってくるリクエストのルーティング (この URL はこの Service へ流す) を定義するリソース</li>
+<li>ALB を自動作成し、TargetGroup に Pod を自動で登録する</li>
+<li>Service Type: LoadBalancer 作成時には NLB を自動プロビジョニング</li>
+</ul>
+</li>
+<li><strong>Cluster Autoscaler</strong><ul>
+<li>Pod の Pending (リソース不足による Pod 作成の保留) 状態検知によるノード (EC2) の自動スケールアウト</li>
+<li>ノードの使用率低下では自動スケールイン</li>
+</ul>
+</li>
+<li><strong>マネージド型ノードグループ</strong><ul>
+<li>EC2 ワーカーノードのプロビジョニングとライフサイクル管理の自動化。</li>
+<li>Kubernetes バージョン更新時のノードのローリングアップデート対応（旧ノードのドレインと新ノードへの置換）。</li>
+</ul>
+</li>
+</ul>
+<p><strong>ハイブリッド・オンプレミス</strong></p>
+<ul>
+<li><strong>Amazon EKS on Outposts</strong>: AWS Outposts 上でのローカルクラスタ実行<ul>
+<li>低レイテンシが必要でデータプレーンをオンプレで実行したい場合。</li>
+</ul>
+</li>
+<li><strong>EKS Anywhere</strong>:  VMware vSphere やベアメタルなど、自社データセンター環境でローカルクラスタ実行<ul>
+<li>AWS クラウド上の EKS コンソールでの統合可視化（EKS Connector 利用）</li>
+</ul>
+</li>
+<li><strong>EKS-D (Amazon EKS Distro)</strong>: AWS外でも利用可能な Kubernetes ディストリビューション (コントロールプレーン含む)</li>
 </ul>
 <hr />
 <h1 id="amazon-ecr">Amazon ECR</h1>

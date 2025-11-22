@@ -16,8 +16,7 @@
         
 <article>
     <p>DevSecOps は DevOps 同様にセキュリティプラクティスをパイプラインで自動化する。</p>
-<p><img alt="" src="_attachment/image_376.png" />
-<img alt="" src="_attachment/image_377.png" /></p>
+<p><img alt="" src="_attachment/image_376.png" /></p>
 <p>パイプライン自体のセキュリティ:</p>
 <ul>
 <li>
@@ -52,28 +51,29 @@
 <li><a href="https://github.com/awslabs/git-secrets">git-secrets</a> などでレポジトリにコミットされたシークレットをスキャン。</li>
 <li>アーティファクトの S3 オブジェクトにタグ付け。</li>
 <li>キーポリシーなどのセキュリティコンポーネントをデプロイ。</li>
-<li>AWS Config ルールで展開されたリソースの監査。</li>
+<li>AWS Config ルールで展開されたリソースの監査。
+[[
+]]# セキュリティテスト</li>
 </ul>
-<h1 id="_2">セキュリティテスト</h1>
 <p><img alt="" src="_attachment/image_379.png" /></p>
-<ul>
-<li>TestAMI Lambda で Amazon Inspector をトリガーして AMI をテストする例。</li>
-</ul>
+<p>AMI をビルドする CodePipeline のセキュリティテスト例 (SecurityTests ステージ)
+- Invoke アクション (Lambda)  <code>TestAMI</code> で Amazon Inspector をトリガーして AMI をテスト
+- Amazon Inspector は起動中のインスタンスをテストするので、前後にインスタンスの起動・停止を行う  Invoke アクション (Lambda) を入れている</p>
 <p><img alt="" src="_attachment/image_380.png" /></p>
+<p>コンテナのセキュリティテスト例</p>
 <ul>
-<li>TriggerClair Lambda で docker コンテナの静的脆弱性スキャンツール Clair を実行する例。</li>
+<li>Invoke アクション (Lambda) <code>TriggerClair</code> で docker コンテナの静的脆弱性スキャンツール Clair を実行。</li>
 <li>Clair は各コンテナレイヤーをスキャンし、CVE および Red Hat, Ubuntu, Debian の類似データベースに基づいて脆弱性を通知する。</li>
 <li><a href="https://github.com/quay/clair">https://github.com/quay/clair</a></li>
 <li><a href="https://www.redhat.com/ja/topics/containers/what-is-clair">https://www.redhat.com/ja/topics/containers/what-is-clair</a></li>
 </ul>
 <p><img alt="" src="_attachment/image_381.png" /></p>
 <ul>
-<li>Python の requirements.txt のモジュールのホワイトリストチェックを CodeBuild で行う例。</li>
+<li>Python の requirements.txt のモジュールのホワイトリストチェックを CodeBuild アクションで行う例。</li>
 </ul>
-<p><img alt="" src="_attachment/image_382.png" /></p>
 <hr />
-<h1 id="_3">脅威検出</h1>
-<p>Ref. <a href="AWS/AWS%20Security%20Governance,%20Incident%20Response.html">AWS: Security: Governance, Incident Response</a></p>
+<h1 id="_2">脅威検出</h1>
+<p>Ref. <a href="References/AWS%20-%20Security%20-%20Governance,%20Incident%20Response.html">AWS - Security - Governance, Incident Response</a></p>
 <h2 id="amazon-inspector">Amazon Inspector</h2>
 <p>起動中インスタンスの脆弱性チェックを実行。</p>
 <p>SNS 通知により Lambda 等で自動修復。</p>
@@ -94,7 +94,7 @@
 <p><img alt="" src="_attachment/image_386.png" /></p>
 <hr />
 <h1 id="configuration-management">Configuration Management</h1>
-<h2 id="_4">構成管理</h2>
+<h2 id="_3">構成管理</h2>
 <p>インフラストラクチャ、シス テム、製品の構成要素、設計に関する詳細、構築状態を、追跡・記録し、必要なときにアクセスできるようにする。</p>
 <p><img alt="" src="_attachment/image_387.png" /></p>
 <ul>
@@ -120,7 +120,7 @@
 </ul>
 <p><img alt="" src="_attachment/image_391.png" /></p>
 <p><a href="https://aws.amazon.com/jp/blogs/apn/how-to-automate-cloud-governance-to-achieve-safety-at-speed/">https://aws.amazon.com/jp/blogs/apn/how-to-automate-cloud-governance-to-achieve-safety-at-speed/</a></p>
-<h2 id="_5"><br></h2>
+<h2 id="_4"><br></h2>
 <hr />
 <h1 id="ami">カスタム AMI</h1>
 <h2 id="ami_1">AMI の構成要素</h2>

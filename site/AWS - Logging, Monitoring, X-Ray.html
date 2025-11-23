@@ -30,36 +30,60 @@
 </ul>
 <p>次の項目について推奨事項を提示:</p>
 <p><img alt="" src="_attachment/image_1285.png" /></p>
-<p><img alt="" src="_attachment/image_1286.png" /></p>
+<p><img alt="" src="_attachment/image_1286.png" />
+- ダッシュボードで確認。
+- 検知結果変更をメール送信したり、EventBridge でトリガーし SNS や Lambda による自動修復アクションへ繋げる。</p>
+<h3 id="trusted-advisor">Trusted Advisor セキュリティチェック項目</h3>
+<p><strong>IAM・アカウント管理</strong></p>
 <ul>
-<li>ダッシュボードで確認。</li>
-<li>メール送信と CloudWatch Events 送信が設定できる。</li>
+<li>ルートアカウントの MFA ... ルートユーザーに対する多要素認証の有効化状況（無料利用枠）</li>
+<li>IAM の使用 ... ルートユーザー以外の IAM ユーザー作成・利用状況（無料利用枠）</li>
+<li>IAM パスワードポリシー ... パスワードの複雑さや有効期限などのポリシー設定</li>
+<li>IAM アクセスキーの更新 ... 定期的なローテーションが行われていない古いアクセスキーの検出</li>
+<li>公開されたアクセスキー ... GitHub 等のパブリックリポジトリに漏洩している可能性のあるアクセスキーの検出</li>
+</ul>
+<p><strong>ネットワーク・セキュリティグループ</strong></p>
+<ul>
+<li>セキュリティグループ - 制限されないポート ... 特定ポート（20, 21, 1433）への無制限アクセス（0.0.0.0/0）許可（無料利用枠）</li>
+<li>セキュリティグループ - 無制限アクセス ... 上記以外のポートに対する無制限アクセスの許可設定</li>
+<li>ELB 関連 ... ELB リスナーのセキュリティ設定（SSL/TLS バージョン等）, ELB に適用されているセキュリティグループ設定</li>
+<li>Route 53 ... MX および SPF リソースレコードセットの構成（メールスプーフィング対策）</li>
+</ul>
+<p><strong>ストレージ・データベース</strong></p>
+<ul>
+<li>S3 バケットの権限 ... 誰でもアクセス可能な（パブリックな）S3 バケットの検出（無料利用枠）</li>
+<li>EBS パブリックスナップショット ... 公開設定されている EBS スナップショットの検出（無料利用枠）</li>
+<li>RDS パブリックスナップショット ... 公開設定されている RDS スナップショットの検出（無料利用枠）</li>
+<li>RDS セキュリティグループ ... データベースインスタンスへのアクセス権限リスク</li>
+</ul>
+<p><strong>その他</strong></p>
+<ul>
+<li>CloudTrail のログ記録<ul>
+<li>ログ記録の有効化状況および最新のログ配信状況。</li>
+</ul>
+</li>
+<li>CloudFront カスタム証明書<ul>
+<li>SSL/TLS 証明書の期限切れや設定不備。</li>
+</ul>
+</li>
 </ul>
 <p><img alt="" src="_attachment/image_1287.png" /></p>
 <p>AWS Trusted Advisor のチェックの自動更新は Weekly-base</p>
 <p>AWS Support API:</p>
 <ul>
-<li>
-<p>DescribeTrustedAdvisorChecks</p>
-<ul>
+<li>DescribeTrustedAdvisorChecks<ul>
 <li>チェック項目の一覧。ここから checkId を取得。</li>
 </ul>
 </li>
-<li>
-<p>RefreshTrustedAdvisorCheck</p>
-<ul>
+<li>RefreshTrustedAdvisorCheck<ul>
 <li>特定チェックの結果を更新 (Refresh)</li>
 </ul>
 </li>
-<li>
-<p>DescribeTrustedAdvisorCheckRefreshStatuses</p>
-<ul>
+<li>DescribeTrustedAdvisorCheckRefreshStatuses<ul>
 <li>Refresh 中のチェック項目のステータスを取得</li>
 </ul>
 </li>
-<li>
-<p>DescribeTrustedAdvisorCheckSummaries</p>
-<ul>
+<li>DescribeTrustedAdvisorCheckSummaries<ul>
 <li>指定した複数チェック項目の現在のチェック結果をサマリ表示</li>
 </ul>
 </li>
@@ -70,22 +94,17 @@
 </ul>
 </li>
 <li>
-<p><a href="https://docs.aws.amazon.com/ja_jp/awssupport/latest/APIReference/API_Operations.html">https://docs.aws.amazon.com/ja_jp/awssupport/latest/APIReference/API_Operations.html</a></p>
+<p>Ref. <a href="https://docs.aws.amazon.com/ja_jp/awssupport/latest/APIReference/API_Operations.html">https://docs.aws.amazon.com/ja_jp/awssupport/latest/APIReference/API_Operations.html</a></p>
 </li>
-</ul>
-<p><img alt="" src="_attachment/image_1288.png" /></p>
-<ul>
 <li>
 <p>Basic/Developer ライセンスは無料利用枠の機能のみ</p>
 <ul>
 <li>セキュリティグループの 23 番など特定ポートへの無制限アクセス、パブリックバケット、ルートアカウントの MFA、パブリックスナップショット</li>
 </ul>
 </li>
-<li>
-<p>全機能を使うにはビジネス/エンタープライズ以上が必要。</p>
-</li>
+<li>全機能を使うにはビジネス/エンタープライズ以上が必要。</li>
 </ul>
-<p>オートメーション: CloudWatch Events 連携</p>
+<p>オートメーション: EventBridge 連携</p>
 <ul>
 <li>グローバルサービスなので us-east-1 でしかイベントソースに表示されない。</li>
 <li><img alt="" src="_attachment/image_1289.png" /></li>
@@ -96,9 +115,14 @@
 <li>ルートボリュームが EBS のインスタンスはランタイムでインスタンスタイプを変更できる</li>
 <li><a href="https://github.com/aws/Trusted-Advisor-Tools/tree/master/HighUtilizationEC2Instances">https://github.com/aws/Trusted-Advisor-Tools/tree/master/HighUtilizationEC2Instances</a></li>
 </ul>
-<p>CloudWatch メトリクスも CloudWatch Events 同様の項目で存在</p>
+<p><strong>Trusted Advisorの CloudWatch メトリクス</strong></p>
 <ul>
-<li><a href="https://docs.aws.amazon.com/ja_jp/awssupport/latest/user/cloudwatch-metrics-ta.html#cloudwatch-metrics-dimensions-for-trusted-advisor">https://docs.aws.amazon.com/ja_jp/awssupport/latest/user/cloudwatch-metrics-ta.html#cloudwatch-metrics-dimensions-for-trusted-advisor</a></li>
+<li>
+<p>EventBridge 同様の項目について CloudWatch メトリクスも存在</p>
+</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/awssupport/latest/user/cloudwatch-metrics-ta.html#cloudwatch-metrics-dimensions-for-trusted-advisor">https://docs.aws.amazon.com/ja_jp/awssupport/latest/user/cloudwatch-metrics-ta.html#cloudwatch-metrics-dimensions-for-trusted-advisor</a></p>
+</li>
 <li>問題例: 使用されていない ELB の通知を実現できるオプション<ul>
 <li>Use Amazon CloudWatch to create alarms on Trusted Advisor metrics in order to detect the load balancers with low utilization. Specify an SNS topic for notification.</li>
 <li>Utilize CloudWatch Events to monitor Trusted Advisor recommendation results. Set up a trigger to send an email using SNS to notify you about the results of the check.</li>
@@ -118,16 +142,11 @@
 <ul>
 <li>リソースベースのポリシーを分析し、外部プリンシパルと共有されるリソースを表示。</li>
 <li>24時間に1回スキャン。意図して許可したものは「アーカイブ済」に移動できる。</li>
-<li><img alt="" src="_attachment/image_1291.png" /></li>
-<li>
-<p>対象サービス</p>
-<ul>
+<li>対象サービス<ul>
 <li>IAM ロール, S3 バケット, KMS キー, Lambda 関数/レイヤー, SQS キュー</li>
 </ul>
 </li>
-<li>
-<p>例</p>
-<ul>
+<li>例<ul>
 <li>クロスアカウントが許可されたロールの確認</li>
 <li>パブリックアクセスのバケットの確認</li>
 </ul>
@@ -146,20 +165,15 @@
 <table>
 <thead>
 <tr>
-<th></th>
-<th></th>
-<th></th>
+<th>種類</th>
+<th>保管・送信先</th>
+<th>備考</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>種類</td>
-<td>保管・送信先</td>
-<td>備考</td>
-</tr>
-<tr>
 <td>CloudWatch Logs</td>
-<td>ログストリーム,<br><br>S3(手動エクスポート)</td>
+<td>ログストリーム,<br>S3(手動エクスポート)</td>
 <td>EventBridge でスケジュール実行した Lambda による Export API 実行や、サブスクリプションフィルター+Firehose で S3 への保存の自動化が可能。</td>
 </tr>
 <tr>
@@ -175,7 +189,7 @@
 <tr>
 <td>DNS ログ</td>
 <td>S3, CloudWatch Logs, Kinesis Data Firehose</td>
-<td>Route 53, VPC Route53 Resolver の DNS クエリログ。<br><br>Route 53 は CloudWatch Logs のみ。</td>
+<td>Route 53, VPC Route53 Resolver の DNS クエリログ。<br>Route 53 は CloudWatch Logs のみ。</td>
 </tr>
 <tr>
 <td>S3 アクセスログ</td>
@@ -189,7 +203,7 @@
 </tr>
 <tr>
 <td>Web ACL トラフィックログ</td>
-<td>Kinesis Data Firehose,<br><br>S3, CloudWatch Logs</td>
+<td>Kinesis Data Firehose,S3, CloudWatch Logs</td>
 <td><br></td>
 </tr>
 <tr>
@@ -204,7 +218,7 @@
 </tr>
 </tbody>
 </table>
-<p>アプリケーションログ</p>
+<p><strong>アプリケーションログ</strong></p>
 <ul>
 <li>EC2 インスタンス: CloudWatch Agent から CloudWatch Logs へ</li>
 <li>ECS: ECS Agent から CloudWatch Logs へ</li>
@@ -214,7 +228,7 @@
 <h1 id="cloudtrail">CloudTrail</h1>
 <p>SDK, CLI, 管理コンソールを含む全 API コールをロギング</p>
 <ul>
-<li>ユーザに代わって AWS サービスが API コールする場合も含む (CloudFormation, Auto Scalling 等)</li>
+<li>ユーザに代わって AWS サービスが API コールする場合も含む (CloudFormation, Auto Scaling 等)</li>
 </ul>
 <p>ログイン試行イベントも記録される</p>
 <p><img alt="" src="_attachment/image_1293.png" /></p>
@@ -223,6 +237,7 @@
 <li>イベントは JSON/CSV でダウンロードできる。</li>
 </ul>
 <p><img alt="" src="_attachment/image_1294.png" /></p>
+<p><strong>ログの内容</strong></p>
 <ul>
 <li>認証されたプリンシパルの情報</li>
 <li>API リクエストのタイムスタンプ, API エンドポイント, Source IP, User Agent,</li>
@@ -233,48 +248,49 @@
 <ul>
 <li>正: CludTrail / 誤: AWS Config</li>
 <li>CloudTrail はデフォルト有効で証跡を保存していなくても 90日間のイベントを確認できる。</li>
-<li>CloudTrail は API 操作とログインの確認、AWS Config はリソースの設定の確認。このケースではインスタンス作成の操作とアクセス元などを確認する。</li>
+<li>CloudTrail は API 操作とログインの確認、AWS Config はリソースの設定の確認。このケースではインスタンス作成の操作とアクセス元などを確認する。AWS Config は状態の変化は分かるが、何が行われたかというアクションを見るものではない。</li>
 </ul>
 <h2 id="trail">証跡 (Trail)</h2>
 <p>CloudTrail イベントを S3 バケットに保存する</p>
 <ul>
 <li>JSON が送られる。デフォルト無効。S3 バケットに約 5 分ごとにログファイルを送信する。</li>
-<li>
-<p>オプションで CloudWatch Logs にも送信できる。</p>
-<ul>
-<li>アプリ連携には CloudWatch Events を CloudTrail をソースにして設定。</li>
-</ul>
-</li>
-<li>
-<p>証跡はデフォルトで S3-KMS で暗号化。</p>
-<ul>
+<li>オプションで CloudWatch Logs にも送信できる。</li>
+<li>アプリ連携には EventBridge を CloudTrail をソースにして設定。</li>
+<li>証跡はデフォルトで S3-KMS で暗号化。<ul>
 <li>設定は S3 バケット側でなくて CloudTrail 側で設定する。</li>
 <li>デフォルト暗号化でなく証跡に指定した CMK でオブジェクトを暗号化する。</li>
 </ul>
 </li>
-<li>
-<p>証跡を Athena で SQL 分析できる。</p>
+<li>証跡を Athena で SQL 分析できる。</li>
+</ul>
+<p><strong>イベントタイプ</strong></p>
+<ul>
+<li>証跡に保存するイベントタイプを設定できる。</li>
+<li>管理イベント (Management Events)<ul>
+<li>リソースに対するコントロールプレーン操作の記録。</li>
+<li>内容: セキュリティグループの設定変更、デバイスの登録、ルートテーブルの設定など。</li>
+</ul>
+</li>
+<li>データイベント (Data Events)<ul>
+<li>リソース自体の中で実行されるデータプレーン操作の記録。</li>
+<li>内容: S3 オブジェクトの API アクティビティ(GetObject, PutObject）、Lambda 実行、DynamoDB のアイテム操作など。</li>
+</ul>
+</li>
+<li>Insights イベント<ul>
+<li>アカウント内の異常なアクティビティやエラーの検出。</li>
+<li>内容: 過去の API 呼び出し履歴を機械学習で分析し、ベースラインから逸脱した書き込み API のスパイクやエラー率の上昇を特定。</li>
+</ul>
 </li>
 </ul>
-<p>証跡に保存するイベントタイプの設定</p>
 <p><img alt="" src="_attachment/image_1295.png" /></p>
-<p>Management events</p>
-<ul>
-<li>Management events provide insight into management operations that are performed on resources in your AWS account.</li>
-<li>These are also known as control plane operations.</li>
-<li>Management events can also include non-API events that occur in your account. For example, when a user logs in to your account, CloudTrail logs the ConsoleLogin event.</li>
-</ul>
-<p>Data events</p>
-<ul>
-<li>These events provide insight into the resource operations performed on or within a resource.</li>
-<li>These are also known as data plane operations.</li>
-</ul>
-<p>クロスリージョン・クロスアカウントのログ(証跡)統合</p>
+<p><strong>クロスリージョン・クロスアカウントのログ(証跡)統合</strong></p>
 <p><img alt="" src="_attachment/image_1296.png" /></p>
 <ul>
-<li>クロスリージョン・クロスアカウントで証跡を 1つの S3 バケットに配信できる。</li>
 <li>
-<p>Multi-region trail</p>
+<p>クロスリージョン・クロスアカウントで証跡を 1つの S3 バケットに配信する。</p>
+</li>
+<li>
+<p><strong>Multi-region trail</strong></p>
 <ul>
 <li>デフォルトで全リージョンのログを保存する証跡が作成される。</li>
 <li>新しいリージョンを立ち上げた時も自動で対象になる。</li>
@@ -282,7 +298,7 @@
 </ul>
 </li>
 <li>
-<p>クロスアカウントのログ統合</p>
+<p><strong>クロスアカウントのログ統合</strong></p>
 <ul>
 <li>中央アカウントにバケットを作り、各アカウントで証跡をそこに配信するよう設定する。</li>
 <li>バケットポリシーで CloudTrail サービスに各アカウントのフォルダへの書き込みを許可する</li>
@@ -308,13 +324,12 @@
       }
     }
 </code></pre>
-<pre><code>- [https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-receive-logs-from-multiple-accounts.html](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-receive-logs-from-multiple-accounts.html)
-- Organizations を使うと個別に設定しなくても組織証跡で一括できる。
-</code></pre>
 <ul>
+<li><a href="https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-receive-logs-from-multiple-accounts.html">https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-receive-logs-from-multiple-accounts.html</a></li>
+<li>Organizations を使うと個別に設定しなくても組織証跡で一括できる。</li>
 <li>オプションでクロスアカウントの CloudWatch Logs ロググループにも同時に配信できる。</li>
 </ul>
-<p>組織証跡 (organization trail)</p>
+<p><strong>組織証跡 (organization trail)</strong></p>
 <ul>
 <li>Organizations で使用できる、全アカウントの CloudTrail ログを保存する証跡。</li>
 <li>各メンバーアカウントに組織証跡に設定したのと同じ名前の証跡ができる。</li>
@@ -323,8 +338,7 @@
 </ul>
 <p><img alt="" src="_attachment/image_1297.png" /></p>
 <p><a href="https://docs.aws.amazon.com/awscloudtrail/latest/userguide/creating-trail-organization.html">https://docs.aws.amazon.com/awscloudtrail/latest/userguide/creating-trail-organization.html</a></p>
-<p>ログファイルの検証 (ダイジェストファイル)</p>
-<p><img alt="" src="_attachment/image_1298.png" /></p>
+<p><strong>ログファイルの検証 (ダイジェストファイル)</strong></p>
 <ul>
 <li>証跡の作成時にデフォルトで有効。</li>
 <li>1時間毎に各ログファイルの  SHA-256 ハッシュを記録するダイジェストファイルが作成される。</li>
@@ -335,13 +349,19 @@
 </ul>
 </li>
 </ul>
-<p>SSE-KMS による CloudTrail ログファイルの暗号化</p>
+<p><img alt="" src="_attachment/image_1298.png" /></p>
+<p><strong>CloudTrail 証跡の暗号化</strong></p>
 <ul>
+<li>デフォルトは SSE-S3 (S3 管理キー) で自動的に暗号化。</li>
+<li>厳格な管理が必要な場合に SSE-KMS (カスタマー管理キー) を選択。<ul>
+<li>NOTE: 証跡に SSE-KMS を指定してもダイジェストファイルは SSE-S3 による暗号化となる。</li>
+</ul>
+</li>
+<li>リージョン間コピー: 証跡がマルチリージョンの場合、KMS キーも同じリージョンにある必要がある</li>
 <li><a href="https://docs.aws.amazon.com/ja_jp/awscloudtrail/latest/userguide/encrypting-cloudtrail-log-files-with-aws-kms.html">https://docs.aws.amazon.com/ja_jp/awscloudtrail/latest/userguide/encrypting-cloudtrail-log-files-with-aws-kms.html</a></li>
-<li>証跡に SSE-KMS を指定してもダイジェストファイルは SSE-S3 による暗号化となる。</li>
-<li>キーポリシー設定が必要<ul>
-<li>CloudTrail に GenerateDataKey,  DescribeKey を許可。</li>
-<li>EncryptionContext でアカウントを制限できる。</li>
+<li><strong>キーポリシー設定が必要</strong><ul>
+<li>CloudTrail サービスがログ書き込み時に必要とする GenerateDataKey,  DescribeKey を許可。</li>
+<li>kms:EncryptionContext 条件で暗号化を行うアカウントの証跡を ARN で制限できる。</li>
 </ul>
 </li>
 </ul>
@@ -360,9 +380,11 @@
     }
   }
 </code></pre>
-<pre><code>- キーポリシーに S3 バケットから CloudTrail ログを取得するプリンシパルへの Decrypt 許可を追加
-    - kms:ViaService 条件で S3 からのアクセスだけに制限することもできる。
-</code></pre>
+<p>CloudTrail ログを S3 から取得するユーザ/サービス用の復号許可ポリシー</p>
+<ul>
+<li>キーポリシーに S3 バケットから CloudTrail ログを取得するプリンシパルへの Decrypt 許可を追加</li>
+<li>kms:ViaService 条件で S3 経由のアクセスだけに制限することもできる。</li>
+</ul>
 <pre><code>{
   &quot;Sid&quot;: &quot;Enable CloudTrail log decrypt permissions&quot;,
   &quot;Effect&quot;: &quot;Allow&quot;,
@@ -378,22 +400,17 @@
   }
 }
 </code></pre>
-<pre><code>- [https://docs.aws.amazon.com/ja\_jp/awscloudtrail/latest/userguide/create-kms-key-policy-for-cloudtrail.html](https://docs.aws.amazon.com/ja_jp/awscloudtrail/latest/userguide/create-kms-key-policy-for-cloudtrail.html)
-</code></pre>
-<p>CloudTrail Insights</p>
+<p><a href="https://docs.aws.amazon.com/ja_jp/awscloudtrail/latest/userguide/create-kms-key-policy-for-cloudtrail.html">https://docs.aws.amazon.com/ja_jp/awscloudtrail/latest/userguide/create-kms-key-policy-for-cloudtrail.html</a></p>
+<p><strong>CloudTrail Insights</strong></p>
 <ul>
 <li>異常な API アクティビティを機械学習で自動検出。</li>
 <li>証跡作成時に Insights イベントを対象にすることで有効。</li>
-<li>
-<p>検出対象はリソースを変更する可能性がある API 操作 (=書き込みの管理イベント)</p>
-<ul>
+<li>検出対象はリソースを変更する可能性がある API 操作 (=書き込みの管理イベント)<ul>
 <li>データイベントは対象外</li>
 <li>最初のイベントを受信するまでに最大で 36 時間かかる</li>
 </ul>
 </li>
-<li>
-<p>GuardDuty はサービス特化 (VPC, IAM 等) で検出するのに対し、サービス全般で異常と思われる API コールを検出する。</p>
-</li>
+<li>GuardDuty はサービス特化 (VPC, IAM 等) で検出するのに対し、サービス全般で異常と思われる API コールを検出する。</li>
 </ul>
 <p><img alt="" src="_attachment/image_1299.png" /></p>
 <p><img alt="" src="_attachment/image_1300.png" /></p>

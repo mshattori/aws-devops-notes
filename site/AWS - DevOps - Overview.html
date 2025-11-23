@@ -107,28 +107,20 @@
 </ul>
 <p>管理ポリシー</p>
 <ul>
-<li>
-<p>AWSCodeCommitFullAccess</p>
-<ul>
+<li>AWSCodeCommitFullAccess<ul>
 <li>Grants full access to CodeCommit.</li>
 </ul>
 </li>
-<li>
-<p>AWSCodeCommitPowerUser</p>
-<ul>
+<li>AWSCodeCommitPowerUser<ul>
 <li>Allows users access to all of the functionality of CodeCommit and repository-related resources</li>
 <li>Except it does not allow them to delete CodeCommit repositories or create or delete repository-related resources in other AWS services, such as CloudWatch Events.</li>
 </ul>
 </li>
-<li>
-<p>AWSCodeCommitReadOnly</p>
-<ul>
+<li>AWSCodeCommitReadOnly<ul>
 <li>Grants read-only access to CodeCommit and repository-related resources in other AWS services, as well as the ability to create and manage their own CodeCommit-related resources (such as Git credentials and SSH keys for their IAM user to use when accessing repositories).</li>
 </ul>
 </li>
-<li>
-<p>開発ユーザ全員に AWSCodeCommitPowerUser を与え、Lead 以外は master ブランチへの Push や Merge を明示的 Deny する、という問題例がよく出る。</p>
-</li>
+<li>開発ユーザ全員に AWSCodeCommitPowerUser を与え、Lead 以外は master ブランチへの Push や Merge を明示的 Deny する、という問題例がよく出る。</li>
 </ul>
 <h1 id="codebuild">CodeBuild</h1>
 <p>環境を Docker イメージで立ち上げ、ビルドとテストに使用。</p>
@@ -164,18 +156,12 @@
 <p>ビルドキャッシュ</p>
 <ul>
 <li>ビルドツールや依存モジュールのダウンロードやビルド時間を短縮できる。</li>
-<li>
-<p>キャッシュタイプ</p>
-<ul>
-<li>
-<p>S3</p>
-<ul>
+<li>キャッシュタイプ<ul>
+<li>S3<ul>
 <li>サイズが大きくなくビルドに時間がかかるモジュールに向く。</li>
 </ul>
 </li>
-<li>
-<p>ローカル</p>
-<ul>
+<li>ローカル<ul>
 <li>ダウンロードに時間がかかるような大きなファイルに向く。</li>
 <li>ビルドホストにマウントされるインスタンスストレージでのキャッシュ。<ul>
 <li>DockerLayerCache ... コンテナイメージのビルドのためのキャッシュ</li>
@@ -190,40 +176,28 @@
 </ul>
 <p>buildspec.yml</p>
 <ul>
-<li>
-<p>install フェーズ</p>
-<ul>
+<li>install フェーズ<ul>
 <li>runtime-versions でビルドランタイムのインストール指定。</li>
 <li>dotnet, java, golang, php, nodejs, python, ruby をサポート。</li>
 </ul>
 </li>
-<li>
-<p>pre_build, build, post_build フェーズ</p>
-<ul>
+<li>pre_build, build, post_build フェーズ<ul>
 <li>command ブロックで コマンド実行。</li>
 </ul>
 </li>
-<li>
-<p>run-as</p>
-<ul>
+<li>run-as<ul>
 <li>全体および各フェーズで実行ユーザ指定可能。</li>
 </ul>
 </li>
-<li>
-<p>finally ブロック</p>
-<ul>
+<li>finally ブロック<ul>
 <li>各セクションに指定。command ブロックでエラーがあっても必ず実行される。</li>
 </ul>
 </li>
-<li>
-<p>artifact セクション</p>
-<ul>
+<li>artifact セクション<ul>
 <li>artifact として S3 に保存するファイルを指定。</li>
 </ul>
 </li>
-<li>
-<p>env セクション</p>
-<ul>
+<li>env セクション<ul>
 <li>環境変数設定。パラメータストアからも簡単に取得できる。</li>
 </ul>
 </li>
@@ -267,16 +241,12 @@
 </ul>
 <p>デプロイタイプ</p>
 <ul>
-<li>
-<p>EC2: インプレースデプロイ, Blue/Green デプロイ</p>
-<ul>
+<li>EC2: インプレースデプロイ, Blue/Green デプロイ<ul>
 <li>ASG の Blue/Green では ASG 全体の置き換えによるデプロイメントを指定できる。</li>
 <li>Blue/Green ではトラフィックのルーティングをコントロールする ELB の指定が必須。</li>
 </ul>
 </li>
-<li>
-<p>オンプレ: インプレースのみ</p>
-</li>
+<li>オンプレ: インプレースのみ</li>
 <li>ECS, Lambda:  Blue/Green のみ<ul>
 <li>ECS: サービスにタスクセットと ELB ターゲットグループを作成して加重ターゲットグループ</li>
 <li>Lambda: 指定バージョン間で加重エイリアス</li>
@@ -285,21 +255,15 @@
 </ul>
 <p>デプロイ設定</p>
 <ul>
-<li>
-<p>EC2</p>
-<ul>
+<li>EC2<ul>
 <li>AllAtOnce, HalfAtATime, OneAtATime, Custom (=min. health hosts)</li>
 </ul>
 </li>
-<li>
-<p>Lambda:</p>
-<ul>
+<li>Lambda:<ul>
 <li>AllAtOnce, CanaryNPercentEveryNMinutes, LinearNPercentEveryNMinutes</li>
 </ul>
 </li>
-<li>
-<p>ECS:</p>
-<ul>
+<li>ECS:<ul>
 <li>AllAtOnce, CanaryNPercentEveryNMinutes, LinearNPercentEveryNMinutes</li>
 </ul>
 </li>
@@ -313,22 +277,16 @@
 <li>デプロイ処理の具体的な定義。リビジョンの root ディレクトリに配置。</li>
 <li>CodeDeploy エージェントによって実行される。</li>
 <li>ECS ではコンテナイメージが別途コンテナディレクトリに登録される必要があるので、AppSpec はコードと一緒に置かず S3 にファイル単体を置いても良い。</li>
-<li>
-<p>files セクション</p>
-<ul>
+<li>files セクション<ul>
 <li>source, destination</li>
 </ul>
 </li>
-<li>
-<p>resources セクション</p>
-<ul>
+<li>resources セクション<ul>
 <li>Lambda: Name, Alias, CurrentVersion, TargetVersion</li>
 <li>ECS: TaskDefinition ARN (リビジョン番号含む), LoadBalancerInfo (ContainerName, ContainerPort)</li>
 </ul>
 </li>
-<li>
-<p>hooks セクション</p>
-<ul>
+<li>hooks セクション<ul>
 <li>デプロイ前後に実行するスクリプトファイルを指定する (ECS, Lambda では Lambda 実行)</li>
 <li>EC2 - インプレース<ul>
 <li>ApplicationStop: 停止スクリプトを指定</li>
@@ -337,9 +295,7 @@
 <li><img alt="" src="_attachment/File_18.png" /></li>
 </ul>
 </li>
-<li>
-<p>EC2 - Blue/Green</p>
-<ul>
+<li>EC2 - Blue/Green<ul>
 <li>ALB があるので AllowTraffic 前後のフックがある。</li>
 <li>停止側のインスタンスには BlockTraffic 前後のフックしかない。</li>
 <li><img alt="" src="_attachment/image_636.png" /></li>
@@ -352,9 +308,7 @@
 </li>
 </ul>
 </li>
-<li>
-<p>Lambda</p>
-<ul>
+<li>Lambda<ul>
 <li>インストール系のフックがない。</li>
 <li><img alt="" src="_attachment/image_637.png" /></li>
 </ul>
@@ -402,16 +356,12 @@
 <p>CodeDeploy エージェント</p>
 <ul>
 <li>S3 から pull するためインスタンスロールに s3:Get*,   s3:List* パーミッションが必要。</li>
-<li>
-<p>CodeDeploy エンドポイントに HTTPS/443 でアクセス</p>
-<ul>
+<li>CodeDeploy エンドポイントに HTTPS/443 でアクセス<ul>
 <li>パブリックサブネットならインターネット経由、プライベートなら VPC エンドポイント経由。</li>
 <li>VPC エンドポイントは ECS や VPC Lambda でもプライベートサブネットなら必要。</li>
 </ul>
 </li>
-<li>
-<p>インスタンス上のインストールログを CloudWatch Logs で見るには CloudWatch エージェントを別途インストール。</p>
-</li>
+<li>インスタンス上のインストールログを CloudWatch Logs で見るには CloudWatch エージェントを別途インストール。</li>
 </ul>
 <p>オンプレインスタンスのセットアップ</p>
 <ol>
@@ -465,21 +415,15 @@
 <p>アクション</p>
 <p><img alt="" src="_attachment/image_641.png" /></p>
 <ul>
-<li>
-<p>Approval アクション: 手動承認 (SNS)</p>
-<ul>
+<li>Approval アクション: 手動承認 (SNS)<ul>
 <li>Codepipeline コンソール上または SNS で通知される URL で Approve/Reject できる。(サブスクライバは任意に追加可能)</li>
 </ul>
 </li>
-<li>
-<p>カスタムアクション</p>
-<ul>
+<li>カスタムアクション<ul>
 <li>Codepipeline サービスから Job をポーリングして、Job 実行後にレスポンスを返す。</li>
 </ul>
 </li>
-<li>
-<p>パラレルアクション(=アクショングループ)とシーケンシャルアクション</p>
-</li>
+<li>パラレルアクション(=アクショングループ)とシーケンシャルアクション</li>
 <li><strong>runOrder:</strong> シーケンスの順番。パラレルアクションは同じ runOrder になる。<ul>
 <li>問題例: 複数の Lambda のデプロイを並行させることでパイプラインの処理時間を早める</li>
 <li><img alt="" src="_attachment/image_642.png" /></li>
@@ -495,15 +439,11 @@
 </ul>
 <p>クロスリージョンアクション</p>
 <ul>
-<li>
-<p>クロスリージョンでビルドプロバイダー/デプロイプロバイダー等を呼び出すことが可能。</p>
-<ul>
+<li>クロスリージョンでビルドプロバイダー/デプロイプロバイダー等を呼び出すことが可能。<ul>
 <li>ソースアクション、サードパーティーアクション、カスタムアクションは不可。</li>
 </ul>
 </li>
-<li>
-<p>各リージョンにアーティファクトストア (S3バケット) と SSE-KMS キーが必要となる。</p>
-</li>
+<li>各リージョンにアーティファクトストア (S3バケット) と SSE-KMS キーが必要となる。</li>
 <li>リージョン間でのアーティファクトのコピーが行われる。</li>
 <li><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/actions-create-cross-region.html">https://docs.aws.amazon.com/codepipeline/latest/userguide/actions-create-cross-region.html</a></li>
 </ul>
@@ -547,15 +487,11 @@
 <li>バケットのオプション。一定期間が過ぎたオブジェクトのライフサイクルを指定。</li>
 <li>移行 (Transition): 別のストレージクラスに移行。Glacier へのアーカイブも可能。</li>
 <li>失効 (Expiration): 削除</li>
-<li>
-<p>フィルター要素</p>
-<ul>
+<li>フィルター要素<ul>
 <li>キープレフィックスおよびタグで対象を選択できる</li>
 </ul>
 </li>
-<li>
-<p>バージョニングの最新とそれ以前で個別に設定できる。</p>
-</li>
+<li>バージョニングの最新とそれ以前で個別に設定できる。</li>
 <li>問題例: LegalHold タグ true のドキュメント以外は 90 日で削除したい<ul>
 <li>S3 イベントでオブジェクト作成時に Lambda 関数を開始する。LegalHold タグが存在しない場合は false の値を追加する。</li>
 <li>LegalHold タグが false のフィルタールールを指定した S3 ライフサイクルポリシーを作成し、90 日より古いオブジェクトを削除するよう設定する。</li>
@@ -566,15 +502,11 @@
 <p><a href="AWS%20-%20Deployment%20Strategy.html">AWS - Deployment Strategy</a></p>
 <p>用語</p>
 <ul>
-<li>
-<p>ダークローンチ</p>
-<ul>
+<li>ダークローンチ<ul>
 <li>フィーチャーフラグで一部のインスタンスで機能を有効にする。</li>
 </ul>
 </li>
-<li>
-<p>セグメンテーション</p>
-<ul>
+<li>セグメンテーション<ul>
 <li>デプロイを小さなチャンクに分割することでリスク軽減。</li>
 <li>リージョン, AZ, タグ, ASG, etc.</li>
 </ul>
@@ -646,16 +578,12 @@
 <h2 id="codedeploy_1">CodeDeploy のデプロイ</h2>
 <p>CodeDeploy のデプロイタイプ</p>
 <ul>
-<li>
-<p>EC2/オンプレ</p>
-<ul>
+<li>EC2/オンプレ<ul>
 <li>インプレース (=AllAtOnce 以外はローリング)</li>
 <li>Blue/Green (=イミュータブル)</li>
 </ul>
 </li>
-<li>
-<p>ECS, Lamda</p>
-<ul>
+<li>ECS, Lamda<ul>
 <li>Blue/Green のみ (仕組み的にコンテナやLambdaはインプレース切り替えの概念がない)</li>
 </ul>
 </li>
@@ -733,36 +661,26 @@
 </ul>
 <p>問題例: Serveless のバックエンド API 層と Web アプリケーション層を Blue/Green する要件</p>
 <ul>
-<li>
-<p>Deploy the DynamoDB tables, Lambda functions, and Amazon ES domain using AWS CloudFormation.　</p>
-<ul>
+<li>Deploy the DynamoDB tables, Lambda functions, and Amazon ES domain using AWS CloudFormation.　<ul>
 <li>Deploy changes with an AWS CodeDeploy blue/green deployment.</li>
 </ul>
 </li>
-<li>
-<p>Host the web application in AWS Elastic Beanstalk and set the deployment policy to <strong>Immutable</strong>.</p>
-</li>
+<li>Host the web application in AWS Elastic Beanstalk and set the deployment policy to <strong>Immutable</strong>.</li>
 </ul>
 <h2 id="ecs">ECS のデプロイ</h2>
 <p>サービスの deploymentController 設定を次のいずれかに設定する:</p>
 <ul>
-<li>
-<p>ECS</p>
-<ul>
+<li>ECS<ul>
 <li>ローリング更新</li>
 <li>サービスのタスク定義を更新すると ECS はローリングデプロイを実施する。</li>
 <li>古いバージョ ンのコンテナへの接続をドレイニングし、新しいコンテナを ALB に登録する。</li>
 </ul>
 </li>
-<li>
-<p>CODE_DEPLOY</p>
-<ul>
+<li>CODE_DEPLOY<ul>
 <li>Blue/Green</li>
 </ul>
 </li>
-<li>
-<p>EXTERNAL</p>
-<ul>
+<li>EXTERNAL<ul>
 <li>ECS API でサービス・タスクを制御する外部のデプロイコントローラー</li>
 </ul>
 </li>
@@ -791,15 +709,11 @@
 </code></pre>
 <p>Mappings セクション</p>
 <ul>
-<li>
-<p>リージョンごとに使用する AMI ID を指定するマッピングテーブルなどを定義する。</p>
-<ul>
+<li>リージョンごとに使用する AMI ID を指定するマッピングテーブルなどを定義する。<ul>
 <li>AMI はリージョンリソースなので、リージョンごとに AMI ID が異なる。</li>
 </ul>
 </li>
-<li>
-<p>Fn::FindInMap function でアクセス</p>
-<ul>
+<li>Fn::FindInMap function でアクセス<ul>
 <li>!FindInMap [ <em>MapName, TopLevelKey, SecondLevelKey</em> ]</li>
 </ul>
 </li>
@@ -813,15 +727,11 @@
 <p>Outputs セクション</p>
 <ul>
 <li>スタック内の値をコンソールや CLI にアウトプットする。</li>
-<li>
-<p>ネストしたスタックの Outputs は 親スタックから Stack リソースの属性として参照できる。</p>
-<ul>
+<li>ネストしたスタックの Outputs は 親スタックから Stack リソースの属性として参照できる。<ul>
 <li>!GetAtt StackName.Output.Name</li>
 </ul>
 </li>
-<li>
-<p>Export することで Fn::ImportValue で他のスタックからも参照できる。</p>
-</li>
+<li>Export することで Fn::ImportValue で他のスタックからも参照できる。</li>
 <li>Export 名の名前空間は同一アカウントのリージョン内。</li>
 </ul>
 <p>CreationPolicy 属性</p>
@@ -830,16 +740,12 @@
 </ul>
 <p>UpdatePolicy 属性</p>
 <ul>
-<li>
-<p>AWS::AutoScaling::AutoScalingGroup</p>
-<ul>
+<li>AWS::AutoScaling::AutoScalingGroup<ul>
 <li>AutoScalingRollingUpdate</li>
 <li>AutoScalingReplacingUpdate</li>
 </ul>
 </li>
-<li>
-<p>AWS::Lambda::Alias</p>
-<ul>
+<li>AWS::Lambda::Alias<ul>
 <li>Lambda の加重エイリアスを設定する。</li>
 </ul>
 </li>
@@ -883,16 +789,12 @@
 <p>スタックのネスト</p>
 <ul>
 <li>AWS::CloudFormation::Stack リソースで別のテンプレートをネストする。</li>
-<li>
-<p>ネットワーク層とアプリ層のテンプレートをネストする例</p>
-<ul>
+<li>ネットワーク層とアプリ層のテンプレートをネストする例<ul>
 <li>DependsOn で作成順序をコントロール。そうしないと並列で作成されてしまう。</li>
 <li>ネットワークスタックの Outputs の値をアプリケーションスタックの Parameters で渡す。</li>
 </ul>
 </li>
-<li>
-<p>スタック更新時は親スタック (root stack) を更新する。</p>
-</li>
+<li>スタック更新時は親スタック (root stack) を更新する。</li>
 </ul>
 <p>クロススタックリファレンス (Export/ImportValue)</p>
 <ul>
@@ -974,16 +876,12 @@ Resources:
 <p>カスタムリソース</p>
 <ul>
 <li>外部リソースをカスタムリソースプロバイダー (Lambda 等) で作成・更新・削除する。</li>
-<li>
-<p>ユースケース:</p>
-<ul>
+<li>ユースケース:<ul>
 <li>空でない S3 バケットではスタック削除が Fail するため、Lambda カスタムリソースで削除するのは頻出のユースケース。(DeletaionPolicy が Delete でも Fail する)</li>
 <li>リージョン毎に異なる AMI ID を Lambda カスタムリソースで取得して、カスタムリソースの Attribute として AMI ID を返すようなユースケース。</li>
 </ul>
 </li>
-<li>
-<p>Create/Update/Delete といったリクエストを  SNS メッセージでカスタムリソースプロバイダに送信。</p>
-<ul>
+<li>Create/Update/Delete といったリクエストを  SNS メッセージでカスタムリソースプロバイダに送信。<ul>
 <li>カスタムリソースプロバイダがメッセージを処理し、Success/Fail の結果が S3 署名付き URL 経由で CloudFormation に返される。</li>
 <li>Lambda を使用する場合は直接 Lambda の ARN を指定でき、SNS トピックを作成する必要がない。</li>
 </ul>
@@ -1004,17 +902,13 @@ Resources:
 <h1 id="elastic-beanstalk_1">Elastic Beanstalk</h1>
 <ul>
 <li>Web サーバ環境と Worker 環境 (Web server tier &amp; Worker tier)</li>
-<li>
-<p>プロビジョニング・負荷分散・モニタリングなどを自動設定:</p>
-<ul>
+<li>プロビジョニング・負荷分散・モニタリングなどを自動設定:<ul>
 <li>EC2, EBS, RDS, セキュリティグループ, IAM ロール</li>
 <li>ELB, Auto Scaling</li>
 <li>CloudWatch Alarms, SNS</li>
 </ul>
 </li>
-<li>
-<p>プラットフォームのアップデート。</p>
-</li>
+<li>プラットフォームのアップデート。</li>
 </ul>
 <p>アプリケーション</p>
 <ul>
@@ -1033,15 +927,11 @@ Resources:
 </ul>
 <p>環境タイプ</p>
 <ul>
-<li>
-<p>単一インスタンス: Single-instance</p>
-<ul>
+<li>単一インスタンス: Single-instance<ul>
 <li>単一の Web サーバインスタンスに EIP がつき、単一の DB インスタンスができる。</li>
 </ul>
 </li>
-<li>
-<p>負荷分散: Load balanced</p>
-<ul>
+<li>負荷分散: Load balanced<ul>
 <li>ELB と Auto Scaling が付き、Multi-AZ を設定できる。</li>
 <li>DB がプライマリー・スタンバイ構成になる。</li>
 </ul>
@@ -1050,22 +940,16 @@ Resources:
 <p>保存済み設定: Saved configurations</p>
 <ul>
 <li>起動中の環境設定を保存して他のリージョンやアカウントで展開できる</li>
-<li>
-<p>eb config save dev-env --cfg prod</p>
-<ul>
+<li>eb config save dev-env --cfg prod<ul>
 <li>サービス側に設定が保存される。</li>
 <li>.elasticbeanstalk/saved_configs 配下に prod.cfg.yaml ができ、ローカルで直にファイルを編集できる。</li>
 </ul>
 </li>
-<li>
-<p>eb config put prod</p>
-<ul>
+<li>eb config put prod<ul>
 <li>ローカルで編集した設定をサービス側に保存する。</li>
 </ul>
 </li>
-<li>
-<p>eb config dev-env --cfg prod</p>
-<ul>
+<li>eb config dev-env --cfg prod<ul>
 <li>サービス側に保存された設定を環境に適用。</li>
 </ul>
 </li>
@@ -1076,28 +960,20 @@ Resources:
 </ul>
 <p><img alt="" src="_attachment/image_652.png" /></p>
 <ul>
-<li>
-<p>services:</p>
-<ul>
+<li>services:<ul>
 <li>各種サービスのコンフィグを設定: EC2, VPC, Auto Scaling, ELB, RDS  等。</li>
 </ul>
 </li>
-<li>
-<p>resources:</p>
-<ul>
+<li>resources:<ul>
 <li>CloudFromation テンプレートのリソース記述で任意のリソースを作成できる。</li>
 <li>ただし DB のように消えたら困るリソースは環境外に個別に作成したほうがよい。</li>
 </ul>
 </li>
-<li>
-<p>commands</p>
-<ul>
+<li>commands<ul>
 <li>アプリケーションバージョンのファイルが解凍される前に実行されるコマンド</li>
 </ul>
 </li>
-<li>
-<p>container_commands</p>
-<ul>
+<li>container_commands<ul>
 <li>アプリケーションバージョンのファイルがステージングフォルダに解凍された後に実行される</li>
 <li>設定ファイルを変更したりはできるが、デプロイよりも前であることに注意。</li>
 <li>leader_only: true ... 複数あるインスタンスのうち１つだけで実行</li>
@@ -1186,43 +1062,29 @@ Resources:
 <p>ライフサイクルイベント</p>
 <p>各レイヤーでライフサイクルイベントごとに実行するレシピ (Chef cookbook) を指定できる。</p>
 <ul>
-<li>
-<p>Setup</p>
-<ul>
+<li>Setup<ul>
 <li>This event occurs after a started instance has finished booting.</li>
 </ul>
 </li>
-<li>
-<p>Configure</p>
-<ul>
-<li>
-<p>This event occurs on all of the stack's instances when one of the following occurs:</p>
-<ul>
+<li>Configure<ul>
+<li>This event occurs on all of the stack's instances when one of the following occurs:<ul>
 <li>An instance enters or leaves the online state.</li>
 <li>You associate an EIP address with an instance or disassociate one from an instance.</li>
 <li>You attach an ELB to a layer, or detach one from a layer.</li>
 </ul>
 </li>
-<li>
-<p>いずれか1つのインスタンスがオンライン/オフラインになった際に全てのインスタンスで実行される。</p>
-</li>
+<li>いずれか1つのインスタンスがオンライン/オフラインになった際に全てのインスタンスで実行される。</li>
 </ul>
 </li>
-<li>
-<p>Deploy</p>
-<ul>
+<li>Deploy<ul>
 <li>This event occurs when you run a Deploy command, typically to deploy an application to a set of application server instances.</li>
 </ul>
 </li>
-<li>
-<p>Undeploy</p>
-<ul>
+<li>Undeploy<ul>
 <li>This event occurs when you delete an app or run an Undeploy command to remove an app from a set of application server instances.</li>
 </ul>
 </li>
-<li>
-<p>Shutdown</p>
-<ul>
+<li>Shutdown<ul>
 <li>This event occurs after you direct OpsWorks Stacks to shut an instance down but before the associated  EC2 instance is actually terminated.</li>
 </ul>
 </li>
@@ -1258,43 +1120,29 @@ Resources:
 <p>EC2 クラスターを作成する場合の指定項目:</p>
 <ul>
 <li>インスタンスタイプ (t2-micro 等)</li>
-<li>
-<p>インスタンス数</p>
-<ul>
+<li>インスタンス数<ul>
 <li>指定したインスタンス数を起動する Auto Scaling グループが作成される。</li>
 <li>クラスタ作成後にインスタンス数を変更したい場合は ASG を直接編集。</li>
 </ul>
 </li>
-<li>
-<p>AMI</p>
-<ul>
+<li>AMI<ul>
 <li>通常は ECS Agent コンテナを起動する AWS 管理の Amazon Linux AMI を使用。</li>
 </ul>
 </li>
-<li>
-<p>ルート EBS ボリュームサイズ</p>
-</li>
-<li>
-<p>キーペア</p>
-<ul>
+<li>ルート EBS ボリュームサイズ</li>
+<li>キーペア<ul>
 <li>インスタンスにログインできる。</li>
 </ul>
 </li>
-<li>
-<p>VPC・サブネット</p>
-<ul>
+<li>VPC・サブネット<ul>
 <li>複数サブネットで Multi-AZ の HA 構成にできる。</li>
 </ul>
 </li>
-<li>
-<p>セキュリティグループ</p>
-<ul>
+<li>セキュリティグループ<ul>
 <li>タスク(=コンテナ)へのインバウンド接続もここで許可する必要がある。</li>
 </ul>
 </li>
-<li>
-<p>コンテナインスタンス IAM ロール</p>
-<ul>
+<li>コンテナインスタンス IAM ロール<ul>
 <li>ECS Agent が ECS API を呼び出すためのロール</li>
 </ul>
 </li>
@@ -1321,16 +1169,12 @@ Resources:
 <ul>
 <li>ECS Agent に使用されるロール。</li>
 <li>Fargate や外部インスタンスの場合、タスク実行ロールでコンテナイメージのプル、コンテナログの CloudWatch Logs への書き込みを許可する。</li>
-<li>
-<p>EC2 クラスターの場合はコンテナインスタンスロールで許可がカバー出来ていれば不要。</p>
-<ul>
+<li>EC2 クラスターの場合はコンテナインスタンスロールで許可がカバー出来ていれば不要。<ul>
 <li>Task Definition 毎に追加の許可が必要な場合はこちらも使用。</li>
 <li>例: containerDefinition の secrets で SSM Parameter Store を参照する場合など</li>
 </ul>
 </li>
-<li>
-<p>(参考) コンテナインスタンスロール</p>
-<ul>
+<li>(参考) コンテナインスタンスロール<ul>
 <li>ECS クラスターに指定する、クラスターの EC2 インスタンスのインスタンスロール。</li>
 <li>ECS Agent に適用される。</li>
 </ul>
@@ -1344,16 +1188,12 @@ Resources:
 <ul>
 <li>各コンテナの定義 (containerDefinition) のリスト。</li>
 <li>イメージや portMappings 等、docker run に指定するパラメータとなる。</li>
-<li>
-<p>memory/memoryReservation</p>
-<ul>
+<li>memory/memoryReservation<ul>
 <li>各コンテナのメモリ上限・予約指定 (オプショナル)</li>
 <li>タスクサイズ (cpu/memory) がタスク全体の割り当てサイズを指定。</li>
 </ul>
 </li>
-<li>
-<p>環境変数の設定</p>
-<ul>
+<li>環境変数の設定<ul>
 <li>environment</li>
 <li>secrets<ul>
 <li>ASM/SSM Parameter Store のパラメータ名の ARN で参照。</li>
@@ -1362,9 +1202,7 @@ Resources:
 </li>
 </ul>
 </li>
-<li>
-<p>logConfiguration</p>
-<ul>
+<li>logConfiguration<ul>
 <li>docker run --log-driver オプションの指定。</li>
 <li>"awslogs" で CloudWatch にログを送れる。</li>
 <li>問題例: ECS (ALB 使用) のログを取得する</li>
@@ -1385,30 +1223,22 @@ Resources:
 <li>タスク定義: family &amp; revision</li>
 <li>クラスター</li>
 <li>サービス名</li>
-<li>
-<p>サービスタイプ</p>
-<ul>
+<li>サービスタイプ<ul>
 <li>REPLICA</li>
 <li>DAEMON: インスタンス数と同じ数のタスクを実行する</li>
 </ul>
 </li>
-<li>
-<p>タスク数 (desired)</p>
-</li>
+<li>タスク数 (desired)</li>
 <li>最小ヘルス率 (min)</li>
 <li>最大率 (max)</li>
 </ul>
 <p>デプロイメントタイプ</p>
 <ul>
-<li>
-<p>ローリングアップデート</p>
-<ul>
+<li>ローリングアップデート<ul>
 <li>サービスのタスク定義を更新すると ECS がローリングデプロイを実施。</li>
 </ul>
 </li>
-<li>
-<p>Blue/Green</p>
-<ul>
+<li>Blue/Green<ul>
 <li>CodeDeploy を使用。CodeDeploy アプリケーションが自動的に作成されう。</li>
 </ul>
 </li>
@@ -1455,16 +1285,12 @@ Resources:
 <p><img alt="" src="_attachment/image_659.png" /></p>
 <ul>
 <li>例: ポートマッピングでホストのポートを占有するタスクを複数個起動するには、その個数分のインスタンスが必要。</li>
-<li>
-<p>binpack</p>
-<ul>
+<li>binpack<ul>
 <li>コンテナをホスト集中することでコストを最適化</li>
 <li>使用中のコンテナインスタンスの数を最小限に抑え、未使用の CPU またはメモリを最小に。</li>
 </ul>
 </li>
-<li>
-<p>spread</p>
-<ul>
+<li>spread<ul>
 <li>均等配置。(instanceId または attribute:ecs.availability-zone)</li>
 </ul>
 </li>
@@ -1526,15 +1352,11 @@ Resources:
 <p>同時実行数 (上限緩和申請可能)</p>
 <ul>
 <li>1000 (リージョンごと)</li>
-<li>
-<p>予約同時実行数: Reserved concurrency</p>
-<ul>
+<li>予約同時実行数: Reserved concurrency<ul>
 <li>全体の同時実行数から特定の関数に予約する。</li>
 </ul>
 </li>
-<li>
-<p>プロビジョニング済み同時実行数: Provisioned concurrency</p>
-<ul>
+<li>プロビジョニング済み同時実行数: Provisioned concurrency<ul>
 <li>スケールアップ時のレイテンシーを下げるためあらかじめコンテナがプロビジョンされる。</li>
 <li>AWS Auto Scaling でプロビジョニングされた同時実行数をスケーリングすることもできる。</li>
 </ul>
@@ -1614,41 +1436,29 @@ Resources:
 </ul>
 <p>ステージ</p>
 <ul>
-<li>
-<p>prod, staging, dev 等。エンドポイントのパスの一部に含まれる。</p>
-<ul>
+<li>prod, staging, dev 等。エンドポイントのパスの一部に含まれる。<ul>
 <li>https://{api-id}.execute-api.{region}.amazonaws.com/{stage}</li>
 </ul>
 </li>
-<li>
-<p>ステージへの「デプロイ」を行わない限り API は有効にならない。</p>
-</li>
+<li>ステージへの「デプロイ」を行わない限り API は有効にならない。</li>
 <li>ステージ変数: ${stageVariables} から参照できるステージ毎に異なる変数。</li>
 </ul>
 <p>オーソライザー: 認証・認可 </p>
 <ul>
-<li>
-<p>IAM アクセス権限</p>
-<ul>
+<li>IAM アクセス権限<ul>
 <li>AWS 署名v4 認証 。</li>
 </ul>
 </li>
-<li>
-<p>Cognito オーソライザー</p>
-<ul>
+<li>Cognito オーソライザー<ul>
 <li>Cognito ユーザープールで認証して取得したトークン (JWT) を Authorization ヘッダで送信。</li>
 </ul>
 </li>
-<li>
-<p>JWT オーソライザー</p>
-<ul>
+<li>JWT オーソライザー<ul>
 <li>HTTP API のみサポート。</li>
 <li>OpenID Connect/OAuth 2.0 準拠の IdP が発行した JWT による認証 (Cognito ユーザープール含む)</li>
 </ul>
 </li>
-<li>
-<p>Lambda オーソライザー</p>
-<ul>
+<li>Lambda オーソライザー<ul>
 <li>カスタムのオーソライザー</li>
 </ul>
 </li>
@@ -1684,15 +1494,11 @@ Resources:
 </ul>
 <p><img alt="" src="_attachment/image_661.png" /></p>
 <ul>
-<li>
-<p>AWS::Serverless::Application: Nested Stack にあたる機能。</p>
-<ul>
+<li>AWS::Serverless::Application: Nested Stack にあたる機能。<ul>
 <li>SAM テンプレートの置き場所の URI か Serverless Application Repository の ARN を指定。</li>
 </ul>
 </li>
-<li>
-<p>AWS::Serverless::StateMachine: Step Functions</p>
-</li>
+<li>AWS::Serverless::StateMachine: Step Functions</li>
 </ul>
 <p>CodeDeploy が組み込まれており Lambda の Blue/Green デプロイメントの指定ができる:</p>
 <pre><code>MyLambdaFunction:
@@ -1789,17 +1595,13 @@ Resources:
 <li>テーブルに行われた過去 24 時間の追加・更新・削除の履歴を保持したストリーム。</li>
 <li>ほぼリアルタイム。WCU の２倍のスループットなのでスループットの問題はない。</li>
 <li>データはシリアライズされ、特定パーティションキーへの変更は順序通りに取得可能。</li>
-<li>
-<p>Lambda 連携</p>
-<ul>
+<li>Lambda 連携<ul>
 <li>ストリーム型 (イベントソースマッピング)</li>
 <li>DynamoDB ストリームの1つのシャードに 3つ以上のリーダーが同時に読み取るとスロットリングが発生する。3つ以上の Lambda を連携させる場合は1つの Lambda から SNS で分岐する。</li>
 <li>DynamoDB ストリームを Lambda 連携で ElasticSearch に投入し DynamoDB テーブルのデータを全文検索するユースケースがある。</li>
 </ul>
 </li>
-<li>
-<p>KCL (Kinesis Client Library) を利用したアプリ開発</p>
-<ul>
+<li>KCL (Kinesis Client Library) を利用したアプリ開発<ul>
 <li>KCL を利用することでシャード意識した低レベル API を抽象化してコードを書ける。</li>
 <li>KCL に DynamoDB  Streams Kinesis Adapter を噛ませることで、DynamoDB ストリームに対して KCL を使用できる。</li>
 <li>Lambda のスロットリングエラーに対し、KCL を利用したアプリケーション経由で Kinesis Data Analytics につないで分析処理を行う構成に変更するという問題があった。</li>
@@ -1808,15 +1610,11 @@ Resources:
 </ul>
 <p>バックアップ</p>
 <ul>
-<li>
-<p>オンデマンドバックアップ</p>
-<ul>
+<li>オンデマンドバックアップ<ul>
 <li>テーブル全体のスナップショットを作成してアーカイブ。</li>
 </ul>
 </li>
-<li>
-<p>ポイントインタイムリカバリー</p>
-<ul>
+<li>ポイントインタイムリカバリー<ul>
 <li>直前 35日間の任意の時点にダウンタイムなしに復元可能。増分バックアップ。</li>
 <li>ポイントインタイムリカバリーの「有効化」で有効にする。(デフォルト無効)</li>
 </ul>
@@ -1825,16 +1623,12 @@ Resources:
 <p>グローバルテーブル</p>
 <ul>
 <li>DynamoDB ストリームを利用したマルチリージョン・マルチマスターのレプリケーション。</li>
-<li>
-<p>レプリカテーブル</p>
-<ul>
+<li>レプリカテーブル<ul>
 <li>リージョン毎にレプリケーションを受けるレプリカテーブルを作成する必要がある。</li>
 <li>同一アカウントのみ。</li>
 </ul>
 </li>
-<li>
-<p>ディザスタリカバリ。近いリージョンのレプリカにアクセスすることでレイテンシー削減。</p>
-</li>
+<li>ディザスタリカバリ。近いリージョンのレプリカにアクセスすることでレイテンシー削減。</li>
 </ul>
 <p>DAX: DynamoDB Accelerator</p>
 <ul>
@@ -1908,15 +1702,11 @@ Resources:
 </ul>
 <p>---</p>
 <ul>
-<li>
-<p>SDK サービス統合: 対応サービスの任意の API を実行</p>
-<ul>
+<li>SDK サービス統合: 対応サービスの任意の API を実行<ul>
 <li><a href="https://docs.aws.amazon.com/step-functions/latest/dg/supported-services-awssdk.html">https://docs.aws.amazon.com/step-functions/latest/dg/supported-services-awssdk.html</a></li>
 </ul>
 </li>
-<li>
-<p>Activity: 自前のアプリケーションによる非同期コールバック</p>
-</li>
+<li>Activity: 自前のアプリケーションによる非同期コールバック</li>
 </ul>
 <h1 id="sns">SNS</h1>
 <p>パブリッシャ</p>
@@ -2054,21 +1844,15 @@ Resources:
 <h2 id="ad">AD 連携</h2>
 <p>AWS 管理コンソールへの SSO</p>
 <ul>
-<li>
-<p>ADFS と AWS サインインエンドポイントで SAML 認証により管理コンソールへ SSO。</p>
-<ul>
+<li>ADFS と AWS サインインエンドポイントで SAML 認証により管理コンソールへ SSO。<ul>
 <li>エンドポイントが背後で AssumeRoleWithSAML でクリデンシャルを取得。</li>
 </ul>
 </li>
-<li>
-<p>AWS 管理コンソールの IAM 設定で ID プロバイダとして ADFS を追加する。</p>
-<ul>
+<li>AWS 管理コンソールの IAM 設定で ID プロバイダとして ADFS を追加する。<ul>
 <li>この際 AssumeRoleWithSAML を許可するロールを関連づける。</li>
 </ul>
 </li>
-<li>
-<p>ユーザが組織内の ADFS サインオンページをブラウズすることでフローが開始する。</p>
-</li>
+<li>ユーザが組織内の ADFS サインオンページをブラウズすることでフローが開始する。</li>
 </ul>
 <p>Cognito ユーザープールと ADFS の SAML 連携</p>
 <p>API Gateway や ALB でドメインアカウントで認証が可能。</p>
@@ -2165,15 +1949,11 @@ Resources:
 <p>CloudTrail で API 操作, サインイン試行をロギング。(デフォルト有効 90日間のイベント保持)</p>
 <p>証跡</p>
 <ul>
-<li>
-<p>ログを S3 バケットに保管。オプションで CloudWatch Logs に送信。</p>
-<ul>
+<li>ログを S3 バケットに保管。オプションで CloudWatch Logs に送信。<ul>
 <li>管理イベント、データイベント、Insights イベントのチェックボックスがある</li>
 </ul>
 </li>
-<li>
-<p>ログは SSE-KMS とダイジェストファイルで保護される。</p>
-</li>
+<li>ログは SSE-KMS とダイジェストファイルで保護される。</li>
 <li>デフォルトでマルチリージョンのログを保存する証跡となる。</li>
 <li>中央アカウントのバケットへマルチアカウントのログ統合。<ul>
 <li>クロスアカウントで証跡を 1つの S3 バケットに配信できる。</li>
@@ -2197,27 +1977,19 @@ Resources:
 <li>Kinesis Data Streams/Firehose, Lambda によるリアルタイム処理。</li>
 <li>ロググループに転送先とフィルタ文字列を設定する (全てのログの転送も可能)</li>
 <li>クロスアカウントの送信先 (Destination) も設定できる。</li>
-<li>
-<p>ログアグリゲーションの例:</p>
-<ul>
+<li>ログアグリゲーションの例:<ul>
 <li>中央アカウントで CloudWatch Logs の Destination を作成。(put-destination) この Destination のターゲットを S3 に投入する Kinesis Firehose とする。</li>
 <li>リモートアカウントに PutSubscriptionFilter を許可するリソースベースポリシーを Destination に付与する。(put-destination-policy)</li>
 <li>各アカウントでは中央アカウントの Destination をターゲットにサブスクリプションフィルターを作成する。(put-subscription-filter)</li>
 </ul>
 </li>
-<li>
-<p>問題例:</p>
-<ul>
-<li>
-<p>中央アカウントでは Kinesis Data Streams から Lambda で ES にデータ投入。</p>
-<ul>
+<li>問題例:<ul>
+<li>中央アカウントでは Kinesis Data Streams から Lambda で ES にデータ投入。<ul>
 <li>ちなみに Firehose を使えば ES に直接投入できるが Lambda で何か前処理している？</li>
 <li>ここで Data Streams を立てずに直接 Lambda だけにするとスループット問題が発生しうる。</li>
 </ul>
 </li>
-<li>
-<p>各アカウントは VPC フローログを CloudWatch Logs で受け、さらにサブスクリプションフィルターで中央アカウントの Kinesis Data Streams  に送信。</p>
-</li>
+<li>各アカウントは VPC フローログを CloudWatch Logs で受け、さらにサブスクリプションフィルターで中央アカウントの Kinesis Data Streams  に送信。</li>
 <li><img alt="" src="_attachment/image_664.png" /></li>
 </ul>
 </li>
@@ -2285,44 +2057,32 @@ Resources:
 <ul>
 <li>インスタンスの CPU 状態や Lambda のエラー回数などを監視。</li>
 <li>メトリクスにしきい値を設定し、CloudWatch アラームを発生させる。</li>
-<li>
-<p>標準メトリクス</p>
-<ul>
+<li>標準メトリクス<ul>
 <li>AWS サービスのメトリクス。デフォルトは標準解像度(分単位)。</li>
 </ul>
 </li>
-<li>
-<p>カスタムメトリクス</p>
-<ul>
+<li>カスタムメトリクス<ul>
 <li>CloudWatch Agent や PutMetricData API で発行。</li>
 <li>EC2 インスタンスのメモリ使用量、EBS ボリュームの残りサイズ等。</li>
 <li>標準解像度(分単位) / 高解像度(秒単位) から選択できる。</li>
 </ul>
 </li>
-<li>
-<p>ダッシュボード: メトリクスのグラフや統計の表示。</p>
-</li>
+<li>ダッシュボード: メトリクスのグラフや統計の表示。</li>
 </ul>
 <p>CloudWatch アラーム</p>
 <ul>
 <li>アラームから SNS 通知、EC2 アクション(停止・再起動等)、Auto Scaling 連携。</li>
-<li>
-<p>SNS 連携でメール送信や Lambda 関数コール。</p>
-<ul>
+<li>SNS 連携でメール送信や Lambda 関数コール。<ul>
 <li>アラームは CloudWatch Events/EventTrigger のデータソースにならない。</li>
 </ul>
 </li>
-<li>
-<p>各状態への移行に SNS 通知を設定できる</p>
-<ul>
+<li>各状態への移行に SNS 通知を設定できる<ul>
 <li>OK: しきい値以下</li>
 <li>ALARM: しきい値超過</li>
 <li>INSUFFICIENT_DATA: 開始直後やメトリクスが利用できないなどデータ不足の状態</li>
 </ul>
 </li>
-<li>
-<p>Anomaly detection</p>
-<ul>
+<li>Anomaly detection<ul>
 <li>特定の値でなく標準偏差の幅をしきい値に指定する</li>
 </ul>
 </li>
@@ -2341,35 +2101,25 @@ Resources:
 <p>Event Bus</p>
 <ul>
 <li>クロスアカウントでのイベント送信。各アカウントはデフォルトのイベントバスを 1 つ持つ。</li>
-<li>
-<p>送信側アカウント</p>
-<ul>
+<li>送信側アカウント<ul>
 <li>受信側のイベントバスをターゲットとしてルールを設定する。</li>
 </ul>
 </li>
-<li>
-<p>受信側アカウント</p>
-<ul>
+<li>受信側アカウント<ul>
 <li>イベントバスで送信側アカウント ID を許可する。</li>
 <li>送信側アカウントからのイベントをイベントソースとしたルールを設定する。</li>
 </ul>
 </li>
-<li>
-<p>中央アカウントのイベントバスに各アカウントからイベント送信するように設定、中央アカウントで 特定のイベントを Lambda 監視する、等のユースケース。</p>
-</li>
+<li>中央アカウントのイベントバスに各アカウントからイベント送信するように設定、中央アカウントで 特定のイベントを Lambda 監視する、等のユースケース。</li>
 </ul>
 <p>S3 イベントとの違い</p>
 <ul>
 <li>S3 イベントはバケットレベルオプションとして指定し、取得できるのはオブジェクトレベルのイベントだけ。</li>
-<li>
-<p>CloudWatch Event の S3 データソースは管理イベントとデータイベント (オブジェクトレベル) 両方のイベントを対象にできる。</p>
-<ul>
+<li>CloudWatch Event の S3 データソースは管理イベントとデータイベント (オブジェクトレベル) 両方のイベントを対象にできる。<ul>
 <li>オブジェクトレベルイベントを取るには CloudTrail の証跡がデータイベントに対して有効になっている必要がある</li>
 </ul>
 </li>
-<li>
-<p>S3 イベントのターゲットは SNS, SQS, Lambda だけ。</p>
-</li>
+<li>S3 イベントのターゲットは SNS, SQS, Lambda だけ。</li>
 </ul>
 <h2 id="x-ray">X-Ray</h2>
 <p>サービスマップ</p>
@@ -2389,15 +2139,11 @@ Resources:
 <p>X-Ray デーモン</p>
 <ul>
 <li>2000/udp でリッスンし、ローカルの SDK から受信したセグメントデータを X-Ray サービスに PutTraceSegments API でバッチでアップロードする。</li>
-<li>
-<p>EC2 の場合</p>
-<ul>
+<li>EC2 の場合<ul>
 <li>ユーザデータスクリプトで X-Ray デーモンを落としてきてインストール。</li>
 </ul>
 </li>
-<li>
-<p>ECS の場合</p>
-<ul>
+<li>ECS の場合<ul>
 <li>X-Ray デーモンを実行するコンテナをタスク定義に含める (サイドカーコンテナ)。</li>
 <li>ポートマッピングを設定して 2000/udp へのトラフィックをマップする。</li>
 <li>問題例: ECS で X-Ray を利用する</li>
@@ -2409,18 +2155,12 @@ Resources:
 </li>
 </ul>
 </li>
-<li>
-<p>Lambda の場合</p>
-<ul>
-<li>
-<p>Lambda コンソールで AWS X-Ray のアクティブトレースを有効化。</p>
-<ul>
+<li>Lambda の場合<ul>
+<li>Lambda コンソールで AWS X-Ray のアクティブトレースを有効化。<ul>
 <li>関数の実行ロールにポリシーが追加される。</li>
 </ul>
 </li>
-<li>
-<p>X-Ray デーモンは Lambda ランタイムで自動的に実行される。</p>
-</li>
+<li>X-Ray デーモンは Lambda ランタイムで自動的に実行される。</li>
 <li>X-Ray SDK を関数パッケージにバンドルしてコードから使用する。</li>
 </ul>
 </li>
@@ -2492,35 +2232,24 @@ Resources:
 </li>
 </ul>
 <h3 id="run-commandautomation">Run Command/Automation</h3>
+<p><strong>Run Command</strong></p>
 <ul>
-<li>Run Command<ul>
 <li>指定したインスタンス群でコマンドドキュメントを実行。</li>
 <li>コンソール出力は S3 や CloudWatch Logs にアウトプットするよう指定可能。</li>
 <li>CodeBuild の buildspec で ssh せずに Run Command を使うべきという問題例:</li>
-<li><img alt="" src="_attachment/image_669.png" /></li>
 </ul>
-</li>
-<li>
-<p>Automation</p>
+<blockquote>
+<p>CodeBuild プロジェクトに必要な権限を持つ IAM ロールを設定し、buildspec.yaml から AWS 認証情報を削除する。scp や ssh のコマンドは、AWS Systems Manager の Run Command を使用して実行する。</p>
+</blockquote>
+<p><strong>Automation</strong> (Runbook の実行)</p>
 <ul>
-<li>インスタンスや AWS リソースに処理を行う Runbook を実行する。</li>
-<li>
-<p>例: <a href="https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-tutorial-update-patch-linux-ami.html">AWS-UpdateLinuxAmi</a></p>
-<ul>
-<li>ベース AMI をインスタンス起動してアップデート実行後に新しい AMI を作成するまでの一連のステップを行う。</li>
+<li>インスタンスや AWS リソースに Runbook で定義した処理を実行する。</li>
+<li>Runbook の例:<ul>
+<li><strong>AWS-UpdateLinuxAmi</strong>:  ベース AMI をインスタンス起動してアップデート実行後に新しい AMI を作成するまでの一連のステップを行う。</li>
+<li><strong>AWSSupport-ExecuteEC2Rescue</strong>: ログ収集やメモリダンプなどのトラブルシューzティングを行う EC2Rescure を実行する。</li>
 </ul>
 </li>
-<li>
-<p>AWSSupport-ExecuteEC2Rescue</p>
-<ul>
-<li>ログ収集やメモリダンプなどのトラブルシューティングを行う EC2Rescure を実行する。</li>
-</ul>
-</li>
-<li>
-<p>SSM Automation は Codepipeline アクションと統合していないため、Invoke アクションの Lambda などを経由して呼び出す。</p>
-</li>
-</ul>
-</li>
+<li>SSM Automation は Codepipeline アクションと統合していないため、Invoke アクションの Lambda などを経由して呼び出す。</li>
 </ul>
 <h3 id="ssm_1">SSM メンテナンスウィンドウ</h3>
 <ul>
@@ -2529,17 +2258,26 @@ Resources:
 </ul>
 <h3 id="ssm_2">SSM パッチマネージャー</h3>
 <ul>
-<li>
-<p>パッチベースラインを作りパッチグループに紐付け。</p>
-<ul>
-<li>パッチ対象のプロダクトやパッチの種類 (Security, Bugfix 等)、Severity のルールなどを指定。</li>
+<li>マネージドインスタンスに対するパッチ適用の自動化</li>
+<li>Scanのみ, Scan &amp; Install の2方式</li>
+<li>パッチ準拠状況のレポート（コンプライアンス状態の可視化）</li>
+<li>オンプレ/ハイブリッド環境にも対応（SSM Agent &amp; Hybrid Activation）</li>
+<li>State Manager / Run Command と連携</li>
 </ul>
-</li>
-<li>
-<p><img alt="" src="_attachment/image_671.png" /></p>
-</li>
+<p><strong>Patch Baseline</strong></p>
+<ul>
+<li>パッチ適用ルール設定</li>
+<li>分類（Security / Critical など）</li>
+<li>例外パッチ指定（Allow / Reject）</li>
+<li>適用延期日数指定</li>
+<li>OS種類ごとに作成する</li>
 <li>スケジュール実行にはメンテナンスウィンドウに Run Command タスクの AWS-RunPatchBaseline を登録する。</li>
-<li>異なる Patch Grup タグに同じベースラインを指定することもできる。同じベースラインを別のリソースグループにメンテナスウインドウをずらして実行する、等。</li>
+</ul>
+<p><strong>Patch Group</strong></p>
+<ul>
+<li>Patch Group タグにより対象インスタンスを分類</li>
+<li>Patch Baseline と Patch Group を関連付け</li>
+<li>異なる Patch Group タグに同じベースラインを指定することもできる。同じベースラインを別のリソースグループにメンテナスウインドウをずらして実行する、等。</li>
 </ul>
 <h3 id="ssm_3">SSM コンプライアンスダッシュボード</h3>
 <ul>
@@ -2563,21 +2301,10 @@ Resources:
 <li>Assign the AWS-RunPatchBaseline document as a task within each maintenance window which has a different processing start time</li>
 </ul>
 <h1 id="aws-service-catalog">AWS Service Catalog</h1>
-<p>セキュリティ管理者が提供する CloudFormation テンプレートをエンドユーザが自身で制約のもとでプロビジョンする。</p>
-<p><img alt="" src="_attachment/image_673.png" /></p>
+<p>管理者が提供する CloudFormation テンプレート(=製品)を指定された IAM ロールと CFn パラメータ(=制約)で、エンドユーザが自身でプロビジョンする仕組み。</p>
 <ul>
-<li>
-<p>テンプレート制約</p>
-<ul>
-<li>CloudFormation テンプレートのパラメータを制限。</li>
-</ul>
-</li>
-<li>
-<p>起動制約</p>
-<ul>
-<li>製品からリソースをプロビジョニングする際に使用するロールを指定。</li>
-</ul>
-</li>
+<li>テンプレート制約:  CloudFormation テンプレートのパラメータを制限。</li>
+<li>起動制約:  製品を起動する際に使用するロールを指定。</li>
 </ul>
 <h1 id="aws-waf">AWS WAF</h1>
 <p>統合サービス: ALB, CloudFront, API Gateway</p>
@@ -2593,9 +2320,7 @@ Resources:
 </ul>
 <p>ルール</p>
 <ul>
-<li>
-<p>ルールステートメント</p>
-<ul>
+<li>ルールステートメント<ul>
 <li>HTTP リクエスト各コンポーネントの正規表現マッチ</li>
 <li>リクエストサイズ, Rate limit</li>
 <li>IP, GeoIP</li>
@@ -2603,9 +2328,7 @@ Resources:
 <li>例: 特定の User Agent によるリクエストのブロック。</li>
 </ul>
 </li>
-<li>
-<p>アクション: Block, Allow, Count の3種。</p>
-</li>
+<li>アクション: Block, Allow, Count の3種。</li>
 <li>WAF v2 ではステートメントの AND/OR が指定できる。</li>
 <li>IP ブラックリスト指定等も可能。</li>
 </ul>
@@ -2622,15 +2345,11 @@ Resources:
 </ul>
 <p>Advanced</p>
 <ul>
-<li>
-<p>EC2(ENI), ELB, CloudFront, Route 53 と統合された高度な検出。</p>
-<ul>
+<li>EC2(ENI), ELB, CloudFront, Route 53 と統合された高度な検出。<ul>
 <li>WAF と異なり API Gateway は対象外。Web に限らないので ALB に限られない。</li>
 </ul>
 </li>
-<li>
-<p>AWS WAF が無料。</p>
-</li>
+<li>AWS WAF が無料。</li>
 </ul>
 <p>問題例: Which among the options below can the Engineer implement as part of the company's DDoS attack surface reduction strategy to minimize the blast radius in their cloud infrastructure? (Select TWO.)</p>
 <p>解答</p>
@@ -2690,15 +2409,11 @@ Resources:
 <p><img alt="" src="_attachment/image_676.png" /></p>
 <ul>
 <li>Firewall Manager により WAF, Shield Advanced, セキュリティグループの検出も統合される。</li>
-<li>
-<p>AWS Config のコンフォーマンスパックのコンプライアンスチェックも継続的に実施。</p>
-<ul>
+<li>AWS Config のコンフォーマンスパックのコンプライアンスチェックも継続的に実施。<ul>
 <li>AWS ベストプラクティスや CIS, PCI-DSS 等</li>
 </ul>
 </li>
-<li>
-<p>セキュリティイベントを CloudWatch Events 経由で Lambda 等と連携し、レスポンス自動化。</p>
-</li>
+<li>セキュリティイベントを CloudWatch Events 経由で Lambda 等と連携し、レスポンス自動化。</li>
 </ul>
 <p><img alt="" src="_attachment/image_677.png" /></p>
 <h1 id="trusted-advisor">Trusted Advisor</h1>
@@ -2716,17 +2431,13 @@ Resources:
 </ul>
 <p>CloudWatch メトリクスも CloudWatch Events 同様の項目で存在</p>
 <ul>
-<li>
-<p>問題例: 使用されていない ELB の通知を実現できるオプション</p>
-<ul>
+<li>問題例: 使用されていない ELB の通知を実現できるオプション<ul>
 <li>メトリクスからアラームで通知: Use Amazon CloudWatch to create alarms on Trusted Advisor metrics in order to detect the load balancers with low utilization. Specify an SNS topic for notification.</li>
 <li>CloudWatch Events 連携: Utilize CloudWatch Events to monitor Trusted Advisor recommendation results. Set up a trigger to send an email using SNS to notify you about the results of the check.</li>
 <li>スケジュール Lambda から Trusted Advisor API コール: Create a Lambda function and integrate it with CloudWatch Events. Configure the function to run on a regular basis and to check AWS Trusted Advisor via API. Based on the results, publish a message to an Amazon SNS Topic to notify the subscribers.</li>
 </ul>
 </li>
-<li>
-<p>Trusted Advisor ビルドインの通知もあるが、自動リフレッシュが Weekly-base なので Daily scheduled の Lambda による Trusted Advisor チェックリストの更新・取得のポーリングが正解とされる。</p>
-</li>
+<li>Trusted Advisor ビルドインの通知もあるが、自動リフレッシュが Weekly-base なので Daily scheduled の Lambda による Trusted Advisor チェックリストの更新・取得のポーリングが正解とされる。</li>
 </ul>
 <h2 id="iam-access-analyzer">IAM Access Analyzer</h2>
 <ul>
@@ -2770,9 +2481,69 @@ Resources:
 </ul>
 </li>
 </ul>
-<p>暗号化・クリデンシャル管理
-Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20ACM.html">AWS - Security - KMS, Secrets Manager, ACM</a></p>
-<p>KMS</p>
+<h1 id="_7">暗号化・クリデンシャル管理</h1>
+<p>Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20ACM.html">AWS - Security - KMS, Secrets Manager, ACM</a></p>
+<h2 id="kms">KMS</h2>
+<ul>
+<li>暗号化に使うデータキーと、それを暗号化するマスターキーを管理するサービス。</li>
+<li>CMK: Customer Master Key<ul>
+<li>KMS 内の HSM で暗号化された状態で保管されるマスターキー。</li>
+<li>対象鍵 (AES256), 非対称鍵 (RSA, ECC) がサポートされている。</li>
+<li>キーローテーションがある。</li>
+</ul>
+</li>
+<li>CDK: Customer Data Key<ul>
+<li>データの暗号化に使用するキー。使用時以外は CMK で暗号化されたものを保存。</li>
+<li>対象鍵のデータキーと非対称鍵のデータキーペアがある。<ul>
+<li>非対称なら公開鍵をアプリに保存して暗号化時に使用、復号時のみ秘密鍵を Decrypt して復号という使い方もできる。</li>
+<li>非対称は署名用途にも使える。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>暗号化の手順
+- GenerateDataKey で平文データキー (Plaintext) で暗号化し、暗号化したデータを暗号化データキー (CiphertextBlob) とともに保管。
+- 平文データキーは廃棄。</p>
+<p>復号の手順
+- Decrypt で暗号化データキーを復号し、そのキーで暗号化データを復号。</p>
+<p>API</p>
+<ul>
+<li>CreateKey<ul>
+<li>CMK を生成。KeyID が返り CMK そのものは返らない。</li>
+</ul>
+</li>
+<li>GenerateDataKey/GenerateDataKeyPair<ul>
+<li>KeyID を指定してデータキーを生成。データキーとして Plaintext と暗号化されたデータキーの CiphertextBlob が返る。</li>
+<li>Plaintext でデータを暗号化して Plaintext は捨てる。暗号化後のデータを CiphertextBlob とともに保管。</li>
+</ul>
+</li>
+<li>Decrypt<ul>
+<li>CiphertextBlob を復号。KeyId は CiphertextBlob に含まれるので指定不要。</li>
+</ul>
+</li>
+<li>Encrypt<ul>
+<li>GenerateDataKey のデータキーを暗号化に使用するので、通常は使用しない。</li>
+<li>CMK の KeyId と最大 4KB までの任意のデータを指定して呼び出す。暗号化された CiphertextBlob が返る。</li>
+<li>Ciphertext には CMK の情報と暗号化されたデータが含まれる。Decrypt 時は KeyId 指定不要。</li>
+<li>Usecase-1:  DB パスワードなどサイズの小さなシークレットを暗号化する場合。</li>
+<li>Usecase-2: データキーをクロスリージョンで共有するために、データキーを別リージョンの CMK で暗号化して渡す。</li>
+</ul>
+</li>
+</ul>
+<p><strong>KMS Grant（権限委譲）</strong></p>
+<ul>
+<li>キーポリシーを変更せずに、一時的にKMSキー操作権限を委譲するAPI</li>
+<li><code>Decrypt</code> / <code>Encrypt</code> / <code>GenerateDataKey</code> などの権限を特定プリンシパルに付与</li>
+<li>取得された Grant Token を指定して API を呼び出す</li>
+<li>代表ユースケース：AWSサービス連携時の動的権限委譲、外部システムの復号権限付与</li>
+</ul>
+<p><strong>Encryption Context</strong></p>
+<ul>
+<li>対称鍵での Encrypt/GenerateDataKey 時に指定できる Key/Value ペアの追加認証情報。</li>
+<li>復号時に同じ Key/Value を渡す必要がある。</li>
+<li>CloudTrail でキーポリシーの kms:EncryptionContext 条件で暗号化を行う証跡の ARN を指定して制限する際に使う。</li>
+</ul>
 <p>Systems Manager Parameter Store</p>
 <p>Secrets Manager</p>
 <hr />
@@ -2780,8 +2551,9 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <p>Ref.
 <a href="References/AWS%20-%20Auto%20Scaling,%20Multi%20AZ/Region/Account.html">AWS - Auto Scaling, Multi AZ/Region/Account</a>
 <a href="References/AWS%20SAA%20-%20VPC,%20ELB,%20Auto%20Scaling,%20Route%2053,%20CloudFront,%20Direct%20Connect.html">AWS SAA - VPC, ELB, Auto Scaling, Route 53, CloudFront, Direct Connect</a>
-<a href="References/AWS%20-%20Security%20-%20EC2,%20ELB,%20VPC.html">AWS - Security - EC2, ELB, VPC</a></p>
-<p><img alt="" src="_attachment/image_679.png" /></p>
+<a href="References/AWS%20-%20Security%20-%20EC2,%20ELB,%20VPC.html">AWS - Security - EC2, ELB, VPC</a>
+<img alt="" src="_attachment/image_679.png" />
+<img alt="" src="_attachment/image_679.png" /></p>
 <h2 id="vpc">VPC</h2>
 <p>サブネット</p>
 <ul>
@@ -2843,21 +2615,15 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </ul>
 <p>インターフェイスエンドポイント (PrivateLink)</p>
 <ul>
-<li>
-<p>ENI としてサブネット内のプライベート IP アドレスを持つエンドポイントが現れる。</p>
-<ul>
+<li>ENI としてサブネット内のプライベート IP アドレスを持つエンドポイントが現れる。<ul>
 <li>サービスのエンドポイントと ENI が PrivateLink でリンクされる。</li>
 </ul>
 </li>
-<li>
-<p>VPC の DNS にサービスのデフォルトのホスト名が登録される</p>
-<ul>
+<li>VPC の DNS にサービスのデフォルトのホスト名が登録される<ul>
 <li>&lt;サービス名&gt;.&lt;リージョン&gt;.amazonaws.com の A レコード</li>
 </ul>
 </li>
-<li>
-<p>ENI に関連付けたセキュリティグループでアクセス制御が可能</p>
-</li>
+<li>ENI に関連付けたセキュリティグループでアクセス制御が可能</li>
 </ul>
 <p>エンドポイントポリシー</p>
 <ul>
@@ -2867,15 +2633,11 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <p>VPC ピア接続 (VPC ピアリング)</p>
 <ul>
 <li>2つの VPC ルーター同士を接続する。</li>
-<li>
-<p>VPC ルートテーブルにお互いのプライベートアドレスへのルーティングを設定。</p>
-<ul>
+<li>VPC ルートテーブルにお互いのプライベートアドレスへのルーティングを設定。<ul>
 <li>サブネットの CIDR ブロックがかぶらないように設計する必要がある。</li>
 </ul>
 </li>
-<li>
-<p>クロスリージョン・クロスアカウントの VPC も接続可能。</p>
-</li>
+<li>クロスリージョン・クロスアカウントの VPC も接続可能。</li>
 <li>推移的なピア接続は不可</li>
 </ul>
 <p>問題例: VPC 内の EC2 から S3 へのアップロードが失敗する ← VPC エンドポイントポリシーが原因</p>
@@ -2903,15 +2665,11 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <p>Launch configuration/template を変更するとバージョン番号がインクリメントする。</p>
 <p>Auto Scaling グループ</p>
 <ul>
-<li>
-<p>ELB 統合</p>
-<ul>
+<li>ELB 統合<ul>
 <li>Auto Scaling が ELB ターゲットグループに自動でインスタンスを追加・削除する。</li>
 </ul>
 </li>
-<li>
-<p>マルチ AZ でインスタンス数が均等になるようにバランシングされる。</p>
-</li>
+<li>マルチ AZ でインスタンス数が均等になるようにバランシングされる。</li>
 </ul>
 <p>Scheduled Action (予定されたアクション)</p>
 <ul>
@@ -2919,59 +2677,43 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </ul>
 <p>動的スケーリングポリシー</p>
 <ul>
-<li>
-<p>Target tracking scaling</p>
-<ul>
+<li>Target tracking scaling<ul>
 <li>CloudWatch メトリクスのターゲット値を維持するようスケールアウト/インする。</li>
 <li>CPU 使用率、ネットワーク出力、ネットワーク入力、ALB リクエスト数。</li>
 </ul>
 </li>
-<li>
-<p>Step scaling</p>
-<ul>
+<li>Step scaling<ul>
 <li>CloudWatch アラームにスケーリング調整値を設定してインスタンス数を増減する。</li>
 <li>例: 平均 CPU 使用率 50% 超過アラームと、80% 超過アラームそれぞれにインスタンス追加数を個別に設定。</li>
 </ul>
 </li>
-<li>
-<p>クールダウン (デフォルト300秒)</p>
-<ul>
+<li>クールダウン (デフォルト300秒)<ul>
 <li>スケーリング実施後にアラームが連続して発生しても次のスケーリングを実施しない期間。</li>
 </ul>
 </li>
-<li>
-<p>ウォームアップ</p>
-<ul>
+<li>ウォームアップ<ul>
 <li>指定秒数の間、新しいインスタンスの値がメトリクスに反映されない。</li>
 <li>インスタンス内の OS のブートアップやアプリケーションの起動時間を考慮。</li>
 <li>クールダウンがウォームアップより長くないとメトリクス反映前に再度スケーリングが発生してしまう。</li>
 </ul>
 </li>
-<li>
-<p>Disable scale-in</p>
-<ul>
+<li>Disable scale-in<ul>
 <li>このポリシーによるインスタンスの削除 (スケールイン) を無効化。</li>
 </ul>
 </li>
 </ul>
 <p>ヘルスチェック</p>
 <ul>
-<li>
-<p>Auto Healing</p>
-<ul>
+<li>Auto Healing<ul>
 <li>異常 (impared) 判定されたインスタンスを終了 (terminate) し新しいインスタンスを起動する。</li>
 </ul>
 </li>
-<li>
-<p>EC2 のヘルスチェック (デフォルト)</p>
-<ul>
+<li>EC2 のヘルスチェック (デフォルト)<ul>
 <li>システムステータスチェック: EC2 のインフラ由来の問題の検出</li>
 <li>インスタンスステータスチェック: ARP によるヘルスチェック</li>
 </ul>
 </li>
-<li>
-<p>ELB によるヘルスチェック (オブション)</p>
-</li>
+<li>ELB によるヘルスチェック (オブション)</li>
 <li>カスタムヘルスチェック<ul>
 <li>独自のヘルスチェック機能から Unhealthy 状態を Auto Scaling に通知する。</li>
 </ul>
@@ -3011,45 +2753,31 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <p>ライフサイクルフック</p>
 <ul>
 <li>インスタンスの起動・終了のフック待機 (デフォルト1時間)</li>
-<li>
-<p>スクリプト実行</p>
-<ul>
+<li>スクリプト実行<ul>
 <li>起動テンプレートの UserData に指定したスクリプトが実行される</li>
 </ul>
 </li>
-<li>
-<p>通知設定</p>
-<ul>
+<li>通知設定<ul>
 <li>SNS, SQS</li>
 </ul>
 </li>
-<li>
-<p>EventBridge/CloudWatch Events</p>
-<ul>
+<li>EventBridge/CloudWatch Events<ul>
 <li>Auto Scaling のライフサイクルアクション (launch/terminate) をイベントソースにできる</li>
 </ul>
 </li>
-<li>
-<p>CompleteLifecycleAction API</p>
-<ul>
+<li>CompleteLifecycleAction API<ul>
 <li>CLI や Lambda で処理の実施後 COMPLETE/ABANDON の結果を通知する</li>
 </ul>
 </li>
-<li>
-<p>EC2_INSTANCE_LAUNCHING (Pending: Wait → Proceed)</p>
-<ul>
+<li>EC2_INSTANCE_LAUNCHING (Pending: Wait → Proceed)<ul>
 <li>アプリケーション初期化処理の待機や SSM RunCommand などを実施。</li>
 </ul>
 </li>
-<li>
-<p>EC2_INSTANCE_TERMINATING (Terminating: Wait → Proceed)</p>
-<ul>
+<li>EC2_INSTANCE_TERMINATING (Terminating: Wait → Proceed)<ul>
 <li>ログの待避やスナップショットなどを実施。</li>
 </ul>
 </li>
-<li>
-<p>問題例:</p>
-<ul>
+<li>問題例:<ul>
 <li>Delay the termination of unhealthy Amazon EC2 instances by adding a lifecycle hook to your Auto Scaling group to move instances in the Terminating state to the Terminating:Wait state.</li>
 <li>Set up a CloudWatch Events rule for the EC2 Instance-terminate Lifecycle Action Auto Scaling Event with an associated AWS Systems Manager Automation document.</li>
 <li>Trigger the CloudWatch agent to push the application logs and then resume the instance termination once all the logs are sent to CloudWatch Logs.</li>
@@ -3060,9 +2788,7 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <ul>
 <li>CreationPolicy &gt; ResourceSignal で希望容量のインスタンスからシグナルあるまで ASG 作成成功を待機。</li>
 <li>起動設定の UserData で cfn-signal を実施。</li>
-<li>
-<p>スタック更新時にデフォルトでは既存インスタンスは置き換わらない。</p>
-<ul>
+<li>スタック更新時にデフォルトでは既存インスタンスは置き換わらない。<ul>
 <li>UpdatePolicy を指定した場合にスタック更新でインスタンスがリプレースされる。<ul>
 <li>AutoScalingReplacingUpdate ... ASG 全体を置き換える</li>
 <li>AutoScalingRollingUpdate ... ASG 内で新しいインスタンスを立ててローリングアップデート</li>
@@ -3070,9 +2796,7 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </li>
 </ul>
 </li>
-<li>
-<p>IgnoreUnmodifiedGroupSizeProperties</p>
-<ul>
+<li>IgnoreUnmodifiedGroupSizeProperties<ul>
 <li>スケジュールアクションで変更されたグループサイズ (Max,Min,Desired) がスタック更新で上書きされないようにするオプション。</li>
 </ul>
 </li>
@@ -3097,18 +2821,14 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <li>ASG の既存インスタンスとスケールアウトで新しく立ち上がるインスタンスに新しいリビジョンがデプロイされる。</li>
 <li>デプロイタイプとしてインプレースとBlue/Green の両方が指定可能。</li>
 <li>Blue/Green では ASG そのものを置き換える方法も選択できる。</li>
-<li>
-<p>デプロイ中にスケールアウトが発生した場合、まだデプロイが成功したとみなされていないため、以前のリビジョンが新しく立ち上がるインスタンスにデプロイされる。それを防ぐためにはデプロイ中に Suspended Process オプションでインスタンス起動につながる以下の Auto Scaling 処理を停止する:</p>
-<ul>
+<li>デプロイ中にスケールアウトが発生した場合、まだデプロイが成功したとみなされていないため、以前のリビジョンが新しく立ち上がるインスタンスにデプロイされる。それを防ぐためにはデプロイ中に Suspended Process オプションでインスタンス起動につながる以下の Auto Scaling 処理を停止する:<ul>
 <li>AZRebalance</li>
 <li>AlarmNotification</li>
 <li>ScheduledActions</li>
 <li>ReplaceUnhealthy</li>
 </ul>
 </li>
-<li>
-<p>common_functions.sh というスクリプトでやってくれるそう</p>
-</li>
+<li>common_functions.sh というスクリプトでやってくれるそう</li>
 </ul>
 <p>例: MinSize = MaxSize = 1 の ASG でインスタンスのリカバリを実現する例</p>
 <ul>
@@ -3124,9 +2844,7 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </ul>
 <p>解答: Update を Fail になりにくくする設定を選ぶ</p>
 <ul>
-<li>
-<p>In your <em>AutoScalingRollingUpdate</em> policy, set the <em>WaitOnResourceSignals</em> property to false.</p>
-<ul>
+<li>In your <em>AutoScalingRollingUpdate</em> policy, set the <em>WaitOnResourceSignals</em> property to false.<ul>
 <li>タイムアウトで Fail にならないようにする。アプリケーション起動などは失敗しているかもしれがないが、アップデート自体は Fail にならない。</li>
 <li>Take note that if <em>WaitOnResourceSignals</em> is set to true, <em>PauseTime</em> changes to a timeout value.</li>
 <li>AWS CloudFormation waits to receive a success signal until the maximum time specified by the PauseTime value.</li>
@@ -3134,16 +2852,12 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <li>Then, AWS CloudFormation rolls back the stack with the same settings, including the same <em>PauseTime</em> value.</li>
 </ul>
 </li>
-<li>
-<p>In your <em>AutoScalingRollingUpdate</em> policy, set the value of the <em>MinSuccessfulInstancesPercent</em> property to prevent AWS CloudFormation from rolling back the entire stack if only a single instance fails to launch</p>
-<ul>
+<li>In your <em>AutoScalingRollingUpdate</em> policy, set the value of the <em>MinSuccessfulInstancesPercent</em> property to prevent AWS CloudFormation from rolling back the entire stack if only a single instance fails to launch<ul>
 <li><em>MinSuccessfulInstancesPercent</em> が指定されていないと1台 Fail しただけでロールバックとなる。</li>
 <li>Take note that setting the <em>MinSuccessfulInstancesPercent</em> property prevents AWS CloudFormation from rolling back the entire stack if only a single instance fails to launch.</li>
 </ul>
 </li>
-<li>
-<p>During a rolling update, suspend the following Auto Scaling processes: <em>HealthCheck</em>, <em>ReplaceUnhealthy</em>, <em>AZRebalance</em>, <em>AlarmNotification</em>, and <em>ScheduledActions</em></p>
-<ul>
+<li>During a rolling update, suspend the following Auto Scaling processes: <em>HealthCheck</em>, <em>ReplaceUnhealthy</em>, <em>AZRebalance</em>, <em>AlarmNotification</em>, and <em>ScheduledActions</em><ul>
 <li>Take note that if an unexpected scaling action changes the state of the Auto Scaling group during a rolling update, the update can fail. The failure can result from an inconsistent view of the group by AWS CloudFormation.</li>
 <li>It is quite important to know that if you're using your Auto Scaling group with ELB, you should not suspend the following processes: <em>Launch</em>, <em>Terminate</em>, and <em>AddToLoadBalancer</em>. These processes are required to make rolling updates.</li>
 </ul>
@@ -3151,21 +2865,15 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </ul>
 <p>誤答</p>
 <ul>
-<li>
-<p>Switch from <em>AutoScalingRollingUpdate</em> to <em>AutoScalingReplacingUpdate</em> policy by modifying the <em>UpdatePolicy</em> of the AWS::AutoScaling::AutoscalingGroup resource in the CloudFormation template. Set the <em>WillReplace</em> property to true</p>
-<ul>
+<li>Switch from <em>AutoScalingRollingUpdate</em> to <em>AutoScalingReplacingUpdate</em> policy by modifying the <em>UpdatePolicy</em> of the AWS::AutoScaling::AutoscalingGroup resource in the CloudFormation template. Set the <em>WillReplace</em> property to true<ul>
 <li>incorrect because although the AutoScalingReplacingUpdate policy provides an immediate rollback of the stack without any possibility of failure, this solution is not warranted since the scenario asks for the options that will help troubleshoot the issue.</li>
 </ul>
 </li>
-<li>
-<p>Suspend the following Auto Scaling processes that are related with your ELB: <em>Launch</em>, Terminate, and <em>AddToLoadBalancer</em></p>
-<ul>
+<li>Suspend the following Auto Scaling processes that are related with your ELB: <em>Launch</em>, Terminate, and <em>AddToLoadBalancer</em><ul>
 <li>incorrect because these processes are required by the ELB to make rolling updates.</li>
 </ul>
 </li>
-<li>
-<p>Set the <em>WaitOnResourceSignals</em> property to true in your <em>AutoScalingRollingUpdate</em> policy</p>
-<ul>
+<li>Set the <em>WaitOnResourceSignals</em> property to true in your <em>AutoScalingRollingUpdate</em> policy<ul>
 <li>The <em>WaitOnResourceSignals</em> property should be set to false instead of true, to determine what prevents the Auto Scaling group from being updated correctly during a stack update.</li>
 </ul>
 </li>
@@ -3204,15 +2912,11 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <li>クエリ文字列/ヘッダベースのルーティング</li>
 <li>HTTP/2, WebSockets サポート。</li>
 <li>別の URL へのリダイレクト。</li>
-<li>
-<p>Lambda ターゲットのサポート。(NLB/CLB はサポートしない)</p>
-<ul>
+<li>Lambda ターゲットのサポート。(NLB/CLB はサポートしない)<ul>
 <li>非 VPC の Lambda も VPC Lambda も両方呼べる</li>
 </ul>
 </li>
-<li>
-<p>ユーザ認証: インスタンス上の Web アプリを改修せず認証を追加できる。</p>
-<ul>
+<li>ユーザ認証: インスタンス上の Web アプリを改修せず認証を追加できる。<ul>
 <li>Cognito ユーザープール統合:  ALB がユーザープールの Hosted UI にリダイレクト。</li>
 <li>OpenID Connect (OIDC) 準拠 IdP 連携による認証。(Cognito 使わない ALB の機能)</li>
 </ul>
@@ -3223,16 +2927,12 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <li>L4 (TCP/UDPレベル) NAT ロードバランサー</li>
 <li>UDP をサポート</li>
 <li>大規模トラフィック対応: 毎秒数百万のリクエストを処理できる</li>
-<li>
-<p>静的 (Static) IP アドレスのサポート</p>
-<ul>
+<li>静的 (Static) IP アドレスのサポート<ul>
 <li>EIP で独自の固定 IP を設定することも可能。</li>
 <li>FW などの制約で宛先を IP 指定しなければいけない場合など。</li>
 </ul>
 </li>
-<li>
-<p>送信元 IP アドレスの保持</p>
-</li>
+<li>送信元 IP アドレスの保持</li>
 </ul>
 <p>複数ポートのサポート</p>
 <ul>
@@ -3241,21 +2941,15 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <p>TLS オフロード (TLS Termination)</p>
 <ul>
 <li>ELB が TLS を終端しターゲット側は TLS 対応せずに済む</li>
-<li>
-<p>E2E 通信暗号化のため NLB/CLB で TCP pass through するという逆のユースケースも。</p>
-<ul>
+<li>E2E 通信暗号化のため NLB/CLB で TCP pass through するという逆のユースケースも。<ul>
 <li>ALB は HTTP プロキシなので TCP pass through ではない。</li>
 </ul>
 </li>
-<li>
-<p>(参考) ELB とターゲット間の HTTPS 通信</p>
-<ul>
+<li>(参考) ELB とターゲット間の HTTPS 通信<ul>
 <li>オフロードにより ELB で終端してターゲットグループ設定で HTTPS を使用。</li>
 </ul>
 </li>
-<li>
-<p>(参考) HTTP to HTTPS リダイレクション</p>
-<ul>
+<li>(参考) HTTP to HTTPS リダイレクション<ul>
 <li>HTTP (80) リスナーを作成し、443 へのリダイレクトアクションを設定する。</li>
 </ul>
 </li>
@@ -3268,33 +2962,25 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <p>ELB と AZ</p>
 <ul>
 <li>ELB は AZ サービス。DNS とロードバランサーノードで成り立つ。</li>
-<li>
-<p>ELB 作成時にサブネット(=AZ) を指定。</p>
-<ul>
+<li>ELB 作成時にサブネット(=AZ) を指定。<ul>
 <li>ロードバランサーノードが指定された AZ に作成され、その AZ 内のターゲットに転送。</li>
 <li>DNS を引くとそれぞれの AZ のロードバランサーの IP が返ってくる。</li>
 </ul>
 </li>
-<li>
-<p>耐障害性 (Fault tolerance) のためにマルチ AZ 指定が推奨される。</p>
-</li>
+<li>耐障害性 (Fault tolerance) のためにマルチ AZ 指定が推奨される。</li>
 <li>ALB は2つ以上の AZ を設定する必要がある。</li>
 <li>ELB をパブリックサブネットに配置してターゲットのインスタンスはプライベートサブネットという構成もできる。</li>
 </ul>
 <p><img alt="" src="_attachment/image_682.png" /></p>
 <ul>
-<li>
-<p>EFS: Elastic File System: VPC に配置する NFS 大規模分散ストレージ。</p>
-<ul>
+<li>EFS: Elastic File System: VPC に配置する NFS 大規模分散ストレージ。<ul>
 <li>何千ものインスタンスから同時にマウント可能。</li>
 <li>VPC にマウントターゲットを作成し EC2 から NFS マウント。</li>
 <li>マルチ AZ 可能。</li>
 <li>ファイルシステムのアクセスセマンティクス (強い整合性やファイルのロックなど) を提供</li>
 </ul>
 </li>
-<li>
-<p>EBS は AZ リソース。Multi AZ に対応するにはスナップショットを使ったハックが必要になる。</p>
-</li>
+<li>EBS は AZ リソース。Multi AZ に対応するにはスナップショットを使ったハックが必要になる。</li>
 <li>ElastiCache for Redis: リードレプリカ, フェイルオーバー, マルチ AZ サポート (Memcached は不可)</li>
 </ul>
 <p>Amazon Data Lifecycle Manager (DLM)</p>
@@ -3333,32 +3019,24 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </ul>
 <p>スナップショット</p>
 <ul>
-<li>
-<p>自動バックアップ</p>
-<ul>
+<li>自動バックアップ<ul>
 <li>特定時刻 (過去 5分以内) の状態にリカバリするための機能。デフォルトで有効。</li>
 <li>毎日スナップショットを自動的に作成し、差分のトランザクションログを保存する。</li>
 <li>バックアップウィンドウと保持期間 (デフォルト7日、最大35日) を指定する。</li>
 <li>DB インスタンスを削除されると同時に削除される。</li>
 </ul>
 </li>
-<li>
-<p>バックアップからのリストア</p>
-<ul>
+<li>バックアップからのリストア<ul>
 <li>新しいプライマリ DB インスタンスが作成され、自動スナップショットからリストアされる。</li>
 <li>新しいエンドポイントを使用して作成される。エンドポイントが変わる！</li>
 <li>アプリケーションが新しいエンドポイントに接続するように変更され、リストアが完了する。</li>
 </ul>
 </li>
-<li>
-<p>DB スナップショット (手動)</p>
-<ul>
+<li>DB スナップショット (手動)<ul>
 <li>スナップショットは DB インスタンスを削除しても削除されない。</li>
 </ul>
 </li>
-<li>
-<p>スナップショットをクロスリージョンの DR に使用する問題例</p>
-</li>
+<li>スナップショットをクロスリージョンの DR に使用する問題例</li>
 <li><img alt="" src="_attachment/image_685.png" /></li>
 </ul>
 <p>メンテナンス</p>
@@ -3398,9 +3076,7 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </li>
 </ul>
 </li>
-<li>
-<p>問題例: マルチ AZ 配置の DB バージョン更新にあたり、先にリードレプリカの CFn スタックを立てておくことでダウンタイムを減少させる。</p>
-</li>
+<li>問題例: マルチ AZ 配置の DB バージョン更新にあたり、先にリードレプリカの CFn スタックを立てておくことでダウンタイムを減少させる。</li>
 <li><img alt="" src="_attachment/image_686.png" /></li>
 <li><img alt="" src="_attachment/image_687.png" /></li>
 </ul>
@@ -3428,21 +3104,15 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <h2 id="aurora">Aurora</h2>
 <p>概要</p>
 <ul>
-<li>
-<p>MySQL/PostgreSQL 互換</p>
-<ul>
+<li>MySQL/PostgreSQL 互換<ul>
 <li>MySQL/PostgreSQL を利用した既存アプリのコードがそのまま再利用できる、</li>
 </ul>
 </li>
-<li>
-<p>高スループット</p>
-<ul>
+<li>高スループット<ul>
 <li>MySQL スループットの 5 倍、PostgreSQL スループットの 3 倍</li>
 </ul>
 </li>
-<li>
-<p>データベースのクラスター化とレプリケーションの自動化</p>
-</li>
+<li>データベースのクラスター化とレプリケーションの自動化</li>
 <li>スケーラビリティ<ul>
 <li>10GB から 64TB まで自動でスケールアップ</li>
 </ul>
@@ -3450,16 +3120,12 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </ul>
 <p>Aurora  クラスター</p>
 <ul>
-<li>
-<p>クラスターボリューム</p>
-<ul>
+<li>クラスターボリューム<ul>
 <li>マルチ AZ の仮想 DB ストレージボリューム。3つの AZ に 6 つのコピーが作成される</li>
 <li>シームレスにスケール (10GB-&gt;64TB) する仮想ストレージ</li>
 </ul>
 </li>
-<li>
-<p>DB クラスタ</p>
-<ul>
+<li>DB クラスタ<ul>
 <li>プライマリ DB インスタンスと Aurora レプリカ (リードレプリカ)</li>
 <li>DB クラスタ作成時にマルチ AZ 配置を指定することでマルチ AZ となる。<ul>
 <li>クラスタボリュームはデフォでマルチ AZ だが、DB クラスタではオプション。 </li>
@@ -3531,47 +3197,33 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <p>ルーティングポリシー</p>
 <ul>
 <li>(レコードに複数リソースがある場合の) 動的なトラフィックルーティング。</li>
-<li>
-<p>シンプルルーティング</p>
-<ul>
+<li>シンプルルーティング<ul>
 <li>レコード複数のリソース (IP アドレス等) がある場合は全ての値をランダムな順序で返す。</li>
 </ul>
 </li>
-<li>
-<p>Failover ルーティング</p>
-<ul>
+<li>Failover ルーティング<ul>
 <li>DNS フェイルオーバーにより、ヘルスチェックで Healthy なエンドにのみルーティング。</li>
 </ul>
 </li>
-<li>
-<p>加重 (Weighted) ルーティング</p>
-<ul>
+<li>加重 (Weighted) ルーティング<ul>
 <li>複数のリソースを重み付けして登録。重みの高いものに多くルーティングされる。</li>
 <li>複数リソースに同じ名前とタイプでレコードを作成、レコードごとに重みを割り当てる。</li>
 </ul>
 </li>
-<li>
-<p>Latency (遅延) ルーティング</p>
-<ul>
+<li>Latency (遅延) ルーティング<ul>
 <li>最も遅延の少ないリージョンのリソースにルーティング。</li>
 </ul>
 </li>
-<li>
-<p>Geolocation (位置情報) ルーティング</p>
-<ul>
+<li>Geolocation (位置情報) ルーティング<ul>
 <li>位置情報に基づくルーティング。国やアメリカの州に結びつける。</li>
 <li>ユースケース: ローカライズ、コンプライアンス、パフォーマンス。</li>
 </ul>
 </li>
-<li>
-<p>Geoproximity (地理近接性) ルーティング</p>
-<ul>
+<li>Geoproximity (地理近接性) ルーティング<ul>
 <li>ユーザの位置情報とリソースのリージョンの地理的近接性によるルーティング。</li>
 </ul>
 </li>
-<li>
-<p>複数値回答 (Multi-value) ルーティング</p>
-<ul>
+<li>複数値回答 (Multi-value) ルーティング<ul>
 <li>ランダムに選ばれた最大8つの Healthy なレコードを応答。</li>
 <li>シンプルルーティングの複数値と異なり各インスタンスにヘルスチェックが行われる。</li>
 </ul>
@@ -3581,51 +3233,35 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <ul>
 <li>Route 53 用の世界各地に15 以上あるヘルスチェッカーからエンドポイントにリクエスト。</li>
 <li>1つも正常なエンドポイントがない場合、全てのエンドポイントを正常とみなして動作。</li>
-<li>
-<p>セキュリティグループ等にモニタリングパケットを受けられるよう設定が必要。</p>
-<ul>
+<li>セキュリティグループ等にモニタリングパケットを受けられるよう設定が必要。<ul>
 <li>aws route53 get-checker-ip-ranges</li>
 </ul>
 </li>
-<li>
-<p>ヘルスチェックの種類</p>
-<ul>
-<li>
-<p>TCP ヘルスチェック</p>
-<ul>
+<li>ヘルスチェックの種類<ul>
+<li>TCP ヘルスチェック<ul>
 <li>エンドポイントとの TCP 接続の確立。</li>
 </ul>
 </li>
-<li>
-<p>HTTP/HTTPS ヘルスチェック</p>
-<ul>
+<li>HTTP/HTTPS ヘルスチェック<ul>
 <li>エンドポイントからの HTTP  2xx または 3xx 応答。</li>
 </ul>
 </li>
-<li>
-<p>HTTP/HTTPS ヘルスチェックと文字列一致</p>
-<ul>
+<li>HTTP/HTTPS ヘルスチェックと文字列一致<ul>
 <li>HTTP/HTTPS ヘルスチェックに加え、レスポンス本文から指定された文字列を検索。</li>
 </ul>
 </li>
-<li>
-<p>CloudWatch アラーム</p>
-</li>
+<li>CloudWatch アラーム</li>
 </ul>
 </li>
 </ul>
 <p>Alias レコード</p>
 <ul>
 <li>CNAME のように別名がつけられる Route 53 固有の機能。</li>
-<li>
-<p>AWS サービスのエンドポイント DNS レコードを登録するのに使用。</p>
-<ul>
+<li>AWS サービスのエンドポイント DNS レコードを登録するのに使用。<ul>
 <li>ELB, CloudFront, 静的 Web サイトの S3 バケットなど。</li>
 </ul>
 </li>
-<li>
-<p>CNAME よりレスポンスが高速。</p>
-</li>
+<li>CNAME よりレスポンスが高速。</li>
 <li><img alt="" src="_attachment/image_690.png" /></li>
 </ul>
 <p>問題例: DR で別リージョンのバックアップ環境への DNS フェイルオーバーが必要という要件</p>
@@ -3642,19 +3278,15 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </ul>
 <p>DNS が Geolocation で位置情報 DB から直近のエッジーサーバの IP を返す</p>
 <ul>
-<li>
-<p>デフォルトのドメインは *.<a href="http://cloudfront.net">cloudfront.net</a></p>
-<ul>
+<li>デフォルトのドメインは *.<a href="http://cloudfront.net">cloudfront.net</a><ul>
 <li>デフォルトドメインの HTTPS サーバ証明書がデフォルトで作られる</li>
 <li>カスタムドメイン使うには Alias or CNAME 設定と SSL/TLS 証明書設定。</li>
 </ul>
 </li>
-<li>
-<p>キャッシュによる DDoS 緩和。</p>
-</li>
+<li>キャッシュによる DDoS 緩和。</li>
 <li>WAF, AWS Shield が設定できる。(Shield Standard はデフォルトで有効)</li>
 </ul>
-<h2 id="_7">オリジンの保護</h2>
+<h2 id="_8">オリジンの保護</h2>
 <p>オリジンサーバのへの URL 直アクセスの禁止。</p>
 <p>S3 バケット</p>
 <ul>
@@ -3671,7 +3303,7 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <li>Lambda でセキュリティグループを動的に変更して CloudFront からしかアクセスしないようにもできる。</li>
 </ul>
 <h2 id="https">トランスポート暗号化 (HTTPS)</h2>
-<h3 id="_8">ビューア → エッジ間</h3>
+<h3 id="_9">ビューア → エッジ間</h3>
 <p>デフォルトの cloudfront.net SSL 証明書</p>
 <ul>
 <li>標準で利用可能</li>
@@ -3690,12 +3322,10 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <li>[Redirect HTTP to HTTPS]</li>
 <li>[HTTPS Only]</li>
 </ul>
-<h3 id="_9">エッジサーバ → オリジン間</h3>
+<h3 id="_10">エッジサーバ → オリジン間</h3>
 <p>S3 バケット・カスタムオリジン</p>
 <ul>
-<li>
-<p>Origin Protocol Policy を次のいずれかに設定:</p>
-<ul>
+<li>Origin Protocol Policy を次のいずれかに設定:<ul>
 <li>[HTTPS Only]</li>
 <li>[Match Viewer]<ul>
 <li>[Viewer Protocol Policy] で [Redirect HTTP to HTTPS]/[HTTPS Only] を指定する場合</li>
@@ -3703,9 +3333,7 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </li>
 </ul>
 </li>
-<li>
-<p>SSL プロトコル (TLSv1.2, TLSv1.1, TLSv1, SSLv3) を選択。</p>
-</li>
+<li>SSL プロトコル (TLSv1.2, TLSv1.1, TLSv1, SSLv3) を選択。</li>
 <li>オリジンが ELB の場合、ACM で証明書をあてることができる。</li>
 <li><a href="https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/using-https-cloudfront-to-custom-origin.html">https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/using-https-cloudfront-to-custom-origin.html</a></li>
 </ul>
@@ -3728,16 +3356,12 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <p>署名付き URL/署名付き Cookie</p>
 <ul>
 <li>レンタルコンテンツ配信や限定されたユーザへのコンテンツ配信など。</li>
-<li>
-<p>署名付き Cookie</p>
-<ul>
+<li>署名付き Cookie<ul>
 <li>URL を変更したくない場合や複数の URL が使用される HLS で使用する。</li>
 <li>HLS: HTTP Live Streaming</li>
 </ul>
 </li>
-<li>
-<p>署名付き URL/Cookie の使用には CloudFront キーペアやキーグループを登録する。</p>
-<ul>
+<li>署名付き URL/Cookie の使用には CloudFront キーペアやキーグループを登録する。<ul>
 <li>署名者が秘密鍵で署名付きURL/Cookie を署名し、CloudFront が公開鍵で検証する。</li>
 </ul>
 </li>
@@ -3758,16 +3382,12 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </ul>
 <p>地域制限: Geo restriction</p>
 <ul>
-<li>
-<p>特定地域のユーザーによるアクセスを回避。</p>
-<ul>
+<li>特定地域のユーザーによるアクセスを回避。<ul>
 <li>承認された国のリストからのアクセスを許可。</li>
 <li>禁止された国のリストからのアクセスを禁止。</li>
 </ul>
 </li>
-<li>
-<p>403 (Forbidden) を返す (カスタムエラーページの作成も可能)</p>
-</li>
+<li>403 (Forbidden) を返す (カスタムエラーページの作成も可能)</li>
 </ul>
 <p>Lambda@Edge</p>
 <ul>
@@ -3792,21 +3412,15 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </ul>
 <h2 id="aws-certificate-manager-acm">AWS Certificate Manager: ACM</h2>
 <ul>
-<li>
-<p>証明書管理とデプロイ</p>
-<ul>
+<li>証明書管理とデプロイ<ul>
 <li>オンプレサーバや AWS の統合サービスへの証明書デプロイ</li>
 </ul>
 </li>
-<li>
-<p>統合サービス</p>
-<ul>
+<li>統合サービス<ul>
 <li>ALB/NLB, CloudFront, API Gateway, Elastic Beanstalk</li>
 </ul>
 </li>
-<li>
-<p>証明書はインポートするか ACM が生成するパブリック証明書 (ACM 証明書) を使用。</p>
-<ul>
+<li>証明書はインポートするか ACM が生成するパブリック証明書 (ACM 証明書) を使用。<ul>
 <li>ACM 証明書は統合サービスで無料で利用できる証明書</li>
 </ul>
 </li>
@@ -3832,28 +3446,20 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <li>ベストプラクティスに基づいて構成したアカウントをガバナンスを効かせてスケーラブルに自動展開する仕組み。</li>
 <li>マスター、ログアーカイブ、監査アカウントを使用する。</li>
 <li><img alt="" src="_attachment/image_691.png" /></li>
-<li>
-<p>アカウントの発行・管理</p>
-<ul>
+<li>アカウントの発行・管理<ul>
 <li>Organizations を使用してマルチアカウント環境を作成</li>
 </ul>
 </li>
-<li>
-<p>サインオンの構成</p>
-<ul>
+<li>サインオンの構成<ul>
 <li>AWS SSO を使用して ID 管理、フェデレーテッドアクセスを提供</li>
 </ul>
 </li>
-<li>
-<p>監査用ログ集約</p>
-<ul>
+<li>監査用ログ集約<ul>
 <li>CloudTrail ログや S3 に保存される AWS Config のログを集中管理</li>
 <li>CloudWatch によるアラート</li>
 </ul>
 </li>
-<li>
-<p>ガードレール</p>
-<ul>
+<li>ガードレール<ul>
 <li>Organization, AWS Config で実装。</li>
 </ul>
 </li>
@@ -3870,39 +3476,27 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 </ul>
 <h2 id="aws-application-discovery-service-ads">AWS Application Discovery Service (ADS)</h2>
 <ul>
-<li>
-<p>オンプレサーバの各種情報を収集。ADS のダッシュボードで確認。</p>
-<ul>
+<li>オンプレサーバの各種情報を収集。ADS のダッシュボードで確認。<ul>
 <li>アプリケーションの検出、依存関係、性能 (CPU, RAM, I/O, etc.)。</li>
 </ul>
 </li>
-<li>
-<p>AWS Migration Hub と統合 → 移行の進捗をトラッキング</p>
-</li>
-<li>
-<p>エージェントレス型</p>
-<ul>
+<li>AWS Migration Hub と統合 → 移行の進捗をトラッキング</li>
+<li>エージェントレス型<ul>
 <li>VMware vCenter Server 環境</li>
 <li>AWS Agentless Discovery Connector (OVA 形式の仮想アプライアンス) を使用する。</li>
 </ul>
 </li>
-<li>
-<p>エージェント型</p>
-<ul>
+<li>エージェント型<ul>
 <li>Ubuntu, CentOS, RedHat, Windows Server</li>
 </ul>
 </li>
-<li>
-<p>問題例:</p>
-<ul>
+<li>問題例:<ul>
 <li>The company is using a VMWare vCenter Server for data center management of their vSphere environments and virtual servers.</li>
 <li>A DevOps engineer is tasked to implement a solution that will collect various information from their on-premises and EC2 instances, such as operating system details, MAC address, IP address, and many others.</li>
 <li>The Operations team should also be able to analyze the collected data in a visual format.</li>
 </ul>
 </li>
-<li>
-<p>解答</p>
-<ul>
+<li>解答<ul>
 <li>Using the AWS Application Discovery Service, deploy the Agentless Discovery Connector in an OVA file format to your VMware vCenter and then install the AWS Discovery Agents on the EC2 instances to collect the required data.</li>
 <li>Use the AWS Migration Hub Dashboard to analyze your hybrid infrastructure.</li>
 </ul>
@@ -3913,23 +3507,17 @@ Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20AC
 <ul>
 <li>オンプレ拠点 (オフィスや DC) と VPC を専用線で接続</li>
 <li>セットアップに数週間はかかるしお高い。</li>
-<li>
-<p>Direct Connect ロケーション</p>
-<ul>
+<li>Direct Connect ロケーション<ul>
 <li>AWS と通信事業者などの AWS Direct Connect パートナーが IX に用意した相互接続ポイント。</li>
 <li>東京リージョンは東京2カ所、大阪1カ所、台北2カ所。</li>
 </ul>
 </li>
-<li>
-<p>プライベート接続</p>
-<ul>
+<li>プライベート接続<ul>
 <li>VPC/オンプレ相互にプライベート IP を使用。</li>
 <li>VPC のサブネットに接続。</li>
 </ul>
 </li>
-<li>
-<p>パブリック接続</p>
-<ul>
+<li>パブリック接続<ul>
 <li>AWS のパブリックサービスへの接続。</li>
 <li>パブリック IP に接続するためにオンプレ側もパブリック IP (NAT) が必要。</li>
 </ul>

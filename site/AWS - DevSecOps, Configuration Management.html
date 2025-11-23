@@ -19,27 +19,19 @@
 <p><img alt="" src="_attachment/image_376.png" /></p>
 <p>パイプライン自体のセキュリティ:</p>
 <ul>
-<li>
-<p>パイプラインへのアクセス権の管理:</p>
-<ul>
+<li>パイプラインへのアクセス権の管理:<ul>
 <li>最小権限で許可するアクションとリソースを定義。</li>
 <li>IAM ロールを使用し、ユーザにポリシーを直接つけない。</li>
 <li>MFA を有効にする。</li>
 <li>IAM Policy Simulator によるポリシーのテスト。</li>
 </ul>
 </li>
-<li>
-<p>AWS Config により非準拠リソースを監査。</p>
-</li>
-<li>
-<p>認証情報の管理</p>
-<ul>
+<li>AWS Config により非準拠リソースを監査。</li>
+<li>認証情報の管理<ul>
 <li>Secrets Manager, SSM Parameter Store を使う。</li>
 </ul>
 </li>
-<li>
-<p>Jenkins などのビルドーサーバを保護する。</p>
-</li>
+<li>Jenkins などのビルドーサーバを保護する。</li>
 </ul>
 <p>パイブライン内のセキュリティ:</p>
 <ul>
@@ -75,27 +67,69 @@
 <h1 id="_2">脅威検出</h1>
 <p>Ref. <a href="References/AWS%20-%20Security%20-%20Governance,%20Incident%20Response.html">AWS - Security - Governance, Incident Response</a></p>
 <h2 id="amazon-inspector">Amazon Inspector</h2>
-<p>起動中インスタンスの脆弱性チェックを実行。</p>
-<p>SNS 通知により Lambda 等で自動修復。</p>
+<ul>
+<li>起動中 EC2 インスタンス, ECS コンテナ, ECR イメージの既知の脆弱性</li>
+<li>アプリケーション脆弱性診断。<ul>
+<li>apt, yum などのパッケージマネージャや Windows Installer を使用してインストールされたソフトウェアを評価。</li>
+</ul>
+</li>
+<li>ネットワーク到達性診断<ul>
+<li>オープンポートの検査。不要なサーバやセキュリティグループ誤設定によって外部から到達可能なポートのチェック。</li>
+</ul>
+</li>
+<li>SSM Agent がインストールされていれば、現行の Inspector v2 では Inspector エージェントは不要。自動的に検出・スキャンが実行される。</li>
+<li>SNS 通知により Lambda 等で自動修復。</li>
+</ul>
 <p><img alt="" src="_attachment/image_383.png" /></p>
 <h2 id="amazon-macie">Amazon Macie</h2>
 <ul>
-<li>S3 オブジェクトと CloudTrail の S3 アクセスパターンから機械学習で脅威検知。</li>
-<li>機械学習（ML）およびパターンマッチングを利用して、AWS のデータ（特に S3）に含まれる PII を検出・分類し、可視化・保護を支援するマネージドサービス。 </li>
-<li>S3 バケットのアクセス制御（公開、他アカウント共有、暗号化設定など）を継続的に監視し、セキュリティリスクを「ポリシー違反」として報告。</li>
+<li>S3 の機密データ (PII, カード番号, 認証情報)、暗号化不備、共有状況などのセキュリティリスクの検出。</li>
+<li>S3 オブジェクトと CloudTrail の S3 アクセスパターンから機械学習およびパターンマッチング。</li>
 </ul>
 <p><img alt="" src="_attachment/image_384.png" /></p>
 <h2 id="amazon-guardduty">Amazon GuardDuty</h2>
-<p>AWS アカウント全体での脅威を検出</p>
-<p><img alt="" src="_attachment/image_385.png" /></p>
+<ul>
+<li>AWS アカウント全体の脅威検出サービス</li>
+<li>VPC フローログ、DNS ログ、CloudTrail ログのイベントを分析</li>
+<li>ネットワーク (VPC), インスタンス, アカウントのレベルで不正検出</li>
+<li>IP レピュテーション、異常検知、機械学習などによる脅威検出</li>
+<li>検出は EventBridge で通知。イベント経由で Lambda によるレスポンス自動化。</li>
+</ul>
+<p>検出テゴリ</p>
+<ul>
+<li>偵察<ul>
+<li>異常な API アクティビティ</li>
+<li>悪意のある既知の IP</li>
+<li>ポートスキャン</li>
+<li>通常とは異なるポート</li>
+</ul>
+</li>
+<li>インスタンス侵害<ul>
+<li>RDP ブルートフォース</li>
+<li>異常なトラフィック量</li>
+<li>ビットコインアクティビティ（暗号通貨マイニング）</li>
+<li>Tor ネットワーク</li>
+<li>DNS による不正抽出</li>
+</ul>
+</li>
+<li>アカウント侵害<ul>
+<li>匿名化プロキシ</li>
+<li>通常とは異なるリージョンでの起動</li>
+<li>CloudTrail の無効化</li>
+<li>通常とは異なるインスタンスやインフラストラクチャの起動</li>
+</ul>
+</li>
+</ul>
 <h2 id="aws-security-hub">AWS Security Hub</h2>
-<p>各種セキュリティサービスの検出結果をダッシュボード表示。</p>
-<p>AWS ベストプラクティスや CIS, PCI-DSS 等、AWS Config のコンフォーマンスパックのコンプライアンスチェックを継続的に実施</p>
+<ul>
+<li>組織カウント横断で各種セキュリティサービスの検出結果を統合・優先順位づけしてダッシュボード表示。</li>
+<li>自動のコンプライアンススキャン: AWS ベストプラクティスや CIS, PCI-DSS, AWS Config のコンフォーマンスパックのコンプライアンスチェックを継続的に実施。</li>
+<li>CloudWatch Events 通知とレスポンス自動化</li>
+</ul>
 <p><img alt="" src="_attachment/image_386.png" /></p>
 <hr />
-<h1 id="configuration-management">Configuration Management</h1>
-<h2 id="_3">構成管理</h2>
-<p>インフラストラクチャ、シス テム、製品の構成要素、設計に関する詳細、構築状態を、追跡・記録し、必要なときにアクセスできるようにする。</p>
+<h1 id="configuration-management">Configuration Management/構成管理</h1>
+<p>インフラストラクチャ、システム、製品の構成要素、設計に関する詳細、構築状態を、追跡・記録し、必要なときにアクセスできるようにする。</p>
 <p><img alt="" src="_attachment/image_387.png" /></p>
 <ul>
 <li>インフラは CloudFormation で構築・管理。</li>
@@ -105,13 +139,54 @@
 </ul>
 <h2 id="aws-config">AWS Config</h2>
 <p>Ref. <a href="AWS/AWS%20Security%20Governance,%20Incident%20Response.html">AWS: Security: Governance, Incident Response</a></p>
-<p>AWS リソースのインベントリの生成と管理: AWS リソースのスナップショットと変更履歴を S3 に記録する。</p>
-<p><img alt="" src="_attachment/image_388.png" /></p>
-<p><img alt="" src="_attachment/image_389.png" /></p>
+<p>AWS Config
+- AWS リソースのインベントリ生成と管理
+    - AWS リソース設定のスナップショットと変更履歴を S3 バケットに保存
+    - 変更発生時の SNS 通知 (オプショナル)
+AWS Config ルール
+- リソース設定のコンプライアンス状態の管理
+- AWS Config で取得したリソース設定が Lambda 関数に送られてルール評価が実施される
+    - リソースが対象なのでインスタンス内のアプリケーションなどはカバーされない。
+- マネージドルールとカスタムルール (ユーザが Lambda で実装)
+- 修復アクション:
+  - Config ルールに対する Noncompliant が発生した際に実行する SSM Automation アクションを設定できる
+  - 例: EC2 インスタンスの停止等</p>
 <h2 id="aws-service-catalog">AWS Service Catalog</h2>
 <p>Ref. <a href="AWS/AWS%20Security%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS: Security: CloudFormation, Service Catalog, Control Tower</a></p>
-<p>管理者が提供する CloudFormation テンプレート(=製品)を指定されたロールとパラメータ(=制約)で、エンドユーザが自身でプロビジョンする仕組み。</p>
-<p><img alt="" src="_attachment/image_390.png" /></p>
+<p>管理者が提供する CloudFormation テンプレート(=製品)を指定された IAM ロールとパラメータ(=制約)で、エンドユーザが自身でプロビジョンする仕組み。</p>
+<p><strong>管理者タスク</strong></p>
+<ul>
+<li><strong>Product (製品) 作成</strong><ul>
+<li>実体は CloudFormation テンプレート。</li>
+<li>バージョン管理が可能。</li>
+</ul>
+</li>
+<li><strong>Portfolio (ポートフォリオ) 作成</strong><ul>
+<li>製品の集合体（コレクション）</li>
+<li>特定ユーザー、グループ、ロールに公開する管理単位。</li>
+</ul>
+</li>
+<li><strong>Control (制約)</strong><ul>
+<li><strong>テンプレート制約</strong>:  CloudFormation テンプレートのパラメータを制限。</li>
+<li><strong>起動制約</strong>:  製品からリソースをプロビジョニングする際に使用するロールを指定。 ユーザに CloudFormation の直接権限を与えず、Catalog 経由でのみリソース作成を許可する。</li>
+</ul>
+</li>
+</ul>
+<p><strong>ユーザータスク</strong></p>
+<ul>
+<li><strong>Product List (製品リスト) からの製品の選択</strong><ul>
+<li>IAM によって認可された、自身が利用可能な製品の一覧。</li>
+</ul>
+</li>
+<li><strong>Launch (起動)</strong><ul>
+<li>リストから製品を選択し、パラメータを入力してデプロイ。</li>
+</ul>
+</li>
+<li><strong>Provisioned Products</strong><ul>
+<li>起動された CloudFormation スタックの実体。</li>
+</ul>
+</li>
+</ul>
 <h2 id="compliance-as-code">Compliance-as-Code</h2>
 <ul>
 <li>コンプライアンス要件を AWS Config ルールのカスタムコードとして Lambda のコードとして定義。</li>
@@ -120,7 +195,6 @@
 </ul>
 <p><img alt="" src="_attachment/image_391.png" /></p>
 <p><a href="https://aws.amazon.com/jp/blogs/apn/how-to-automate-cloud-governance-to-achieve-safety-at-speed/">https://aws.amazon.com/jp/blogs/apn/how-to-automate-cloud-governance-to-achieve-safety-at-speed/</a></p>
-<h2 id="_4"><br></h2>
 <hr />
 <h1 id="ami">カスタム AMI</h1>
 <h2 id="ami_1">AMI の構成要素</h2>
@@ -139,23 +213,17 @@
 </ul>
 <p><img alt="" src="_attachment/image_392.png" /></p>
 <ul>
-<li>
-<p>完全ビルド</p>
-<ul>
+<li>完全ビルド<ul>
 <li>全てを含む AMI</li>
 <li>デプロイが簡単で起動時間が高速</li>
 </ul>
 </li>
-<li>
-<p>JeOS (Just Enough Operating System)</p>
-<ul>
+<li>JeOS (Just Enough Operating System)<ul>
 <li>最小限の OS と構成管理エージェントのみを含み、残りは起動時にインストール</li>
 <li>柔軟性とポータビリティ</li>
 </ul>
 </li>
-<li>
-<p>ハイブリッド</p>
-<ul>
+<li>ハイブリッド<ul>
 <li>完全ビルドと JeOS との中間</li>
 <li>動的な変更の柔軟性と、起動速度を両立</li>
 </ul>

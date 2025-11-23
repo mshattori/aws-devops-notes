@@ -87,18 +87,12 @@
 <li>指定した複数チェック項目の現在のチェック結果をサマリ表示</li>
 </ul>
 </li>
-<li>
-<p>DescribeTrustedAdvisorCheckResult</p>
-<ul>
+<li>DescribeTrustedAdvisorCheckResult<ul>
 <li>指定したチェック項目の現在のチェック結果を取得</li>
 </ul>
 </li>
-<li>
-<p>Ref. <a href="https://docs.aws.amazon.com/ja_jp/awssupport/latest/APIReference/API_Operations.html">https://docs.aws.amazon.com/ja_jp/awssupport/latest/APIReference/API_Operations.html</a></p>
-</li>
-<li>
-<p>Basic/Developer ライセンスは無料利用枠の機能のみ</p>
-<ul>
+<li>Ref. <a href="https://docs.aws.amazon.com/ja_jp/awssupport/latest/APIReference/API_Operations.html">https://docs.aws.amazon.com/ja_jp/awssupport/latest/APIReference/API_Operations.html</a></li>
+<li>Basic/Developer ライセンスは無料利用枠の機能のみ<ul>
 <li>セキュリティグループの 23 番など特定ポートへの無制限アクセス、パブリックバケット、ルートアカウントの MFA、パブリックスナップショット</li>
 </ul>
 </li>
@@ -117,12 +111,8 @@
 </ul>
 <p><strong>Trusted Advisorの CloudWatch メトリクス</strong></p>
 <ul>
-<li>
-<p>EventBridge 同様の項目について CloudWatch メトリクスも存在</p>
-</li>
-<li>
-<p><a href="https://docs.aws.amazon.com/ja_jp/awssupport/latest/user/cloudwatch-metrics-ta.html#cloudwatch-metrics-dimensions-for-trusted-advisor">https://docs.aws.amazon.com/ja_jp/awssupport/latest/user/cloudwatch-metrics-ta.html#cloudwatch-metrics-dimensions-for-trusted-advisor</a></p>
-</li>
+<li>EventBridge 同様の項目について CloudWatch メトリクスも存在</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/awssupport/latest/user/cloudwatch-metrics-ta.html#cloudwatch-metrics-dimensions-for-trusted-advisor">https://docs.aws.amazon.com/ja_jp/awssupport/latest/user/cloudwatch-metrics-ta.html#cloudwatch-metrics-dimensions-for-trusted-advisor</a></li>
 <li>問題例: 使用されていない ELB の通知を実現できるオプション<ul>
 <li>Use Amazon CloudWatch to create alarms on Trusted Advisor metrics in order to detect the load balancers with low utilization. Specify an SNS topic for notification.</li>
 <li>Utilize CloudWatch Events to monitor Trusted Advisor recommendation results. Set up a trigger to send an email using SNS to notify you about the results of the check.</li>
@@ -286,20 +276,14 @@
 <p><strong>クロスリージョン・クロスアカウントのログ(証跡)統合</strong></p>
 <p><img alt="" src="_attachment/image_1296.png" /></p>
 <ul>
-<li>
-<p>クロスリージョン・クロスアカウントで証跡を 1つの S3 バケットに配信する。</p>
-</li>
-<li>
-<p><strong>Multi-region trail</strong></p>
-<ul>
+<li>クロスリージョン・クロスアカウントで証跡を 1つの S3 バケットに配信する。</li>
+<li><strong>Multi-region trail</strong><ul>
 <li>デフォルトで全リージョンのログを保存する証跡が作成される。</li>
 <li>新しいリージョンを立ち上げた時も自動で対象になる。</li>
 <li><a href="https://docs.aws.amazon.com/awscloudtrail/latest/userguide/receive-cloudtrail-log-files-from-multiple-regions.html">https://docs.aws.amazon.com/awscloudtrail/latest/userguide/receive-cloudtrail-log-files-from-multiple-regions.html</a></li>
 </ul>
 </li>
-<li>
-<p><strong>クロスアカウントのログ統合</strong></p>
-<ul>
+<li><strong>クロスアカウントのログ統合</strong><ul>
 <li>中央アカウントにバケットを作り、各アカウントで証跡をそこに配信するよう設定する。</li>
 <li>バケットポリシーで CloudTrail サービスに各アカウントのフォルダへの書き込みを許可する</li>
 </ul>
@@ -432,13 +416,16 @@
 <ul>
 <li>ロググループレベルで保持期間を設定。</li>
 <li>無期限に保管できるがコストがかかる。オプションで KMS 暗号化もできる。</li>
-<li>S3 へ手動でエクスポート可能<ul>
+<li>S3 へ手動でエクスポート可能 (Export task)<ul>
 <li>Gracier へのアーカイブも可</li>
-<li>SSE-KMS 暗号化されたバケットへのエクスポートは不可 (SSE-S3 はOK)</li>
-<li>スケジュール実行の Lambda で Export API を実行してもよい</li>
-<li>サブスクリプションフィルターで  Kinesis Firehorse でほぼリアルタイム(最小60秒遅延)の保存も可 </li>
+<li>SSE-KMS 暗号化されたバケットへのエクスポートは不可 (SSE-S3 はOK)<ul>
+<li>Export task 機能は KMS 利用のポリシー権限付与 (GenerateDataKey, Decrypt, etc.) に対応していない</li>
 </ul>
 </li>
+<li>スケジュール実行の Lambda で Export API を実行してもよい</li>
+</ul>
+</li>
+<li>サブスクリプションフィルター+ Kinesis Firehorse でほぼリアルタイム(最小60秒遅延)の保存も可</li>
 </ul>
 <h3 id="cloudwatch-logs_1">CloudWatch Logs メトリクスフィルター</h3>
 <ul>
@@ -472,38 +459,56 @@
 <ul>
 <li>filter-pattern 空白だと全てのログが転送される。</li>
 </ul>
-<p>クロスアカウント共有</p>
+<h4 id="destination">サブスクリプションフィルターのクロスアカウント Destination</h4>
 <ul>
-<li>サブスクリプションフィルターの宛先にクロスアカウントの Destination を設定する。</li>
+<li>サブスクリプションフィルターの宛先に別アカウントでつくった <strong>Destination</strong> を設定する。</li>
 <li><a href="https://aws.amazon.com/jp/premiumsupport/knowledge-center/kinesis-firehose-cloudwatch-logs/">https://aws.amazon.com/jp/premiumsupport/knowledge-center/kinesis-firehose-cloudwatch-logs/</a></li>
 </ul>
-<p>宛先アカウントで  Logs の Destination を作成: Firehose の Delivery stream をターゲットにしている。</p>
+<p><strong>設定手順の概要</strong></p>
+<ul>
+<li>宛先アカウント側 (受信側)<ul>
+<li>CloudWatch Logs の <strong>Destination</strong> を作成<ul>
+<li>送信先に Firehose Delivery Stream を指定</li>
+<li>CloudWatch Logs が Firehose を実行できる IAM ロールを指定</li>
+</ul>
+</li>
+<li>Destination に送信元アカウントを許可するリソースベースポリシーを設定</li>
+</ul>
+</li>
+<li>送信元アカウント側<ul>
+<li>サブスクリプションフィルターを作成</li>
+<li>宛先 ARN に 宛先アカウントの Destination ARN を指定</li>
+<li>例：VPC Flow Logs → Destination → Firehose → S3</li>
+</ul>
+</li>
+</ul>
+<p><strong>宛先アカウント</strong></p>
+<p>Logs の Destination を作成: Firehose の Delivery stream をターゲットにしている。</p>
 <pre><code>$ FIREHOSE_STREAM=&quot;arn:aws:firehose:us-east-1:111111111111:deliverystream/my-delivery-stream&quot;
 $ LOGS_ROLE=&quot;arn:aws:firehose:us-east-1:111111111111:deliverystream/my-delivery-stream&quot;
 $ aws logs put-destination --destination-name &quot;myDestination&quot; \
   --target-arn ${FIREHOSE_STREAM} --role-arn ${LOGS_ROLE} --region us-east-2
 </code></pre>
-<p>宛先アカウントで 送信元アカウントを許可するアクセスポリシーを Destination に割りあてる。</p>
+<p>送信元アカウントを許可する Destination ポリシー (リソースベースポリシー) を Destination に割りあて。</p>
 <pre><code>$ cat ~/AccessPolicy.json
 {
   &quot;Version&quot; : &quot;2012-10-17&quot;,
-  &quot;Statement&quot; : [ ;
+  &quot;Statement&quot; : [
     {
       &quot;Sid&quot; : &quot;&quot;,
-            &quot;Effect&quot; : &quot;Allow&quot;,
-            &quot;Principal&quot; : {
-      &quot;AWS&quot; : &quot;222222222222&quot;
-    },
-    &quot;Action&quot; : &quot;logs:PutSubscriptionFilter&quot;,
-    &quot;Resource&quot; : &quot;arn:aws:logs:us-east-2:111111111111:destination:myDestination&quot;
+      &quot;Effect&quot; : &quot;Allow&quot;,
+      &quot;Principal&quot; : { &quot;AWS&quot; : &quot;222222222222&quot; },
+      &quot;Action&quot; : &quot;logs:PutSubscriptionFilter&quot;,
+      &quot;Resource&quot; : &quot;arn:aws:logs:us-east-2:111111111111:destination:myDestination&quot;
     }
   ]
 }
 $ aws logs put-destination-policy --destination-name &quot;myDestination&quot; \
   --access-policy file://~/AccessPolicy.json --region us-east-2
 </code></pre>
-<p>送信元アカウントで宛先アカウントの Destination を指定したサブスクリプションフィルターを作成:</p>
+<p><strong>送信元アカウント</strong></p>
 <ul>
+<li>宛先アカウントの Destination を指定したサブスクリプションフィルターを作成:</li>
 <li>送信元は VPC Flow Logs を流すように設定したロググループ</li>
 </ul>
 <pre><code>$ DESTINATION=&quot;arn:aws:logs:us-east-1:111111111111:destination:myDestination&quot;
@@ -512,12 +517,12 @@ $ aws logs put-subscription-filter \
   --filter-name &quot;AllTraffic&quot; --filter-pattern &quot;&quot; \
   --destination-arn ${DESTINATION} --region us-east-2
 </code></pre>
-<p>CloudWatch Logs Insights</p>
+<h4 id="cloudwatch-logs-insights">CloudWatch Logs Insights</h4>
 <ul>
 <li>クエリ検索と可視化ができるダッシュボード。従量課金制。</li>
 </ul>
 <p><img alt="" src="_attachment/image_1302.png" /></p>
-<p>CloudWatch Agent</p>
+<h4 id="cloudwatch-agent">CloudWatch Agent</h4>
 <ul>
 <li>CloudWatchAgentServerPolicy 管理ポリシーをインスタンスロールにアタッチする</li>
 <li>SSM Parameter Store から config.json を取得させることができる。</li>
@@ -531,12 +536,12 @@ $ aws logs put-subscription-filter \
 <hr />
 <h1 id="vpc">VPC フローログ</h1>
 <ul>
-<li>VPC, サブネット, ENI 単位で設定にしてトラフィックのフロー情報が取得できる。</li>
+<li>VPC, サブネット, ENI 単位で有効化を設定してトラフィックのフロー情報が取得できる。</li>
 <li>CloudWatch Logs または S3 に送信する。</li>
 </ul>
 <p><img alt="" src="_attachment/image_1303.png" /></p>
 <ul>
-<li>フィルタは SG または NACL での許可・拒否・両方の選択。</li>
+<li>フィルタ: SG または NACL での許可・拒否・両方の選択。</li>
 </ul>
 <p>デフォルト形式</p>
 <p><img alt="" src="_attachment/image_1304.png" /></p>
@@ -588,31 +593,30 @@ $ aws logs put-subscription-filter \
 <h1 id="elb">ELB アクセスログ</h1>
 <ul>
 <li>HTTP アクセスログ。デフォルト OFF。</li>
-<li>
-<p>転送先は S3 バケット。</p>
-<ul>
+<li>転送先は S3 バケット。<ul>
 <li>SSE-S3 暗号化をサポート</li>
 </ul>
 </li>
-<li>
-<p>各ロードバランサーは 5 分毎にログファイルを発行。</p>
-</li>
+<li>各ロードバランサーは 5 分毎にログファイルを発行。</li>
 </ul>
 <p><img alt="" src="_attachment/image_1310.png" /></p>
 <p><a href="https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/application/load-balancer-access-logs.html">https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/application/load-balancer-access-logs.html</a></p>
 <hr />
-<h1 id="web-acl">Web ACL トラフィックログ</h1>
+<h1 id="web-acl-aws-waf">Web ACL トラフィックログ (AWS WAF)</h1>
 <p>リクエスト詳細、あて先 AWSリソース、マッチしたルールのアクションについてログが取得できる。</p>
 <p>出力先、ログのフィルタリングと出力フィールドを設定して有効化。</p>
 <p><img alt="" src="_attachment/image_1311.png" /></p>
-<p>2021/11 以前は Kinesis Data Firehose へのみ出力可能で、Firehose 経由で CloudWatch Logs または S3 に出力する必要があった。</p>
 <hr />
 <h1 id="amazon-kinesis">Amazon Kinesis</h1>
-<p>ログの取り込みとリアルタイム処理。</p>
-<p><img alt="" src="_attachment/image_1312.png" /></p>
-<p>Kinesis Data Stream:  コンシューマでシャードのデータを処理。</p>
-<p>Kinesis Data Firehose:  コンシューマを実装せずにデータを取り込める。バッファリング。</p>
-<p>Kinesis Data Analytics: 標準 SQL でデータをリアルタイムに分析。</p>
+<p>ログ取り込みs</p>
+<ul>
+<li><strong>Kinesis Data Streams</strong>: コンシューマ(アプリ)を実装してシャードのデータを処理。</li>
+<li><strong>Kinesis Data Firehose</strong>: コンシューマを実装せずにデータを取り込める。バッファリング。</li>
+</ul>
+<p>ログ分析</p>
+<ul>
+<li><strong>Kinesis Data Analytics</strong>: 標準 SQL でデータをリアルタイムに分析。</li>
+</ul>
 <h1 id="kinesis-data-streams">Kinesis Data Streams</h1>
 <p><img alt="" src="_attachment/image_1313.png" /></p>
 <p><img alt="" src="_attachment/image_1314.png" /></p>
@@ -621,22 +625,64 @@ $ aws logs put-subscription-filter \
 <li>データレコードサイズ: 最大 1 MB</li>
 <li>書き込み速度: 最大 1MB/秒</li>
 <li>読み取り速度: 最大 2MB/秒</li>
-<li>データ量に応じてシャードを Auto Scaling できる。</li>
+<li>データ量に応じてシャードを Auto Scaling してスループットを増やせる。</li>
 </ul>
-<p>プロデューサー</p>
-<p><img alt="" src="_attachment/image_1315.png" /></p>
+<p><strong>プロデューサー</strong></p>
 <ul>
-<li>Kinesis Producer Library: KPL</li>
-<li>Kinesis エージェント: サーバに入れるとログファイルを監視して自動送信してくれる</li>
-<li>CloudWatch/EventBridge Event のターゲットに Kinesis を指定してイベント投入も可能</li>
+<li>Kinesis SDK<ul>
+<li>コードで直接 PutRecord / PutRecords 実行</li>
 </ul>
-<p>コンシューマ</p>
-<p><img alt="" src="_attachment/image_1316.png" /></p>
+</li>
+<li>Kinesis Producer Library (KPL)<ul>
+<li>バッチ化・圧縮・再試行・集約の自動化</li>
+<li>高スループット投入に最適化</li>
+</ul>
+</li>
+<li>Kinesis Agent<ul>
+<li>サーバに入れるとログファイルを監視して自動送信してくれる</li>
+</ul>
+</li>
+<li>CloudWatch Logs Subscription Filter<ul>
+<li>CloudWatch Logs からストリーム転送</li>
+</ul>
+</li>
+<li>EventBridge Event のターゲットに Kinesis を指定してイベント投入も可能</li>
+<li>サードパーティ連携<ul>
+<li>Spark, Log4J Appender, Apache Flume, Kafka Connect, NiFi 等の入力ソース</li>
+</ul>
+</li>
+</ul>
+<p><strong>コンシューマ</strong></p>
+<p>EC2 や Lambda や Apache Spark で実装。</p>
 <ul>
-<li>EC2 や Lambda や Apache Spark で実装。</li>
-<li>Kinesis Client Library (Java) を使ってレコードを取得。</li>
+<li>Kinesis SDK<ul>
+<li>ストリームから直接データ取得</li>
 </ul>
-<p><img alt="" src="_attachment/image_1317.png" /></p>
+</li>
+<li>Kinesis Client Library (KCL)<ul>
+<li>シャード管理・チェックポイント自動化</li>
+<li>消費者のスケールアウト最適化</li>
+</ul>
+</li>
+<li>Kinesis Connector Library<ul>
+<li>RDS / DynamoDB / Elasticsearch など外部連携</li>
+</ul>
+</li>
+<li>Kinesis Firehose<ul>
+<li>S3 / Redshift / OpenSearch / Splunk へバッファリング転送</li>
+<li>管理不要・自動スケーリング</li>
+</ul>
+</li>
+<li>AWS Lambda<ul>
+<li>イベントドリブン処理、リアルタイム分析</li>
+</ul>
+</li>
+<li>サードパーティ連携<ul>
+<li>Spark, Log4J, Flume, Kafka Connect など</li>
+</ul>
+</li>
+</ul>
+<p><strong>シャードの制約</strong></p>
 <p><img alt="" src="_attachment/image_1318.png" /></p>
 <ul>
 <li>シャードへの書き込みが 1MB or 1000 MPS を超えるとスロットリングが起きる → シャードを増やす必要がある。</li>
@@ -648,17 +694,12 @@ $ aws logs put-subscription-filter \
 <p>正答:</p>
 <ul>
 <li>レコードを処理するインスタンスを増やすために ASG を用いる。メトリクスは 現在のイテレーターの位置がシャードの最新レコードからどれだけ後ろにあるかを時間 (ミリ秒) で示す MillisBehindLatest を用いる。</li>
-<li>さらに、retentino period をデフォルトの 24 時間から増やす (最大7日間) ことで、レコードがドロップされにくくする。</li>
+<li>さらに、retention period をデフォルトの 24 時間から増やす (最大7日間) ことで、レコードがドロップされにくくする。</li>
 </ul>
 <p>誤答:</p>
 <ul>
-<li>シャードを増やす: プロデューサー側でスロットリングを起こしているならシャードを増やす意味があるが、コンシューマー側の処理能力不足なのでこの場合は意味がない。</li>
-<li>Lambda に移行する: 同じコードが Lambda で動くだけなので意味がない。。と言ってるけど、シャードも増やせば同時実行数が増えてスループットが上がるのではないのか？<ul>
-<li><a href="_attachment/image_1350.png">image.png</a></li>
-<li><a href="_attachment/image_1351.png">image.png</a></li>
-</ul>
-</li>
-<li>2つの解答の組み合わせでなく、それぞれ単体で効果があるもの、という問題？</li>
+<li>シャードを増やす: プロデューサー側でスロットリングを起こしているならスループット向上にシャードを増やす意味があるが、コンシューマー側の処理能力不足なのでさらにコンシューマ負荷が増えてしまう。</li>
+<li>Lambda に移行する: Lambda への移行は大幅なアーキテクチャ変更であり、問題文の「minimal changes」に反する</li>
 <li>シャードを減らす: スループットは落ちるけど、プロデューサー側でスロットリングを起こしては意味がない。</li>
 </ul>
 <h1 id="kinesis-data-firehose">Kinesis Data Firehose</h1>
@@ -676,7 +717,6 @@ $ aws logs put-subscription-filter \
 <li>S3 のスループットでは追いつかない場合にも Data Firehose が使える。</li>
 </ul>
 <p><img alt="" src="_attachment/image_1321.png" /></p>
-<h2 id="_1"><br></h2>
 <h2 id="data-streams-vs-data-firehose">Data Streams vs. Data Firehose</h2>
 <p>用途</p>
 <ul>
@@ -685,7 +725,7 @@ $ aws logs put-subscription-filter \
 </ul>
 <p>リアルタイム性</p>
 <ul>
-<li>Data Streams: 1秒以下でレコードがストリームに書き込まれる。</li>
+<li>Data Streams: 1秒以下でレコードがシャードに書き込まれる。</li>
 <li>Data Firehose: 送信先への保存まで 60~900 秒かかる。Near realtime であることに注意。</li>
 </ul>
 <p>データ操作</p>
@@ -707,8 +747,7 @@ $ aws logs put-subscription-filter \
 <p><img alt="" src="_attachment/image_1323.png" /></p>
 <ul>
 <li>VPC フローログに Security Group の ID と GeoIP 情報を追加。</li>
-<li>CloudWatch Logs からの Lambda トリガーはメトリクスフィルター？</li>
-<li>サブスクリプションフィルターも Lambda を呼べるが、Data Streams,  Data Firehose もサポートしているので迂遠。</li>
+<li>CloudWatch Logs からの Lambda トリガーはサブスクリプションフィルター？ Data Streams,  Data Firehose もサポートしているので迂遠。</li>
 </ul>
 <h1 id="kinesis-data-analytics">Kinesis Data Analytics</h1>
 <p>標準 SQL でリアルタイム でストリーミングデータを処理・分析。</p>
@@ -721,9 +760,11 @@ $ aws logs put-subscription-filter \
 <p><img alt="" src="_attachment/image_1325.png" /></p>
 <hr />
 <h1 id="amazon-athena">Amazon Athena</h1>
-<p>S3 に保管されたデータを標準 SQL でインタラクティブにクエリできる。</p>
-<p>分散 SQL エンジン Presto のマネージドサービス。</p>
-<p>テーブル (スキーマ) 作成には AWS Glue のデータカタログが使える。</p>
+<ul>
+<li>S3 に保管されたデータを標準 SQL でインタラクティブにクエリできる。</li>
+<li>分散 SQL エンジン Presto のマネージドサービス。</li>
+<li>テーブル (スキーマ) 作成には AWS Glue のデータカタログが使える。</li>
+</ul>
 <p>AWS Glue</p>
 <ul>
 <li>完全マネージド型の ETL (抽出、変換、ロード) サービス。</li>
@@ -759,15 +800,11 @@ $ aws logs put-subscription-filter \
   ]
 </code></pre>
 <ul>
-<li>
-<p>エージェントを開始</p>
-<ul>
+<li>エージェントを開始<ul>
 <li>sudo systemctl start aws-kinesis-agent.service</li>
 </ul>
 </li>
-<li>
-<p>AWS Glue の管理コンソールで S3 バケットに対するクローラを追加する</p>
-</li>
+<li>AWS Glue の管理コンソールで S3 バケットに対するクローラを追加する</li>
 <li>Athena で Data Catalog をデータソースとしてクエリを実行する。</li>
 </ul>
 <p><img alt="" src="_attachment/image_1328.png" /></p>
@@ -781,44 +818,32 @@ $ aws logs put-subscription-filter \
 <p>CloudWatch メトリクス → アラーム/ダッシュボード</p>
 <ul>
 <li>メトリクス: AWS サービスや OS のメトリクス収集</li>
-<li>
-<p>アラーム: メトリクスしきい値による通知</p>
-<ul>
+<li>アラーム: メトリクスしきい値による通知<ul>
 <li>通知先: SNS, Auto Scaling, EC2 アクション(停止・再起動等)</li>
 <li>アプリ連携に使えるのは SNS だけ。</li>
 </ul>
 </li>
-<li>
-<p>ダッシュボード: メトリクスのグラフや統計の表示。</p>
-</li>
+<li>ダッシュボード: メトリクスのグラフや統計の表示。</li>
 </ul>
 <p>CloudWatch Logs</p>
 <ul>
-<li>
-<p>AWS サービスのログ収集・保管:</p>
-<ul>
+<li>AWS サービスのログ収集・保管:<ul>
 <li>EC2 インスタンスの OS/アプリケーションログ → 要 CloudWatch Agent</li>
 <li>VPC Flow Logs も CloudWatch Logs に投入される。</li>
 </ul>
 </li>
-<li>
-<p>保持期間: 1日～10年、無制限で指定可能。</p>
-</li>
+<li>保持期間: 1日～10年、無制限で指定可能。</li>
 <li>S3 にエクスポートできる。</li>
 </ul>
-<p>CloudWatch Events</p>
+<p>EventBridge (CloudWatch Events)</p>
 <ul>
-<li>
-<p>各種 AWS サービスから発生するイベントに対するアクション実行 → SNS, SQS, Lambda 等</p>
-<ul>
+<li>各種 AWS サービスから発生するイベントに対するアクション実行 → SNS, SQS, Lambda 等<ul>
 <li>例: S3 へのデータ投入時に Lambda 呼ぶ。</li>
 <li>サービスごとに発生するイベントが用意されている。</li>
 <li>CloudTrail をイベントソースにして AWS API 実行を処理することも可能。</li>
 </ul>
 </li>
-<li>
-<p>CloudWatch Events はサービス内から外に発生するイベント、CloudTrail はサービスに向けた API 操作のトレイル。</p>
-</li>
+<li>CloudWatch Events はサービス内から外に発生するイベント、CloudTrail はサービスに向けた API 操作のトレイル。</li>
 </ul>
 <p><img alt="" src="_attachment/File_25.png" /></p>
 <h2 id="cloudwatch_1">CloudWatch メトリクス</h2>
@@ -853,9 +878,7 @@ $ aws logs put-subscription-filter \
 <ul>
 <li>指定した文字列 ("ERROR" 等) でログをフィルタしてカウントをカスタムメトリクスとして取得。</li>
 <li>メトリクスなので得られるのはアラーム/ダッシュボードによる統計情報。</li>
-<li><img alt="" src="_attachment/aws-black-belt-online-seminar-2016-aws-cloudtrail-aws-config-18-638_jpg__638×359_.png" /></li>
 </ul>
-<h3 id="_2"><br></h3>
 <h2 id="cloudwatch_2">CloudWatch アラーム</h2>
 <ul>
 <li>メトリクスしきい値による通知</li>
@@ -864,7 +887,7 @@ $ aws logs put-subscription-filter \
 </ul>
 <p><img alt="" src="_attachment/image_1334.png" /></p>
 <p><img alt="" src="_attachment/image_1335.png" /></p>
-<p>Anomaly detection</p>
+<p><strong>しきい値タイプ: Anomaly detection</strong></p>
 <ul>
 <li>標準偏差の幅をしきい値に指定する</li>
 </ul>
@@ -877,72 +900,53 @@ $ aws logs put-subscription-filter \
 <li>全体の設定とサービス毎の設定が可能。</li>
 </ul>
 <p><img alt="" src="_attachment/image_1338.png" /></p>
-<h2 id="cloudwatch-eventseventbridge">CloudWatch Events/EventBridge</h2>
-<p><img alt="" src="_attachment/image_1339.png" /></p>
+<h2 id="eventbridge-cloudwatch-events">EventBridge (CloudWatch Events)</h2>
 <ul>
-<li>
-<p>イベントソース</p>
-<ul>
+<li>イベントソース<ul>
 <li>AWS リソースや CloudTrail をデータソースにしたイベント</li>
-<li>
-<p>AWS リソース統合がサポートしていないイベントを取得するには CloudTrail からの API イベントを監視する (例 EC2:CreateImage での AMI 作成を監視する)</p>
-<ul>
+<li>AWS リソース統合がサポートしていないイベントを取得するには CloudTrail からの API イベントを監視する (例 EC2:CreateImage での AMI 作成を監視する)<ul>
 <li>Read-only API (List, Get, Describe) は対象外</li>
 </ul>
 </li>
-<li>
-<p>EventBridge はサードパーティーの Service partners もサポート</p>
-</li>
+<li>EventBridge はサードパーティーの Service partners もサポート</li>
 </ul>
 </li>
-<li>
-<p>ターゲット</p>
-<ul>
+<li>ターゲット<ul>
 <li>SNS, SQS, Lambda 等、各種サービス。</li>
 </ul>
 </li>
-<li>
-<p>ルール:</p>
-<ul>
-<li>イベントソースとターゲットを指定したもの</li>
+<li>ルール<ul>
+<li>イベントソースとターゲットを指定してルールを作成</li>
 <li>スケジュールの場合はイベントソースにスケジュール式 (rate, cron) を指定</li>
 <li><img alt="" src="_attachment/image_1340.png" /></li>
 </ul>
 </li>
 </ul>
-<p>CloudWatch/EventBridge Event Bus</p>
+<p><strong>EventBridge Event Bus</strong></p>
 <ul>
 <li>クロスアカウントでのイベント送信。</li>
 </ul>
 <p><img alt="" src="_attachment/image_1341.png" /></p>
 <ul>
 <li>各アカウントはデフォルトのイベントバスを 1 つ持つ。</li>
-<li>
-<p>送信側アカウント</p>
-<ul>
+<li>送信側アカウント<ul>
 <li>受信側のイベントバスをターゲットとするルールを設定する。</li>
 </ul>
 </li>
-<li>
-<p>受信側アカウント</p>
-<ul>
+<li>受信側アカウント<ul>
 <li>イベントバスで送信側アカウント ID を許可する。</li>
 <li>送信側アカウントからのイベントに一致するルールを設定する。</li>
 </ul>
 </li>
-<li>
-<p>Organization との統合</p>
-<ul>
+<li>Organization との統合<ul>
 <li>許可するアカウント ID を個別指定する代わりに Organization の全アカウントを許可できる。</li>
 </ul>
 </li>
-<li>
-<p><a href="https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/events/CloudWatchEvents-CrossAccountEventDelivery.html">https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/events/CloudWatchEvents-CrossAccountEventDelivery.html</a></p>
-</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/events/CloudWatchEvents-CrossAccountEventDelivery.html">https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/events/CloudWatchEvents-CrossAccountEventDelivery.html</a></li>
 <li><a href="https://aws.amazon.com/jp/about-aws/whats-new/2017/06/cloudwatch-events-adds-cross-account-event-delivery-support/">https://aws.amazon.com/jp/about-aws/whats-new/2017/06/cloudwatch-events-adds-cross-account-event-delivery-support/</a></li>
 </ul>
-<p>中央アカウントのイベントバスに各アカウントからイベント送信するように設定、中央アカウントで 特定イベントを Lambda で監視する、等のユースケース。</p>
-<p>クロスアカウントクロスリージョン設定</p>
+<p>中央アカウントのイベントバスに各アカウントからイベント送信するように設定、中央アカウントで特定イベントを Lambda で監視する、等のユースケース。</p>
+<p>クロスアカウント/クロスリージョン設定</p>
 <ul>
 <li>複数アカウントの CloudWatch メトリクス、アラーム、ダッシュボードを1つのアカウントにまとめられるらしい。</li>
 </ul>
@@ -967,7 +971,7 @@ $ aws logs put-subscription-filter \
 <li>Metric Filters は応答の自動化に使用できますがリアルタイムではなく、CloudWatch Event よりもイベントに関する情報が少なくなります。</li>
 </ul>
 <hr />
-<p>AWS X-Ray</p>
+<h1 id="aws-x-ray">AWS X-Ray</h1>
 <ul>
 <li>トレースとサービスマップとデバッグ</li>
 </ul>
@@ -1000,7 +1004,7 @@ $ aws logs put-subscription-filter \
 <p><img alt="" src="_attachment/File_29.png" /></p>
 <p>トレース</p>
 <ul>
-<li>リクエスト１回ごとのトレース。</li>
+<li>リクエスト全体のトレース。</li>
 </ul>
 <p>セグメント</p>
 <ul>
@@ -1025,7 +1029,7 @@ $ aws logs put-subscription-filter \
 <p><img alt="" src="_attachment/File_30.png" /></p>
 <p><img alt="" src="_attachment/File_31.png" /></p>
 <ul>
-<li>GetTraceSummaries でクエリしてトレースIDのリストを取得、BatchGetTraces でトレースのリストを取得。</li>
+<li>GetTraceSummaries でクエリしてトレースIDのリストを取得、BatchGetTraces でIDで指定したトレースのリストを取得。</li>
 <li>GetServiceGraph で Lambda からサービスグラフ情報を取得してレイテンシー問題やスロットリングを監視する例:<ul>
 <li><a href="https://aws.amazon.com/jp/blogs/devops/using-amazon-cloudwatch-and-amazon-sns-to-notify-when-aws-x-ray-detects-elevated-levels-of-latency-errors-and-faults-in-your-application/">https://aws.amazon.com/jp/blogs/devops/using-amazon-cloudwatch-and-amazon-sns-to-notify-when-aws-x-ray-detects-elevated-levels-of-latency-errors-and-faults-in-your-application/</a></li>
 </ul>
@@ -1039,37 +1043,25 @@ $ aws logs put-subscription-filter \
 <p>X-Ray デーモン</p>
 <p><img alt="" src="_attachment/image_1344.png" /></p>
 <ul>
-<li>
-<p>セグメントデータを収集して X-Ray に送信するデーモン。</p>
-<ul>
+<li>セグメントデータを収集して X-Ray に送信するデーモン。<ul>
 <li>2000/udp でリッスン。</li>
 <li>セグメントドキュメントをキューにバッファ、PutTraceSegments によりバッチでアップロード。</li>
 <li>AWSXRayDaemonWriteAccess 管理ポリシーを使う。</li>
 </ul>
 </li>
-<li>
-<p>SDK はセグメントドキュメントをデーモンに送る。</p>
-</li>
-<li>Lambda ランタイムと Beanstalk には含まれてる。</li>
-<li>
-<p>EC2 の場合</p>
-<ul>
+<li>SDK はセグメントドキュメントをデーモンに送る。</li>
+<li>Lambda ランタイムと Beanstalk には含まれている。</li>
+<li>EC2 の場合<ul>
 <li>ユーザデータスクリプトで X-Ray デーモンを落としてきてインストール。</li>
 </ul>
 </li>
-<li>
-<p>ECS の場合</p>
-<ul>
-<li>
-<p>X-Ray デーモンを実行するコンテナをタスク定義に含める (サイドカーコンテナ)。</p>
-<ul>
+<li>ECS の場合<ul>
+<li>X-Ray デーモンを実行するコンテナをタスク定義に含める (サイドカーコンテナ)。<ul>
 <li>ポートマッピングを設定して 2000/udp へのトラフィックをマップする。</li>
 <li>Docker イメージは自分で作っても公式のものを使用しても良い。</li>
 </ul>
 </li>
-<li>
-<p>Task Definition</p>
-</li>
+<li>Task Definition</li>
 </ul>
 </li>
 </ul>
@@ -1087,35 +1079,28 @@ $ aws logs put-subscription-filter \
       ]
     }
 </code></pre>
-<pre><code>- [https://docs.aws.amazon.com/ja\_jp/xray/latest/devguide/xray-daemon-ecs.html](https://docs.aws.amazon.com/ja_jp/xray/latest/devguide/xray-daemon-ecs.html)
-</code></pre>
 <ul>
+<li>タスクロール (Task Role) に <code>AWSXRayDaemonWriteAccess</code> を付与</li>
+<li>
+<p><a href="https://docs.aws.amazon.com/ja_jp/xray/latest/devguide/xray-daemon-ecs.html">https://docs.aws.amazon.com/ja_jp/xray/latest/devguide/xray-daemon-ecs.html</a></p>
+</li>
 <li>
 <p>Lambda の場合</p>
 <ul>
-<li>
-<p>Lambda コンソールで AWS X-Ray のアクティブトレースを有効化。</p>
-<ul>
+<li>Lambda コンソールで AWS X-Ray のアクティブトレースを有効化。<ul>
 <li>関数の実行ロールにポリシーが追加される。</li>
 </ul>
 </li>
-<li>
-<p>X-Ray デーモンは Lambda ランタイムで自動的に実行される。</p>
-</li>
+<li>X-Ray デーモンは Lambda ランタイムで自動的に実行される。</li>
 <li>X-Ray SDK を関数のデプロイパッケージにバンドルしてコードから使用する。<ul>
 <li>環境変数でデーモンへのアドレス:ポートなどが渡される。</li>
 </ul>
 </li>
 </ul>
 </li>
-<li>
-<p>Ref. <a href="https://docs.aws.amazon.com/ja_jp/xray/latest/devguide/xray-daemon.html">https://docs.aws.amazon.com/ja_jp/xray/latest/devguide/xray-daemon.html</a></p>
-</li>
+<li>Ref. <a href="https://docs.aws.amazon.com/ja_jp/xray/latest/devguide/xray-daemon.html">https://docs.aws.amazon.com/ja_jp/xray/latest/devguide/xray-daemon.html</a></li>
 </ul>
-<p>問題例</p>
-<ul>
-<li>ECS で X-Ray を利用する</li>
-</ul>
+<p>問題例:  ECS で X-Ray を利用する</p>
 <p>解答</p>
 <ul>
 <li>Produce a Docker image that runs the X-Ray daemon.</li>
@@ -1190,7 +1175,7 @@ $ aws logs put-subscription-filter \
 <p><a href="https://aws.amazon.com/answers/account-management/aws-tagging-strategies/">https://aws.amazon.com/answers/account-management/aws-tagging-strategies/</a></p>
 <p>Const management, Deployment target, Security control (ref. TBAC: Tag-based access control), etc.</p>
 <hr />
-<h1 id="_3">オブザーバビリティ</h1>
+<h1 id="_1">オブザーバビリティ</h1>
 <p>オブザーバビリティ(可観測性)は、システムの出力を調査することによって内部状態を測定する能力。</p>
 <p>メトリクスやログ、トレースを収集するためにシステムをインストルメントすることで実現する。</p>
 <p>モニタリングとオブザーバビリティ</p>

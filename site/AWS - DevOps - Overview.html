@@ -955,7 +955,8 @@ Resources:
 </ul>
 <p>保存済み設定: Saved configurations</p>
 <ul>
-<li>起動中の環境設定を保存して他のリージョンやアカウントで展開できる</li>
+<li>起動中の環境設定をテンプレートとして保存して他のリージョンやアカウントで展開できる</li>
+<li>インスタンスタイプや ASG などの環境設定なので、コードや .ebextensions は含まれない。</li>
 <li>eb config save dev-env --cfg prod<ul>
 <li>サービス側に設定が保存される。</li>
 <li>.elasticbeanstalk/saved_configs 配下に prod.cfg.yaml ができ、ローカルで直にファイルを編集できる。</li>
@@ -972,7 +973,8 @@ Resources:
 </ul>
 <p>.ebextensions フォルダ</p>
 <ul>
-<li>操作を指定した (分割された) コンフィグファイルを配置。eb deploy で環境に適用。</li>
+<li>アプリケーションパッケージ内に配置する設定スクリプト</li>
+<li>操作を指定した (分割された) 設定ファイルを配置。eb deploy で環境に適用。</li>
 </ul>
 <p><img alt="" src="_attachment/image_652.png" /></p>
 <ul>
@@ -986,28 +988,25 @@ Resources:
 </ul>
 </li>
 <li>commands<ul>
-<li>アプリケーションバージョンのファイルが解凍される前に実行されるコマンド</li>
+<li>インスタンス起動後、アプリケーションのファイルが展開される前に実行されるコマンド</li>
+<li>バックアップや旧ファイルのクリーンアップなど。</li>
 </ul>
 </li>
 <li>container_commands<ul>
-<li>アプリケーションバージョンのファイルがステージングフォルダに解凍された後に実行される</li>
-<li>設定ファイルを変更したりはできるが、デプロイよりも前であることに注意。</li>
-<li>leader_only: true ... 複数あるインスタンスのうち１つだけで実行</li>
+<li>アプリケーションのファイルが展開された後、アプリのデプロイ前に実行される</li>
+<li>デプロイ前の DB マイグレーションや設定ファイルの更新など</li>
+<li><strong>leader_only: true</strong> ... 複数あるインスタンスのうち１つだけで実行</li>
 </ul>
 </li>
 </ul>
-<p>hooks フォルダ</p>
-<ul>
-<li>デプロイ後にコマンド実行するには files セクションで appdeploy フォルダにスクリプトを作成する</li>
-<li>/opt/elasticbeanstalk/hooks/ 配下の以下のフォルダ<ul>
-<li>preinit - アプリケーションのデプロイ前</li>
-<li>appdeploy - アプリケーションのデプロイ中</li>
-<li>postinit - アプリケーションのデプロイ後</li>
-<li>configdeploy - ユーザによる設定変更時</li>
-<li>restartappserver - ユーザによるリスタート時</li>
-</ul>
-</li>
-</ul>
+<p>.platform/hooks フォルダ
+- /opt/elasticbeanstalk/hooks/ で実行される
+    - preinit - アプリケーションのデプロイ前
+    - appdeploy - アプリケーションのデプロイ中
+    - postinit - アプリケーションのデプロイ後
+    - configdeploy - ユーザによる設定変更時
+    - restartappserver - ユーザによるリスタート時
+- デプロイ後にコマンド実行するには .ebextentions/files で appdeploy/post フォルダにスクリプトを作成する</p>
 <p>デプロイポリシー</p>
 <ul>
 <li>All at once</li>
@@ -1044,52 +1043,60 @@ Resources:
 </ul>
 <p>解答</p>
 <ul>
-<li>Decouple the RDS instance from your Elastic Beanstalk environment using the blue/green deployment strategy to decouple.</li>
-<li>Take an RDS DB snapshot of the database and enable deletion protection.</li>
+<li>Decouple the RDS instance from your Elastic Beanstalk environment using the blue/green deployment strategy to decouple. (Blue/Green で既存環境を稼働させてダウンタイム縮小しながら RDS をデカップリング)</li>
+<li>Take an RDS DB snapshot of the database and enable deletion protection. (スナップショットと保護)</li>
 <li>Set up a new Elastic Beanstalk environment with the necessary information to connect to the RDS instance.</li>
 <li><strong>Before terminating the old Elastic Beanstalk environment, remove its security group rule first before proceeding.</strong></li>
-<li>Beanstalk 環境のインスタンスから EBS に接続するには EBS 側の SG で環境の SG からの Ingress アクセスを許可する必要があるが、このルールによる依存関係の残したままだと環境の削除が Fail するとのこと。</li>
+<li>Beanstalk 環境のインスタンスから RDS に接続するには RDS 側の SG で環境の SG からの Ingress アクセスを許可する必要があるが、このルールによる依存関係の残したままだと環境の削除が FAIL する。</li>
+<li>環境側の SG が RDS の SG に参照されたままなので、利用中あつかいになる。</li>
 </ul>
 <h1 id="aws-opsworks">AWS OpsWorks</h1>
 <p><img alt="" src="_attachment/image_653.png" /></p>
 <p>スタック</p>
 <ul>
-<li>ロードバランサー層、アプリケーションサーバ層、DB などの複数レイヤの AWS リソースのスタック</li>
+<li>複数レイヤにまとめられた AWS リソースのスタック</li>
 </ul>
-<p>レイヤー</p>
+<p>レイヤー (Layer)</p>
 <ul>
-<li>DB レイヤー等、レイヤー毎の機能を実現するインスタンスのセット。</li>
-<li>各インスタンスにインスタンスタイプを指定する<ul>
-<li>24/7</li>
-<li>Time-based: スケジュールで起動・終了</li>
-<li>Load-based: CPU 等の負荷に応じて起動・終了</li>
+<li>機能別のインスタンスグループ<ul>
+<li>ロードバランサー層、アプリケーションサーバ層、DB 層などのレイヤにまとめられた AWS リソース</li>
+</ul>
+</li>
+<li>インスタンスタイプ<ul>
+<li>24/7: 常時稼働</li>
+<li>Time-based: スケジュールで起動・停止（例: 夜間バッチ）</li>
+<li>Load-based: CPU などの負荷指標でスケール制御</li>
 </ul>
 </li>
 </ul>
-<p>クックブックレポジトリ</p>
+<p>クックブックとレシピ</p>
 <ul>
-<li>Git, S3, HTTP 等の Chef クックブック保存先。</li>
+<li>クックブックリポジトリ<ul>
+<li>Git、S3、HTTP など、Chef クックブックの保存場所。</li>
 </ul>
-<p>アプリケーションリポジ トリ</p>
-<ul>
-<li>アプリケーションコードは Git, S3 などのリポジ トリに保存される。</li>
-<li>インスタンスにアプリケーションをデプロイする際、OpsWorks スタックによって「Deploy」ライフサイクルイベントがトリガーさ れ、レイヤーのデプロイレシピがそのインスタンスで実行される。</li>
+</li>
+<li>レシピ<ul>
+<li>レイヤーごとに実行される設定スクリプト。</li>
+<li>OpsWorks スタックは各ライフサイクルイベントで対応するレシピを自動実行。</li>
+<li>インスタンスにアプリケーションをデプロイする際、<code>Deploy</code> ライフサイクルイベントがトリガーされ、レイヤーのデプロイレシピがインスタンスで実行される。</li>
+</ul>
+</li>
 </ul>
 <p>ライフサイクルイベント</p>
-<p>各レイヤーでライフサイクルイベントごとに実行するレシピ (Chef cookbook) を指定できる。</p>
+<p>各レイヤーで<strong>ライフサイクルイベントごとに実行するレシピを指定</strong>できる。</p>
 <ul>
 <li>Setup<ul>
 <li>This event occurs after a started instance has finished booting.</li>
 </ul>
 </li>
-<li>Configure<ul>
+<li><strong>Configure</strong><ul>
 <li>This event occurs on all of the stack's instances when one of the following occurs:<ul>
 <li>An instance enters or leaves the online state.</li>
 <li>You associate an EIP address with an instance or disassociate one from an instance.</li>
 <li>You attach an ELB to a layer, or detach one from a layer.</li>
 </ul>
 </li>
-<li>いずれか1つのインスタンスがオンライン/オフラインになった際に全てのインスタンスで実行される。</li>
+<li>いずれか1つのインスタンスが<strong>オンライン/オフラインになった際に全てのインスタンスで実行</strong>される。</li>
 </ul>
 </li>
 <li>Deploy<ul>
@@ -1124,46 +1131,41 @@ Resources:
 </ul>
 <h1 id="ecs_1">ECS</h1>
 <p><img alt="" src="_attachment/20190731_AmazonECS_DeepDive_AWSBlackBelt_2.png" /></p>
-<p>ECS クラスター</p>
+<p>Task Definition</p>
 <ul>
-<li>Fargate / EC2 / 外部クラスター</li>
-<li>クラスターテンプレート<ul>
-<li>コンソールから作成する場合、クラスターテンプレート (CFn テンプレート) を選択して作成する。</li>
-<li><img alt="" src="_attachment/image_654.png" /></li>
+<li>(複数の)コンテナ定義、コンテナの CPU/メモリサイズ、タスク実行ロール</li>
+<li>コンテナへのボリュームマッピングやポートマッピング</li>
+<li>ネットワークモード (VPC)</li>
+<li>docker-compose.yaml 相当の設定</li>
 </ul>
-</li>
-</ul>
-<p>EC2 クラスターを作成する場合の指定項目:</p>
+<p>Service</p>
 <ul>
-<li>インスタンスタイプ (t2-micro 等)</li>
-<li>インスタンス数<ul>
-<li>指定したインスタンス数を起動する Auto Scaling グループが作成される。</li>
-<li>クラスタ作成後にインスタンス数を変更したい場合は ASG を直接編集。</li>
+<li>Task の desired count の維持 (Task の Auto Healing)</li>
+<li>ELB によるトラフィックルーティング</li>
+<li>起動方式: Launch Type (EC2/Fargate), Capacity Provider Strategy</li>
+<li>デプロイ管理: Rolling update / Blue-Green（CodeDeploy）</li>
+<li>Service Auto Scaling</li>
 </ul>
-</li>
-<li>AMI<ul>
-<li>通常は ECS Agent コンテナを起動する AWS 管理の Amazon Linux AMI を使用。</li>
+<p>Capacity Provider（CP）</p>
+<ul>
+<li>タスク実行インフラの抽象化。旧来の Launch Type（Fargate/EC2）より柔軟で、現在の推奨方式。</li>
+<li>Capacity Storategy: <code>FARGATE</code> / <code>FARGATE_SPOT</code> / <code>EC2（ASG）</code> のタスク配分</li>
 </ul>
-</li>
-<li>ルート EBS ボリュームサイズ</li>
-<li>キーペア<ul>
-<li>インスタンスにログインできる。</li>
+<p>ECS クラスタ</p>
+<ul>
+<li>タスク実行環境の論理スコープ。ネットワーク/監視/権限の“枠”を提供。</li>
+<li>クラスタごとに1つ以上の CP が登録できる (FARGATE CP &amp; EC2 CP)</li>
 </ul>
-</li>
-<li>VPC・サブネット<ul>
-<li>複数サブネットで Multi-AZ の HA 構成にできる。</li>
-</ul>
-</li>
-<li>セキュリティグループ<ul>
-<li>タスク(=コンテナ)へのインバウンド接続もここで許可する必要がある。</li>
-</ul>
-</li>
-<li>コンテナインスタンス IAM ロール<ul>
-<li>ECS Agent が ECS API を呼び出すためのロール</li>
+<p>ECS エージェント</p>
+<ul>
+<li>コンテナインスタンス (EC2) で起動するデーモン。Fargate では意識不要。</li>
+<li><strong>コンテナインスタンスロール</strong>が適用される。<ul>
+<li>ECS クラスターの EC2 インスタンスのインスタンスロールのこと。</li>
+<li>ECS 系だけでなく、ECR の GetAuthorizationToken 権限を指定。</li>
 </ul>
 </li>
 </ul>
-<p>問題例: イメージを更新してタスクを再起動してもコンテナが更新されない場合がある</p>
+<p>ECS エージェントの問題例: イメージを更新してタスクを再起動してもコンテナが更新されない場合がある</p>
 <ul>
 <li>正しく起動しているコンテナもあるので、クラスターインスタンスの ECS エージェントの異常が原因と考えられる。</li>
 <li><img alt="" src="_attachment/image_655.png" /></li>
@@ -1183,18 +1185,8 @@ Resources:
 </ul>
 <p>タスク実行ロール: executionRoleArn</p>
 <ul>
-<li>ECS Agent に使用されるロール。</li>
-<li>Fargate や外部インスタンスの場合、タスク実行ロールでコンテナイメージのプル、コンテナログの CloudWatch Logs への書き込みを許可する。</li>
-<li>EC2 クラスターの場合はコンテナインスタンスロールで許可がカバー出来ていれば不要。<ul>
-<li>Task Definition 毎に追加の許可が必要な場合はこちらも使用。</li>
-<li>例: containerDefinition の secrets で SSM Parameter Store を参照する場合など</li>
-</ul>
-</li>
-<li>(参考) コンテナインスタンスロール<ul>
-<li>ECS クラスターに指定する、クラスターの EC2 インスタンスのインスタンスロール。</li>
-<li>ECS Agent に適用される。</li>
-</ul>
-</li>
+<li>コンテナランタイムに使用されるロール。</li>
+<li>コンテナイメージのプル、コンテナログの CloudWatch Logs への書き込みを許可する。</li>
 </ul>
 <p>networkMode</p>
 <ul>

@@ -15,9 +15,10 @@
     <main>
         
 <article>
-    <p>Ref.
-- <a href="References/AWS%20-%20Security%20-%20Overview.html">AWS - Security - Overview</a>
-- BB: <a href="https://aws.amazon.com/jp/aws-jp-introduction/aws-jp-webinar-service-cut/">https://aws.amazon.com/jp/aws-jp-introduction/aws-jp-webinar-service-cut/</a></p>
+    <p>Ref.  <a href="References/AWS%20-%20Security%20-%20Overview.html">AWS - Security - Overview</a>
+- 時間: 75問/180分 → 1問2分20秒
+- 10問: 23分+
+- 1時間: 25問</p>
 <table>
 <thead>
 <tr>
@@ -202,9 +203,16 @@
 </ul>
 </li>
 </ul>
+<p>サービスロール</p>
+<ul>
+<li>CodeBuild サービスが各種サービスにアクセスするのに必要なロール。</li>
+<li>CodeCommit からのソース取得, S3 へのアーティファクト保存, ECR へのプッシュ等</li>
+<li>ビルドサーバのコンテナ環境にもサービスロール権限が引き継がれる (クリデンシャルが環境変数経由で渡される)</li>
+</ul>
 <p>IAM ポリシー</p>
 <ul>
 <li>ビルドプロジェクトへのアクセス制御</li>
+<li>AWSCodeBuildAdminAccess, AWSCodeBuildDeveloperAccess, AWSCodeBuildReadOnlyAccess 等</li>
 </ul>
 <p>CodePipeline 連携</p>
 <ul>
@@ -349,13 +357,14 @@
 <p>サービスロール</p>
 <ul>
 <li>デプロイグループに指定し、デプロイターゲットのサービス等へのアクセスを許可する。</li>
-<li>AWSCodeDeployRole</li>
+<li>AWSCodeDeployRole ... ELB, ASG, タグ取得, ClaoudWatch Alarms 等</li>
 <li>AWSCodeDeployRoleForECS</li>
 <li>AWSCodeDeployRoleForLambda</li>
+<li>ECS, Lambda ではサービスロールで必要な権限を与えられるが、EC2ではインスタンスロールの考慮も必要。</li>
 </ul>
 <p>CodeDeploy エージェント</p>
 <ul>
-<li>S3 から pull するためインスタンスロールに s3:Get*,   s3:List* パーミッションが必要。</li>
+<li>S3 から pull するためインスタンスロールに s3:Get*, s3:List* パーミッションが必要。</li>
 <li>CodeDeploy エンドポイントに HTTPS/443 でアクセス<ul>
 <li>パブリックサブネットならインターネット経由、プライベートなら VPC エンドポイント経由。</li>
 <li>VPC エンドポイントは ECS や VPC Lambda でもプライベートサブネットなら必要。</li>
@@ -368,8 +377,8 @@
 <li>オンプレインスタンスが使用する、CodeDeploy アクセス許可を持つ IAM ロールを作成する。</li>
 <li>オンプレインスタンス上で sts assume-role で認証情報のセットを取得して保存する。</li>
 <li>CodeDeploy エージェントをオンプレインスタンスにインストールする。</li>
-<li>register-on-premises-instance でオンプレインスタンスを登録する。</li>
-<li>オンプレミスインスタンスにタグを設定する。(add-tags-to-on-premises-instances コマンド)</li>
+<li><code>aws deploy register-on-premises-instance</code> でオンプレインスタンスを登録する。</li>
+<li>オンプレミスインスタンスにタグを設定する。(コンソールか CLI コマンド)</li>
 <li>タグに基づいてデプロイグループをセットアップする。</li>
 <li>デプロイグループを使用してアプリケーションをデプロイする。</li>
 </ol>
@@ -450,9 +459,10 @@
 <p>クロスアカウント</p>
 <ul>
 <li>パイプラインのある開発アカウントとデプロイ先の本番アカウントのクロスアカウント設定。</li>
-<li>デプロイ先アカウントに CodeDeploy プロジェクトを作成。</li>
-<li>パイプラインで使用する KMS カスタマー管理キーを作成。デプロイ先アカウントから使用できるようキーポリシーを設定。</li>
+<li>パイプライン側で KMS カスタマー管理キーを作成。デプロイ先アカウントから使用できるようキーポリシーを設定。</li>
 <li>S3 バケットにもデプロイ先アカウントからアクセスできるようバケットポリシーを設定。</li>
+<li>デプロイ先アカウントに CodeDeploy プロジェクトを作成。インスタンスロールに KMS, S3 へのアクセス権も設定。</li>
+<li>この CodeDeploy を開発側アカウントのパイプラインから実行できるよう、クロスアカウントロールを作成して、パイプラインのサービスロールに設定。</li>
 </ul>
 <p>Ref. クロスアカウントロール</p>
 <ul>
@@ -515,12 +525,11 @@
 <p>インプレース</p>
 <ul>
 <li>インスタンスが並列しないので低コスト。</li>
-<li>CodeDeploy, Beanstalk (All at once), OpsWorks でサポート。</li>
+<li>CodeDeploy, Beanstalk (All at once)</li>
 </ul>
 <p>イミュータブル</p>
 <ul>
 <li>インプレースの反対。新しいインスタンスまたは並列環境を作ってデプロイする。</li>
-<li>EC2 Auto Scaling: AutoScalingReplacingUpdate</li>
 </ul>
 <p>ローリング</p>
 <ul>
@@ -536,7 +545,8 @@
 <li>トラフィックを振り分けるため、トラフィックルーティングの仕組みが必要。</li>
 <li>システムのダウングレードなし。</li>
 <li>ロールバックが容易。</li>
-<li>CodeDeploy, Beanstalk(Immutable), OpsWorks, CloudFormation</li>
+<li>CodeDeploy, Beanstalk(Immutable)</li>
+<li>EC2 Auto Scaling: AutoScalingReplacingUpdate</li>
 </ul>
 <h2 id="bluegreen">Blue/Green デプロイの実現方法</h2>
 <p>Route53 CNAME 切り替え (AllAtOnce)</p>
@@ -558,7 +568,7 @@
 <p>API Gateway Canary ステージ</p>
 <p>Lambda 加重エイリアス</p>
 <ul>
-<li>route-config でセカンダリのバージョンと比率を設定。</li>
+<li>route-config 設定でセカンダリのバージョンと比率を設定。</li>
 </ul>
 <p>SAM の AWS::Serverless::Function</p>
 <ul>
@@ -619,9 +629,8 @@
 <li>新しいタスクセットと ELB ターゲットグループを作成、加重ターゲットグループで移行。</li>
 </ul>
 <p>Lambda</p>
-<ul>
-<li>指定された新旧バージョンで加重エイリアスを行う。</li>
-</ul>
+<p>- 指定された新旧バージョンで加重エイリアス(カナリアリリース)を行う。
+- route-configでセカンダリバージョンの比率を指定。</p>
 <h2 id="elastic-beanstalk">Elastic Beanstalk のデプロイ</h2>
 <h3 id="deployment-policy">デプロイポリシー (Deployment policy)</h3>
 <p>All at once</p>
@@ -736,8 +745,12 @@
 </ul>
 <p>CreationPolicy 属性</p>
 <ul>
-<li>例) AutoScalingGroup リソースが作成された後、グループ内の2個のインスタンスからシグナルがとどくまで生成完了とならず、次に進まない。</li>
+<li>生成完了ポリシー指定: 例) AutoScalingGroup リソースが作成時、グループ内の2個のインスタンスからシグナルがとどくまで生成完了とならず、次に進まない。</li>
 </ul>
+<pre><code class="language-yaml">CreationPolicy:
+  ResourceSignal:
+    Count: 2 
+</code></pre>
 <p>UpdatePolicy 属性</p>
 <ul>
 <li>AWS::AutoScaling::AutoScalingGroup<ul>
@@ -764,6 +777,7 @@
 <p>DeletionPolicy 属性</p>
 <ul>
 <li>Delete, Retain, Snapshot</li>
+<li>スナップショット対象: EBS, RDS, ElastiCache, Redshift</li>
 </ul>
 <h3 id="_2">スタックのオプション</h3>
 <p>TimeoutInMinutes</p>
@@ -772,12 +786,12 @@
 </ul>
 <p>DisableRollback</p>
 <ul>
-<li>ロールバックの無効化。</li>
+<li>ロールバック自体の無効化。</li>
 <li>Fail した場合も残ったリソースはスタックごと手動で削除できる。</li>
 </ul>
 <p>OnFailure</p>
 <ul>
-<li>スタック作成に失敗した場合に実行するアクションを指定。</li>
+<li>スタック作成に失敗した場合に実行するロールバック操作を指定。</li>
 <li>DO_NOTHING、ROLLBACK、DELETE のいず れか。</li>
 <li>DETETE ではスタックの情報そのものが消去されるのでスタックのログも見られない。</li>
 <li>DisableRollback が有効な場合、OnFailure は設定できない。</li>
@@ -804,6 +818,7 @@
 <p>MetaData 属性 (リソースメタデータ)</p>
 <ul>
 <li>各リソースの MetaData 属性に指定できる任意の Key-value オブジェクト。</li>
+<li>AWS::CloudFormation::Init キーに指定されたオブジェクトの指定を cfn-init が処理。</li>
 </ul>
 <pre><code>AWSTemplateFormatVersion: '2010-09-09'
 Resources:
@@ -830,7 +845,7 @@ Resources:
 </ul>
 <p>cfn-signal</p>
 <ul>
-<li>CreationPolicy 属性と WaitCondition リソースで使用されるシグナルを送信するために使用する</li>
+<li>CreationPolicy 属性と WaitCondition リソースの ResourceSignal 属性で使用されるシグナルを送信するために使用</li>
 <li>WaitCondition はテンプレートのリソースの1つとして作られ、このリソースが生成されるまでスタック生成全体が終了されないようにできる。</li>
 </ul>
 <p>cfn-hup</p>
@@ -875,13 +890,13 @@ Resources:
 </ul>
 <p>カスタムリソース</p>
 <ul>
-<li>外部リソースをカスタムリソースプロバイダー (Lambda 等) で作成・更新・削除する。</li>
+<li>外部リソースをカスタムリソースプロバイダー (Lambda 等) で作成・更新・削除する。SNS と S3 署名付き URL で実装。</li>
 <li>ユースケース:<ul>
 <li>空でない S3 バケットではスタック削除が Fail するため、Lambda カスタムリソースで削除するのは頻出のユースケース。(DeletaionPolicy が Delete でも Fail する)</li>
 <li>リージョン毎に異なる AMI ID を Lambda カスタムリソースで取得して、カスタムリソースの Attribute として AMI ID を返すようなユースケース。</li>
 </ul>
 </li>
-<li>Create/Update/Delete といったリクエストを  SNS メッセージでカスタムリソースプロバイダに送信。<ul>
+<li>Create/Update/Delete といったリクエストを SNS メッセージでカスタムリソースプロバイダに送信。<ul>
 <li>カスタムリソースプロバイダがメッセージを処理し、Success/Fail の結果が S3 署名付き URL 経由で CloudFormation に返される。</li>
 <li>Lambda を使用する場合は直接 Lambda の ARN を指定でき、SNS トピックを作成する必要がない。</li>
 </ul>
@@ -889,7 +904,8 @@ Resources:
 </ul>
 <p>CloudFormation スタックセット</p>
 <ul>
-<li>クロスアカウント/クロスリージョンに同一スタックを1 度のオペレーションで作成、更新、削除できる。</li>
+<li>クロスアカウント/クロスリージョンに同一スタックを1度のオペレーションで作成、更新、削除できる。</li>
+<li>全アカウントに AWS Config を展開したり、共通の IAM ロールを配布するなどの用途。</li>
 <li>ターゲットアカウントにスタックを作成する前に、 管理者アカウントとターゲットアカウントの間に信頼関係をセットアップする必要がある。</li>
 <li>スタックセットはリージョンリソースなので、他のリージョンで表示や変更できない。</li>
 <li>StackSets のテンプレートがある: クロスアカウントで CloudTrail, Config を有効にするのに使われる</li>
@@ -1685,28 +1701,29 @@ Resources:
 </ul>
 <p>呼び出し可能なサービス</p>
 <ul>
-<li>Lambda : 関数実行</li>
+<li>関数実行<ul>
+<li>Lambda</li>
 </ul>
-<p>--- バッチジョブ系 ---</p>
-<ul>
+</li>
+<li>バッチジョブ系<ul>
 <li>ECS : ECS タスク実行</li>
 <li>AWS Batch : ジョブの起動、ジョブ完了の待機</li>
 <li>Glue : ジョブの実行</li>
 <li>SageMaker : トレーニングジョブ、トランスフォームジョブの起動</li>
 </ul>
-<p>--- レコード投入 ---</p>
-<ul>
+</li>
+<li>レコード投入<ul>
 <li>DynamoDB : アイテム取得、新規アイテム登録 </li>
 <li>SNS : トピックへのメッセージ送信</li>
 <li>SQS : キューへのメッセージ送信</li>
 </ul>
-<p>---</p>
-<ul>
-<li>SDK サービス統合: 対応サービスの任意の API を実行<ul>
+</li>
+<li>その他<ul>
+<li>Activity: 自前のアプリケーションによる非同期コールバック</li>
+<li>SDK サービス統合: 対応サービスの任意の API を実行</li>
 <li><a href="https://docs.aws.amazon.com/step-functions/latest/dg/supported-services-awssdk.html">https://docs.aws.amazon.com/step-functions/latest/dg/supported-services-awssdk.html</a></li>
 </ul>
 </li>
-<li>Activity: 自前のアプリケーションによる非同期コールバック</li>
 </ul>
 <h1 id="sns">SNS</h1>
 <p>パブリッシャ</p>
@@ -2172,11 +2189,13 @@ Resources:
 - <a href="References/AWS%20-%20Security%20-%20Governance,%20Incident%20Response.html">AWS - Security - Governance, Incident Response</a>
 - <a href="References/AWS%20-%20Security%20-%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS - Security - CloudFormation, Service Catalog, Control Tower</a></p>
 <h1 id="aws-config">AWS Config</h1>
-<p>リソース変更履歴とスナップショットを S3 バケットに保管。</p>
+<p>AWS リソース構成のスナップショットと変更履歴をS3に保存</p>
+<p>AWS Config ルール</p>
 <ul>
-<li>変更履歴をタイムラインで確認できる。</li>
-<li>リソース変更、および Config ルール検出の SNS 通知も可能。</li>
+<li>AWS Config で取得したリソース設定が Lambda 関数に送られてルール評価が実施される</li>
+<li><strong>修復アクション</strong>: Noncompliant が発生した際に SSM Automation アクションを実行</li>
 </ul>
+<p>AWS Config アグリゲーター:  中央アカウントに集約</p>
 <h3 id="aws-config-rules">AWS Config Rules</h3>
 <p>ルールによるコンプライアンス違反の検出。</p>
 <ul>
@@ -2306,6 +2325,11 @@ Resources:
 <li>テンプレート制約:  CloudFormation テンプレートのパラメータを制限。</li>
 <li>起動制約:  製品を起動する際に使用するロールを指定。</li>
 </ul>
+<h2 id="ec2-image-builder">EC2 Image Builder</h2>
+<ul>
+<li>AMI とコンテナイメージの自動ビルド・検証・配布を行うパイプラインサービス。</li>
+<li>ベースAMI更新やマルチアカウント配布を自動化。</li>
+</ul>
 <h1 id="aws-waf">AWS WAF</h1>
 <p>統合サービス: ALB, CloudFront, API Gateway</p>
 <p>ウェブ ACL &amp; ルール</p>
@@ -2377,15 +2401,12 @@ Resources:
 <li>ネットワーク到達可能性ルール。</li>
 </ul>
 </li>
-</ul>
-<p>Inspector エージェント(オプショナル)</p>
-<ul>
-<li>SSM Agent あれば SSM Run Command でインストールできる</li>
+<li>エージェントレススキャン: SSM Agent 不要でEBSスナップショットを24時間ごとに評価。</li>
 </ul>
 <h1 id="amazon-macie">Amazon Macie</h1>
-<p>S3 のセキュリティ監視。</p>
+<p>S3 内の機密データ (PII, カード番号, 認証情報)、暗号化不備、共有状況などのリスク検出。</p>
 <ul>
-<li>S3 オブジェクトと CloudTrail のアクセスパターンから機械学習で脅威検知。</li>
+<li>S3 サーバアクセスログと CloudTrail のアクセスパターンから機械学習でリスク検知。</li>
 <li>PII や知的財産などの機密データの検出。</li>
 <li>ダッシュボード表示と CloudWatch Events のトリガー。</li>
 </ul>
@@ -2555,6 +2576,10 @@ Resources:
 <img alt="" src="_attachment/image_679.png" />
 <img alt="" src="_attachment/image_679.png" /></p>
 <h2 id="vpc">VPC</h2>
+<p>リージョン内の複数 AZ にまたがって展開できる仮想ネットワーク
+- AZに1つ以上のサブネットを配置
+- サブネットに EC2, RDS などのインスタンスを配置
+- ここの VPC に IP アドレス範囲 (CIDR) を持つ</p>
 <p>サブネット</p>
 <ul>
 <li>サブネットに AZ を紐づけることで、AZ 内にサブネットを置く。</li>

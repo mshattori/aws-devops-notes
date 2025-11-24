@@ -77,14 +77,22 @@
 <li>オープンポートの検査。不要なサーバやセキュリティグループ誤設定によって外部から到達可能なポートのチェック。</li>
 </ul>
 </li>
-<li>SSM Agent がインストールされていれば、現行の Inspector v2 では Inspector エージェントは不要。自動的に検出・スキャンが実行される。</li>
+<li>ルールパッケージ<ul>
+<li>CVE (共通脆弱性識別子)</li>
+<li>CIS (Center for Internet Security) ... OS のセキュリティ設定ベストプラクティスのベンチマーク</li>
+<li>セキュリティのベストプラクティス ... SSH root ログイン無効化, パスワード複雑性, ASR/DEP 有効化など</li>
+</ul>
+</li>
 <li>SNS 通知により Lambda 等で自動修復。</li>
+<li>エージェントレススキャン</li>
+<li>SSM Agent インストール不要で24時間ごとに評価。EBSスナップショットをスキャン。</li>
+<li>即時性の高いスキャン・詳細なスキャンを行いたい場合は SSM Agent インストールする。</li>
 </ul>
 <p><img alt="" src="_attachment/image_383.png" /></p>
 <h2 id="amazon-macie">Amazon Macie</h2>
 <ul>
-<li>S3 の機密データ (PII, カード番号, 認証情報)、暗号化不備、共有状況などのセキュリティリスクの検出。</li>
-<li>S3 オブジェクトと CloudTrail の S3 アクセスパターンから機械学習およびパターンマッチング。</li>
+<li>S3 内の機密データ (PII, カード番号, 認証情報)、暗号化不備、共有状況などのリスク検出。</li>
+<li>S3 サーバアクセスログと CloudTrail の S3 アクセスパターンを学習およびパターンマッチング。</li>
 </ul>
 <p><img alt="" src="_attachment/image_384.png" /></p>
 <h2 id="amazon-guardduty">Amazon GuardDuty</h2>
@@ -140,17 +148,24 @@
 <h2 id="aws-config">AWS Config</h2>
 <p>Ref. <a href="AWS/AWS%20Security%20Governance,%20Incident%20Response.html">AWS: Security: Governance, Incident Response</a></p>
 <p>AWS Config
-- AWS リソースのインベントリ生成と管理
-    - AWS リソース設定のスナップショットと変更履歴を S3 バケットに保存
-    - 変更発生時の SNS 通知 (オプショナル)
+- AWS リソース構成のスナップショット保存と変更履歴の管理
+    - スナップショットと変更履歴を S3 バケットに保存
+    - 変更発生時の EventBridge/SNS 通知 (オプショナル)
+    - 構成変更の差分確認
 AWS Config ルール
 - リソース設定のコンプライアンス状態の管理
 - AWS Config で取得したリソース設定が Lambda 関数に送られてルール評価が実施される
     - リソースが対象なのでインスタンス内のアプリケーションなどはカバーされない。
-- マネージドルールとカスタムルール (ユーザが Lambda で実装)
-- 修復アクション:
+- マネージドルール
+    - iam-user-mfa-enabled ... MFAが有効？
+    - encrypted-volumes ... アタッチされたEBSが暗号化されている？
+    - TrustedAdvisor も一部のルールを同様に検出ができるが即時性や修復アクションの有無が大きな違い
+- カスタムルール (ユーザが Lambda で実装)
+- <strong>修復アクション</strong>:
   - Config ルールに対する Noncompliant が発生した際に実行する SSM Automation アクションを設定できる
-  - 例: EC2 インスタンスの停止等</p>
+  - 例: EC2 インスタンスの停止等
+AWS Config アグリゲーター
+  - 中央アカウントにアグリゲーターを作成、マルチアカウント/マルチリージョンの AWS Config 情報を集約</p>
 <h2 id="aws-service-catalog">AWS Service Catalog</h2>
 <p>Ref. <a href="AWS/AWS%20Security%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS: Security: CloudFormation, Service Catalog, Control Tower</a></p>
 <p>管理者が提供する CloudFormation テンプレート(=製品)を指定された IAM ロールとパラメータ(=制約)で、エンドユーザが自身でプロビジョンする仕組み。</p>

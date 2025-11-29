@@ -2520,11 +2520,15 @@ Resources:
 </ul>
 </li>
 </ul>
-<p>暗号化の手順
-- GenerateDataKey で平文データキー (Plaintext) で暗号化し、暗号化したデータを暗号化データキー (CiphertextBlob) とともに保管。
-- 平文データキーは廃棄。</p>
-<p>復号の手順
-- Decrypt で暗号化データキーを復号し、そのキーで暗号化データを復号。</p>
+<p>暗号化の手順</p>
+<ul>
+<li>GenerateDataKey で平文データキー (Plaintext) で暗号化し、暗号化したデータを暗号化データキー (CiphertextBlob) とともに保管。</li>
+<li>平文データキーは廃棄。</li>
+</ul>
+<p>復号の手順</p>
+<ul>
+<li>Decrypt で暗号化データキーを復号し、そのキーで暗号化データを復号。</li>
+</ul>
 <p>API</p>
 <ul>
 <li>CreateKey<ul>

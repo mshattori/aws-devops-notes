@@ -2788,7 +2788,7 @@ Resources:
 <ul>
 <li>AZに1つ以上のサブネットを配置</li>
 <li>サブネットに EC2, RDS などのインスタンスを配置</li>
-<li>ここの VPC に IP アドレス範囲 (CIDR) を持つ</li>
+<li>個々の VPC に IP アドレス範囲 (CIDR) を持つ</li>
 </ul>
 <p>サブネット</p>
 <ul>
@@ -2835,19 +2835,21 @@ Resources:
 <p>Network ACL (NACL)</p>
 <ul>
 <li>サブネットにつく仮想 FW ルール。サブネット単位で制御するような場合に使う。</li>
-<li>ブラックリストベースでデフォルト Allow で素通しになっている。(評価順序がある)</li>
 <li>ステートレスなのでインバウンド・アウトバウンドのパケットで個別設定する。<ul>
 <li>クライアントへのレスポンスには一時ポート(Ephemeral ports) の 1024-65535 とかのポートレンジでルールが必要となる。</li>
 </ul>
 </li>
+<li>デフォルトの NACL は Allow ルールのみで素通しになっている。(評価順序がある)</li>
+<li>SG と異なり、Allow/Deny の指定ができるのでブブラックリス指定が可能。</li>
 </ul>
 <p>VPC エンドポイント</p>
 <ul>
-<li>VPC からインターネットを経由せずパブリック IP 空間の AWS サービスにアクセスする。</li>
+<li>VPC からインターネットを経由せずリージョン内でエンドポイントを持つ AWS サービスにアクセスできる。</li>
 </ul>
 <p>ゲートウェイエンドポイント</p>
 <ul>
-<li>サービスのゲートウェイをルートテーブルに指定する。S3 と DynamoDB のみ。</li>
+<li>大規模分散ストレージの S3 と DynamoDB のみ</li>
+<li>サービスのゲートウェイをルートテーブルに指定する</li>
 </ul>
 <p>インターフェイスエンドポイント (PrivateLink)</p>
 <ul>
@@ -2899,6 +2901,7 @@ Resources:
 </li>
 </ul>
 <p>Launch configuration/template を変更するとバージョン番号がインクリメントする。</p>
+<p>同じセキュリティグループを使用すべきなので、ASG で SG が指定される。</p>
 <p>Auto Scaling グループ</p>
 <ul>
 <li>ELB 統合<ul>
@@ -2914,27 +2917,29 @@ Resources:
 <p>動的スケーリングポリシー</p>
 <ul>
 <li>Target tracking scaling<ul>
-<li>CloudWatch メトリクスのターゲット値を維持するようスケールアウト/インする。</li>
+<li><strong>CloudWatch メトリクスのターゲット値を維持</strong>するようスケールアウト/インする。</li>
 <li>CPU 使用率、ネットワーク出力、ネットワーク入力、ALB リクエスト数。</li>
 </ul>
 </li>
 <li>Step scaling<ul>
-<li>CloudWatch アラームにスケーリング調整値を設定してインスタンス数を増減する。</li>
+<li><strong>CloudWatch アラーム</strong>にスケーリング調整値を設定してインスタンス数を増減する。</li>
 <li>例: 平均 CPU 使用率 50% 超過アラームと、80% 超過アラームそれぞれにインスタンス追加数を個別に設定。</li>
 </ul>
 </li>
 <li>クールダウン (デフォルト300秒)<ul>
-<li>スケーリング実施後にアラームが連続して発生しても次のスケーリングを実施しない期間。</li>
+<li>スケーリング発生後に ASG 全体でスケーリングを抑制する期間 </li>
+<li>アラームが連続して発生してもスケーリングを実施しないようにするため</li>
 </ul>
 </li>
 <li>ウォームアップ<ul>
-<li>指定秒数の間、新しいインスタンスの値がメトリクスに反映されない。</li>
+<li>新しいインスタンスが CloudWatch メトリクスの平均 CPU に影響しないように除外する期間</li>
 <li>インスタンス内の OS のブートアップやアプリケーションの起動時間を考慮。</li>
 <li>クールダウンがウォームアップより長くないとメトリクス反映前に再度スケーリングが発生してしまう。</li>
 </ul>
 </li>
 <li>Disable scale-in<ul>
-<li>このポリシーによるインスタンスの削除 (スケールイン) を無効化。</li>
+<li>Target Tracking/Step Scaling の特定ポリシーだけインスタンスの削除 (スケールイン) を無効化。</li>
+<li>スケールアウトはしたいが、しばらくスケールインはさせたくないシナリオ（バッチ処理など）</li>
 </ul>
 </li>
 </ul>
@@ -2967,14 +2972,14 @@ Resources:
 </ul>
 <p>Suspended Process オプション</p>
 <ul>
-<li>Auto Scaling グループで特定の処理を停止:</li>
+<li>Auto Scaling グループで特定のイベント処理を停止:</li>
 <li><img alt="" src="_attachment/image_681.png" /></li>
 </ul>
 <p>Detach アクション</p>
 <ul>
 <li>インスタンスを Auto Scaling グループと ELB ターゲットグループからデタッチする。</li>
 <li>代わりのインスタンスが起動される。</li>
-<li>インスタンスのフォレンジックなどの際に使う。</li>
+<li>インスタンスの<strong>フォレンジックなど</strong>の際に使う。</li>
 </ul>
 <p>Set to Standby アクション</p>
 <ul>
@@ -2988,52 +2993,45 @@ Resources:
 </ul>
 <p>ライフサイクルフック</p>
 <ul>
-<li>インスタンスの起動・終了のフック待機 (デフォルト1時間)</li>
-<li>スクリプト実行<ul>
-<li>起動テンプレートの UserData に指定したスクリプトが実行される</li>
+<li>インスタンスの起動・終了時にインスタンス状態を Pending:Wait や Terminating:Wait に止めておく仕組み (デフォルト1時間)</li>
+<li>アプリケーション初期化処理 (UserData) の待機や、終了時にログ待避やスナップショットなどを実施</li>
+<li>イベント種類<ul>
+<li>EC2_INSTANCE_LAUNCHING (Pending: Wait → Proceed)</li>
+<li>EC2_INSTANCE_TERMINATING (Terminating: Wait → Proceed)</li>
 </ul>
 </li>
 <li>通知設定<ul>
 <li>SNS, SQS</li>
+<li>EventBridge ... SSM RunCommand などを実施</li>
 </ul>
 </li>
-<li>EventBridge/CloudWatch Events<ul>
-<li>Auto Scaling のライフサイクルアクション (launch/terminate) をイベントソースにできる</li>
+<li>
+<p>CompleteLifecycleAction API</p>
+<ul>
+<li>フック完了時に CLI や Lambda から COMPLETE/ABANDON の結果を通知する</li>
 </ul>
 </li>
-<li>CompleteLifecycleAction API<ul>
-<li>CLI や Lambda で処理の実施後 COMPLETE/ABANDON の結果を通知する</li>
-</ul>
-</li>
-<li>EC2_INSTANCE_LAUNCHING (Pending: Wait → Proceed)<ul>
-<li>アプリケーション初期化処理の待機や SSM RunCommand などを実施。</li>
-</ul>
-</li>
-<li>EC2_INSTANCE_TERMINATING (Terminating: Wait → Proceed)<ul>
-<li>ログの待避やスナップショットなどを実施。</li>
-</ul>
-</li>
-<li>問題例:<ul>
+<li>
+<p>問題例:</p>
+<ul>
 <li>Delay the termination of unhealthy Amazon EC2 instances by adding a lifecycle hook to your Auto Scaling group to move instances in the Terminating state to the Terminating:Wait state.</li>
 <li>Set up a CloudWatch Events rule for the EC2 Instance-terminate Lifecycle Action Auto Scaling Event with an associated AWS Systems Manager Automation document.</li>
 <li>Trigger the CloudWatch agent to push the application logs and then resume the instance termination once all the logs are sent to CloudWatch Logs.</li>
 </ul>
 </li>
 </ul>
-<p>CloudFormation による Auto Scaling 作成</p>
+<p><strong>CloudFormation による Auto Scaling 作成</strong></p>
 <ul>
-<li>CreationPolicy &gt; ResourceSignal で希望容量のインスタンスからシグナルあるまで ASG 作成成功を待機。</li>
+<li>CreationPolicy &gt; ResourceSignal で希望数のインスタンスからシグナルあるまで ASG 作成成功を待機。</li>
 <li>起動設定の UserData で cfn-signal を実施。</li>
-<li>スタック更新時にデフォルトでは既存インスタンスは置き換わらない。<ul>
-<li>UpdatePolicy を指定した場合にスタック更新でインスタンスがリプレースされる。<ul>
-<li>AutoScalingReplacingUpdate ... ASG 全体を置き換える</li>
-<li>AutoScalingRollingUpdate ... ASG 内で新しいインスタンスを立ててローリングアップデート</li>
-</ul>
-</li>
+<li>スタック更新時でもデフォルトでは既存インスタンスは置き換わらない</li>
+<li>UpdatePolicy を指定することでスタック更新時にインスタンスがリプレースされる:<ul>
+<li>AutoScalingRollingUpdate: ASG 内で新しいインスタンスを立ててローリングアップデート</li>
+<li>AutoScalingReplacingUpdate: ASG 全体を置き換える (Blue/Green)</li>
 </ul>
 </li>
 <li>IgnoreUnmodifiedGroupSizeProperties<ul>
-<li>スケジュールアクションで変更されたグループサイズ (Max,Min,Desired) がスタック更新で上書きされないようにするオプション。</li>
+<li>スケジュールアクションで変更された ASG のサイズ (Max,Min,Desired) がスタック更新時に上書きされないようにするオプション</li>
 </ul>
 </li>
 </ul>
@@ -3044,31 +3042,31 @@ Resources:
         PauseTime: PT1M
         WaitOnResourceSignals: 'true'
         # SuspendProcesses:
-        # - list of processes...
+        # - list of processes to suspend ...
       AutoScalingScheduledAction:
         IgnoreUnmodifiedGroupSizeProperties: 'true'
-------------------------------------------------------------------
-  　UpdatePolicy:
+</code></pre>
+<pre><code>  　UpdatePolicy:
       AutoScalingReplacingUpdate:
         WillReplace: 'true'
 </code></pre>
-<p>CodeDeploy と Auto Scaling のインテグレーション</p>
+<p><strong>CodeDeploy と Auto Scaling のインテグレーション</strong></p>
 <ul>
 <li>ASG の既存インスタンスとスケールアウトで新しく立ち上がるインスタンスに新しいリビジョンがデプロイされる。</li>
-<li>デプロイタイプとしてインプレースとBlue/Green の両方が指定可能。</li>
+<li>デプロイタイプとしてインプレースとBlue/Green が指定可能。</li>
 <li>Blue/Green では ASG そのものを置き換える方法も選択できる。</li>
-<li>デプロイ中にスケールアウトが発生した場合、まだデプロイが成功したとみなされていないため、以前のリビジョンが新しく立ち上がるインスタンスにデプロイされる。それを防ぐためにはデプロイ中に Suspended Process オプションでインスタンス起動につながる以下の Auto Scaling 処理を停止する:<ul>
-<li>AZRebalance</li>
+<li>デプロイ中にスケールアウトが発生した場合、まだデプロイが成功したとみなされていないため、以前のリビジョンが新しく立ち上がるインスタンスにデプロイされる。それを防ぐためにはデプロイ中に <code>SuspendedProcess</code> オプションでインスタンス起動につながる以下の Auto Scaling 処理を停止する:<ul>
 <li>AlarmNotification</li>
 <li>ScheduledActions</li>
 <li>ReplaceUnhealthy</li>
+<li>AZRebalance</li>
 </ul>
 </li>
 <li>common_functions.sh というスクリプトでやってくれるそう</li>
 </ul>
-<p>例: MinSize = MaxSize = 1 の ASG でインスタンスのリカバリを実現する例</p>
+<p>例: MinSize = MaxSize = 1 の ASG でインスタンスのリカバリを実現するユースケース</p>
 <ul>
-<li>各インスタンスに固定で ENI をアサインするという要件がある</li>
+<li>クラスタの各インスタンスに固定で ENI をアサインするという要件があるため、1つの ASG にまとめられない。 </li>
 <li>Set up a CloudFormation child stack template which launches an Auto Scaling group consisting of just one EC2 instance then provide a list of ENIs, hostnames and the specific AZs as stack parameters.</li>
 <li>Set both the MinSize and MaxSize parameters of the Auto Scaling group to 1.</li>
 <li>Add a user data script that will attach an ENI to the instance once launched.</li>
@@ -3081,6 +3079,7 @@ Resources:
 <p>解答: Update を Fail になりにくくする設定を選ぶ</p>
 <ul>
 <li>In your <em>AutoScalingRollingUpdate</em> policy, set the <em>WaitOnResourceSignals</em> property to false.<ul>
+<li><em>WaitOnResourceSignals</em> が true　だと <em>PauseTime</em> がタイムアウトとなる。</li>
 <li>タイムアウトで Fail にならないようにする。アプリケーション起動などは失敗しているかもしれがないが、アップデート自体は Fail にならない。</li>
 <li>Take note that if <em>WaitOnResourceSignals</em> is set to true, <em>PauseTime</em> changes to a timeout value.</li>
 <li>AWS CloudFormation waits to receive a success signal until the maximum time specified by the PauseTime value.</li>

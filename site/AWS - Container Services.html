@@ -183,8 +183,9 @@
 </ul>
 <p><img alt="" src="_attachment/image_480.png" /></p>
 <ul>
-<li>logConfiguration: docker run --log-driver オプションの指定。<ul>
-<li><code>logConfiguration: awslogs</code> は CloudWatch agent 不要でログを送れる。</li>
+<li>logConfiguration<ul>
+<li><code>docker run --log-driver</code> オプションに設定するロギング・ドライバの指定。</li>
+<li><code>logConfiguration: awslogs</code> は CloudWatch Agent 不要でログを送れる。</li>
 <li><img alt="" src="_attachment/image_481.png" /></li>
 </ul>
 </li>
@@ -209,20 +210,9 @@
 </code></pre>
 <p><strong>タスク実行ロール</strong></p>
 <ul>
-<li>Task Definition で設定する、ECS Agent に使用されるロール。</li>
-<li>Fargate や外部インスタンスの場合、タスク実行ロールでコンテナイメージのプル、コンテナログの CloudWatch Logs への書き込みを許可する。</li>
-<li>EC2 クラスターの場合はコンテナインスタンスロールで許可がカバー出来ていれば不要。<ul>
-<li>Task Definition 毎に追加の許可が必要な場合はこちらも使用。</li>
-<li>例: containerDefinition の secrets で SSM Parameter Store を参照する場合など</li>
-</ul>
-</li>
+<li>Task Definition で設定する、コンテナランタイムに使用されるロール。TaskDefinition に記載する諸々の処理に必要な権限。</li>
+<li>コンテナイメージのプル、コンテナログの CloudWatch Logsの書き込み、Secrets Manager/Systems Manager のアクセスを許可する。</li>
 <li><a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html">https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html</a></li>
-</ul>
-<p><strong>コンテナインスタンスロール</strong></p>
-<ul>
-<li>ECS クラスターに指定する。</li>
-<li>クラスターの EC2 インスタンスのインスタンスロールとして設定される。</li>
-<li>ECS Agent に適用されるロール。</li>
 </ul>
 <h3 id="networkmode">networkMode</h3>
 <p><img alt="" src="_attachment/image_483.png" />
@@ -364,6 +354,15 @@
 </li>
 <li>コンテナインスタンス IAM ロール<ul>
 <li>ECS Agent が ECS API を呼び出すためのロール</li>
+</ul>
+</li>
+</ul>
+<p><strong>コンテナインスタンスロール</strong></p>
+<ul>
+<li>ECS クラスター作成時に指定する。</li>
+<li>ECS Agent に適用されるロール。ECS Agent はコンテナではなくホスト上のデーモンとして動作するので、インスタンスにロールの設定が必要。</li>
+<li>ECS API 系および ECR の <code>ecr::GetAuthorizationToken</code> 権限も指定。<ul>
+<li>ただし、実際の pull はタスク実行ロールでコンテナランタイムが実施。</li>
 </ul>
 </li>
 </ul>

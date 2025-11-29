@@ -1158,10 +1158,11 @@ Resources:
 </ul>
 <p>ECS エージェント</p>
 <ul>
-<li>コンテナインスタンス (EC2) で起動するデーモン。Fargate では意識不要。</li>
+<li>コンテナインスタンス (EC2) で起動するデーモン。ECS API のやり取りを行う。Fargate では意識不要。</li>
 <li><strong>コンテナインスタンスロール</strong>が適用される。<ul>
 <li>ECS クラスターの EC2 インスタンスのインスタンスロールのこと。</li>
-<li>ECS 系だけでなく、ECR の GetAuthorizationToken 権限を指定。</li>
+<li>ECS API 系だけでなく、ECR の <code>ecr::GetAuthorizationToken</code> 権限も指定。</li>
+<li>ただし、実際の pull はタスク実行ロールでコンテナランタイムが実施。</li>
 </ul>
 </li>
 </ul>
@@ -1185,8 +1186,8 @@ Resources:
 </ul>
 <p>タスク実行ロール: executionRoleArn</p>
 <ul>
-<li>コンテナランタイムに使用されるロール。</li>
-<li>コンテナイメージのプル、コンテナログの CloudWatch Logs への書き込みを許可する。</li>
+<li>コンテナランタイムに使用されるロール。TaskDefinition に記載する諸々の処理に必要な権限。</li>
+<li>コンテナイメージのプル、コンテナログの CloudWatch Logs への書き込み (ref. awslogs ロギングドライバ)、Secrets Manager/Systems Manager へのアクセス許可。</li>
 </ul>
 <p>networkMode</p>
 <ul>

@@ -95,12 +95,13 @@
 </ul>
 <p>Service</p>
 <ul>
-<li>Task の希望実行数（desired count）の維持</li>
-<li>異常終了した Task の自動再起動（自己修復 / Auto Healing）</li>
+<li>ロードバランシングされスケーリングも可能な、インバウンド接続される外部公開サービスの1単位</li>
+<li>ECS Service は 1つのターゲットグループしか紐づけできず、外部公開できるコンテナは1つだけ。</li>
+<li>Task 希望実行数（desired count）維持: 異常終了した Task を自動再起動（Auto Healing）</li>
 <li>ELB と連携してトラフィックをルーティング</li>
-<li>起動方式を指定:   Launch Type（EC2 / Fargate）または Capacity Provider Strategy</li>
+<li>起動方式を指定: Launch Type（EC2 / Fargate）または Capacity Provider Strategy</li>
 <li>デプロイ管理: Rolling update / Blue-Green（CodeDeploy）</li>
-<li>Service Auto Scaling</li>
+<li>Service Auto Scaling: CPUなどのメトリクスに応じてタスク数を増減</li>
 </ul>
 <p>Cluster</p>
 <ul>
@@ -239,7 +240,10 @@
 <h3 id="service-elb">Service の ELB 連携</h3>
 <ul>
 <li>起動したタスクをターゲットグループに追加する。</li>
-<li><strong>インバウンド接続されるサーバを立てる場合には必須</strong>。</li>
+<li><strong>インバウンド接続されるサーバを立てるには必須</strong>。</li>
+<li>ECS Service は 1つのターゲットグループしか紐づけできず、外部公開できるコンテナは1つだけ。</li>
+<li>タスク内からも外部公開できるのは1つのコンテナのみ。ただし内部通信するコンテナは複数起動可能。</li>
+<li>複数ポート公開にはサービス分割で対応。</li>
 </ul>
 <p><img alt="" src="_attachment/image_489.png" /></p>
 <p><strong>ポイント</strong></p>
@@ -361,6 +365,7 @@
 <ul>
 <li>ECS クラスター作成時に指定する。</li>
 <li>ECS Agent に適用されるロール。ECS Agent はコンテナではなくホスト上のデーモンとして動作するので、インスタンスにロールの設定が必要。</li>
+<li>例えば、コンテナインスタンスロールが間違っていると ECS とのやりとりができず、コンテナインスタンスが ACTIVE にならない。</li>
 <li>ECS API 系および ECR の <code>ecr::GetAuthorizationToken</code> 権限も指定。<ul>
 <li>ただし、実際の pull はタスク実行ロールでコンテナランタイムが実施。</li>
 </ul>

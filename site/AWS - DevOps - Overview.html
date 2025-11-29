@@ -17,6 +17,7 @@
 <article>
     <p>Ref.  <a href="References/AWS%20-%20Security%20-%20Overview.html">AWS - Security - Overview</a>
 - 時間: 75問/180分 → 1問2分20秒
+- 10分: 4問+
 - 10問: 23分+
 - 1時間: 25問</p>
 <table>
@@ -69,6 +70,183 @@
 <li>CloudMap コンテナのサービス間のルーティング</li>
 <li>App Mesh サービスメッシュによるコンテナの連携のマネージドサービス</li>
 </ul>
+<hr />
+<h1 id="aws">AWS サービスのスコープ分類</h1>
+<h2 id="1vpcvpc-scoped-services">1.VPC内リソース（VPC-scoped services）</h2>
+<p>ネットワーク的に VPC 内に存在し、AZ（サブネット）に紐づき、専用の ENI を持つリソース。</p>
+<table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>EC2</strong></td>
+<td>サブネット単位で配置。ENI を持つ。</td>
+</tr>
+<tr>
+<td><strong>RDS</strong></td>
+<td>マルチAZも含めてサブネットに配置される。</td>
+</tr>
+<tr>
+<td><strong>ECS (EC2モード)</strong></td>
+<td>EC2 が VPC 内に配置される。</td>
+</tr>
+<tr>
+<td><strong>EKS ワーカー/Pod（ENI割当）</strong></td>
+<td>Pod もENIを持ち VPCに属する場合もある。</td>
+</tr>
+<tr>
+<td><strong>ElasticCache（Redis / Memcached）</strong></td>
+<td>サブネットに紐づく。</td>
+</tr>
+<tr>
+<td><strong>Redshift</strong></td>
+<td>クラスタは VPC 内に配置。</td>
+</tr>
+<tr>
+<td><strong>FSx</strong></td>
+<td>VPC 内でアクセス。</td>
+</tr>
+<tr>
+<td><strong>OpenSearch</strong></td>
+<td>VPC内に配置。</td>
+</tr>
+<tr>
+<td><strong>Lambda（VPC接続時）</strong></td>
+<td>ENI をサブネットに作成。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-region-scoped-services">2. リージョン・スコープ （Region-scoped services）</h2>
+<p>物理的な配置の概念はなく、AWSのコントロールプレーンサービスとしてリージョン単位で提供される。VPCと独立している。</p>
+<table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>IAM</strong></td>
+<td>グローバルに見えるが内部的にはリージョンレプリケーションあり。</td>
+</tr>
+<tr>
+<td><strong>CloudWatch</strong></td>
+<td>リージョンごとにメトリクス保存。</td>
+</tr>
+<tr>
+<td><strong>CloudTrail</strong></td>
+<td>リージョン単位（＋Globalサービスイベント）。</td>
+</tr>
+<tr>
+<td><strong>KMS</strong></td>
+<td>CMK はリージョン固有。</td>
+</tr>
+<tr>
+<td><strong>Secrets Manager</strong></td>
+<td>シークレットはリージョン単位。</td>
+</tr>
+<tr>
+<td><strong>SSM Parameter Store</strong></td>
+<td>パラメータはリージョン単位。</td>
+</tr>
+<tr>
+<td><strong>EventBridge</strong></td>
+<td>イベントバスはリージョン単位。</td>
+</tr>
+<tr>
+<td><strong>SNS / SQS</strong></td>
+<td>キュー・トピックはリージョン単位。</td>
+</tr>
+<tr>
+<td><strong>Glue</strong></td>
+<td>リージョン単位でデータカタログ管理。</td>
+</tr>
+<tr>
+<td><strong>Step Functions</strong></td>
+<td>ステートマシンはリージョン単位。</td>
+</tr>
+</tbody>
+</table>
+<h1 id="3">3. <strong>グローバルサービス（リージョンを超えるサービス）</strong></h1>
+<table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S3（サービスはグローバル、バケットはリージョン）</strong></td>
+<td>API エンドポイントはグローバルで使える。</td>
+</tr>
+<tr>
+<td><strong>Route 53</strong></td>
+<td>DNSは完全にグローバル。</td>
+</tr>
+<tr>
+<td><strong>CloudFront</strong></td>
+<td>CDNグローバル。</td>
+</tr>
+<tr>
+<td><strong>IAM（実質グローバル）</strong></td>
+<td>“IAMはグローバルサービス”と明記される。</td>
+</tr>
+<tr>
+<td><strong>WAF（グローバル / リージョン両方）</strong></td>
+<td>CloudFront向けはグローバル。</td>
+</tr>
+<tr>
+<td><strong>AWS Global Accelerator</strong></td>
+<td>グローバルIPを提供。</td>
+</tr>
+<tr>
+<td><strong>Organizations</strong></td>
+<td>組織全体で管理。</td>
+</tr>
+<tr>
+<td><strong>Control Tower</strong></td>
+<td>マルチリージョン/複数アカウントを一元管理。</td>
+</tr>
+</tbody>
+</table>
+<h1 id="4">4. リージョンを跨いでデータ/エンドポイントが存在する特殊タイプ</h1>
+<p>S3 のように“バケットはリージョン”だが、サービスとしては AWS 全体にまたがる特性を持つ。</p>
+<table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>補足</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S3</strong></td>
+<td>データはリージョン、API/namespace はグローバル。</td>
+</tr>
+<tr>
+<td><strong>DynamoDB Global Tables</strong></td>
+<td>複数リージョンで同期。</td>
+</tr>
+<tr>
+<td><strong>Aurora Global Database</strong></td>
+<td>リーダー領域が複数リージョンで構成される。</td>
+</tr>
+<tr>
+<td><strong>EFS One Zone / Standard</strong></td>
+<td>データはAZだがアクセス可能性はリージョン。</td>
+</tr>
+<tr>
+<td><strong>CloudWatch Logs Cross-region</strong></td>
+<td>実質リージョンごとのストレージ＋一部グローバル統合。</td>
+</tr>
+</tbody>
+</table>
 <hr />
 <h1 id="cicd">CI/CD</h1>
 <p><a href="AWS%20-%20CICD.html">AWS - CICD</a></p>
@@ -1144,11 +1322,12 @@ Resources:
 </ul>
 <p>Service</p>
 <ul>
-<li>Task の desired count の維持 (Task の Auto Healing)</li>
+<li>ロードバランシングされスケーリングも可能な、インバウンド接続される外部公開サービスの1単位</li>
+<li>Task の desired count の維持 -&gt; Auto Healing</li>
 <li>ELB によるトラフィックルーティング</li>
 <li>起動方式: Launch Type (EC2/Fargate), Capacity Provider Strategy</li>
 <li>デプロイ管理: Rolling update / Blue-Green（CodeDeploy）</li>
-<li>Service Auto Scaling</li>
+<li>Service Auto Scaling: CPUなどのメトリクスに応じてタスク数を増減</li>
 </ul>
 <p>Capacity Provider（CP）</p>
 <ul>
@@ -1157,8 +1336,9 @@ Resources:
 </ul>
 <p>ECS クラスタ</p>
 <ul>
-<li>タスク実行環境の論理スコープ。ネットワーク/監視/権限の“枠”を提供。</li>
+<li>タスク実行環境の論理スコープ。VPC と実行環境設定 (Launch Type/CP) を設定。</li>
 <li>クラスタごとに1つ以上の CP が登録できる (FARGATE CP &amp; EC2 CP)</li>
+<li>Fargate であってもコンテナは VPC 内リソース。クラスタ作成時に VPC を設定する。</li>
 </ul>
 <p>ECS エージェント</p>
 <ul>
@@ -1459,7 +1639,7 @@ Resources:
 <p>オーソライザー: 認証・認可 </p>
 <ul>
 <li>IAM アクセス権限<ul>
-<li>AWS 署名v4 認証 。</li>
+<li>AWS 署名v4 認証。</li>
 </ul>
 </li>
 <li>Cognito オーソライザー<ul>
@@ -1547,15 +1727,17 @@ Resources:
 </ul>
 <h1 id="dynamodb">DynamoDB</h1>
 <p>Ref.<a href="References/AWS%20DVA%20-%20S3,%20DynamoDB,%20ElastiCache,%20and%20other%20storage%20services.html">AWS DVA - S3, DynamoDB, ElastiCache, and other storage services</a></p>
+<p>DynamoDB は台帳 (テーブル) を各プライマリーキーごとにページ (パーティション) にまとめて管理するようなイメージ
+- プライマリキーで特定されるページに、ソートーキーで特定されるレコードが表に記録される感じ。</p>
 <p>パーティションキー(ハッシュ属性)</p>
 <ul>
 <li>テーブル内でユニーク。</li>
 </ul>
 <p>ソートキー(範囲属性)</p>
 <ul>
-<li>複合プライマリキー=パーティションキー +ソートキー</li>
-<li>同じパーティションキーに対して一意となるソートキー。</li>
-<li>ソートキーにより項目をパーティション内でソートできる。</li>
+<li>複合プライマリキー=パーティションキー + ソートキー</li>
+<li>同じパーティションキーに対してレコードを一意に識別するソートキー。</li>
+<li>ソートキーにより項目がパーティション内でソートされ、範囲検索やタイムスタンプなら時系列検索が可能。</li>
 <li>パーティションキーの値が同じ項目は同じパーティションに保存される。</li>
 </ul>
 <p><img alt="" src="_attachment/image_662.png" /></p>
@@ -1566,12 +1748,12 @@ Resources:
 </ul>
 <p>ローカルセカンダリインデックス (LSI)</p>
 <ul>
-<li>追加のソートキーに対してパーティション内に作成されるインデックス。</li>
-<li>テーブル作成時のみ作成でき、削除できない。</li>
+<li>ソートキーが複数必要な場合に利用する。追加のソートキーに対してパーティション内に作成されるインデックス。</li>
+<li>テーブル作成時のみ作成でき、あとから追加・削除できない。</li>
 </ul>
 <p>グローバルセカンダリインデックス: GSI</p>
 <ul>
-<li>異なるプライマリキーで検索するインデックス。</li>
+<li>異なるプライマリキーで検索したい場合に使用するインデックス。</li>
 <li>異なるプライマリキーで作った別テーブルにレプリケーションする仕組み。</li>
 <li>後から作成・削除することも可能。</li>
 <li>読み込みは結果整合性のみ</li>
@@ -1596,27 +1778,30 @@ Resources:
 <p>プロビジョンド型キャパシティモード</p>
 <ul>
 <li>テーブルに 1秒あたりの RCU/WCU を設定する。</li>
+<li>RCU: 4KB単位: 結果整合性 2回/強い整合性 1回</li>
+<li>WCU: 1KB単位: 結果整合性</li>
 <li>実際の読み書きの有無に関わらず、設定したキャパシティにより課金が発生。</li>
 <li>AWS Auto Scaling でスケーリング可能。</li>
+<li>高負荷で一定量ならオンデマンドより安い</li>
 </ul>
 <p>オンデマンド型キャパシティーモード</p>
 <ul>
-<li>キャパシティを設定せず、発生したリクエストによる従量課金。</li>
+<li>キャパシティを設定せず、読み書きに応じて自動スケール。発生したリクエストによる従量課金。</li>
+<li>低トラフィックならプロビジョンドより安い</li>
 </ul>
 <p>DynamoDB ストリーム</p>
 <ul>
-<li>テーブルに行われた過去 24 時間の追加・更新・削除の履歴を保持したストリーム。</li>
+<li>テーブルに行われた過去 24時間の追加・更新・削除の履歴を保持したシャード。</li>
 <li>ほぼリアルタイム。WCU の２倍のスループットなのでスループットの問題はない。</li>
 <li>データはシリアライズされ、特定パーティションキーへの変更は順序通りに取得可能。</li>
 <li>Lambda 連携<ul>
 <li>ストリーム型 (イベントソースマッピング)</li>
 <li>DynamoDB ストリームの1つのシャードに 3つ以上のリーダーが同時に読み取るとスロットリングが発生する。3つ以上の Lambda を連携させる場合は1つの Lambda から SNS で分岐する。</li>
-<li>DynamoDB ストリームを Lambda 連携で ElasticSearch に投入し DynamoDB テーブルのデータを全文検索するユースケースがある。</li>
+<li>DynamoDB ストリームを Lambda 連携で OpenSearch に投入し DynamoDB テーブルのデータを全文検索するユースケースがあった。</li>
 </ul>
 </li>
 <li>KCL (Kinesis Client Library) を利用したアプリ開発<ul>
-<li>KCL を利用することでシャード意識した低レベル API を抽象化してコードを書ける。</li>
-<li>KCL に DynamoDB  Streams Kinesis Adapter を噛ませることで、DynamoDB ストリームに対して KCL を使用できる。</li>
+<li>KCL に DynamoDB Streams Kinesis Adapter を噛ませることで、DynamoDB ストリームに対して KCL を使用できる。</li>
 <li>Lambda のスロットリングエラーに対し、KCL を利用したアプリケーション経由で Kinesis Data Analytics につないで分析処理を行う構成に変更するという問題があった。</li>
 </ul>
 </li>
@@ -1641,11 +1826,11 @@ Resources:
 <li>同一アカウントのみ。</li>
 </ul>
 </li>
-<li>ディザスタリカバリ。近いリージョンのレプリカにアクセスすることでレイテンシー削減。</li>
+<li>ディザスタリカバリ / 近いリージョンのレプリカにアクセスすることでレイテンシー削減。</li>
 </ul>
 <p>DAX: DynamoDB Accelerator</p>
 <ul>
-<li>VPC 内の DynamoDB のインメモリキャッシュ。</li>
+<li>VPC 内に配置される DynamoDB のインメモリキャッシュ。</li>
 <li>EC2, Beanstalk, ECS 等からの read アクセスのスループット向上。</li>
 <li>マイクロミリ秒のレイテンシ。通常の一桁ミリ秒のレイテンシが問題になる場合。</li>
 <li>DynamoDB API 互換。コード改修少なく移行。</li>
@@ -1760,17 +1945,12 @@ Resources:
 <table>
 <thead>
 <tr>
-<th></th>
-<th></th>
-<th></th>
+<th>Service</th>
+<th>User Identity</th>
+<th>Credential</th>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>Service</td>
-<td>User Identity</td>
-<td>Credential</td>
-</tr>
 <tr>
 <td>ID プール</td>
 <td>Cognito ID</td>
@@ -1783,49 +1963,76 @@ Resources:
 </tr>
 </tbody>
 </table>
-<h3 id="cognito-id">Cognito ID プール</h3>
-<p>外部 IdP での認証でアプリに AWS サービスの利用を許可する。</p>
+<p>Ref. SAML/OIDC</p>
+<p>認証(=SSO)と認可のプロトコル。どちらもブラウザリダイレクトと公開鍵によるトークンの認証をベースにしている。</p>
 <ul>
+<li>
+<p>SAML（Security Assertion Markup Language）</p>
+<ul>
+<li>主にエンタープライズ向け</li>
+<li>IdP と SP で信頼関係を事前に構築</li>
+<li>XMLベースのフォーマットを使って認証情報をやり取り</li>
+</ul>
+</li>
+<li>
+<p>OIDC (OpenID Connect)</p>
+<ul>
+<li>OAuth 2.0ベース、JSONベースのトークンを使う</li>
+<li>RP から IdP にリダイレクトして認証依頼。</li>
+<li>RP に利用許可する属性を IdP でのサインイン時に表示される同意画面でユーザが許諾。</li>
+<li>認証後に IdP が JWT を発行、RP は IdP の公開鍵で JWT のシグネチャを検証する。</li>
+</ul>
+</li>
+</ul>
+<h3 id="cognito-id">Cognito ID プール</h3>
+<ul>
+<li>外部 IdP で認証されたアプリに一時クリデンシャルで AWS サービスの利用を許可する。</li>
+<li>ID プールは渡された外部 IdP のトークンを検証し一時クリデンシャルを発行する。(AWS が RP の役割)<ul>
 <li>STS ID フェデレーションの置き換え。</li>
 </ul>
-<p>ID プールは渡された外部 IdP のトークンを検証し一時クリデンシャルを発行する。</p>
-<p>未認証 ID (ゲスト) をサポートする。</p>
-<p>GetCredentialsForIdentity</p>
-<ul>
-<li>IdentityID と Logins (IdP の URL とトークンのマップ) を渡して一時クリデンシャルを取得する。</li>
-<li>GetOpenIdToken と AssumeRoleWithWebIdentity を一緒にやってくれる。</li>
+</li>
+<li>OIDC側のユーザをAWSの特定のIAMロールにマッピングするためのルールを設定<ul>
+<li>トークンのクレーム（subやaudなど）に基づいて、どのユーザーグループや条件がどのIAMロールを引き受けるかを定義</li>
+</ul>
+</li>
+<li>未認証 ID (ゲスト) のサポート: ルールにあてはまらないユーザに対すロールを設定</li>
 </ul>
 <h3 id="cognito_1">Cognito ユーザープール</h3>
-<p>ユーザープールでアプリの認証とユーザ情報の管理を実装する。</p>
-<p>API トークン (JWT) を発行する OIDC IdP のマネージドサービス。</p>
+<p>認証とユーザデータベースの管理。JWT を発行する OIDC IdP のマネージドサービス。</p>
 <ul>
-<li>認証に MFA も利用できる。</li>
-<li>アダプティブ認証: リスクレベルに応じて MFA を要求したりブロック・メール通知できる。</li>
-<li>API Gateway, AppSync, ALB へのアクセスに認証を追加できる。</li>
-<li>ソーシャルサインインや SAML(=ADFS), OIDC の IdP など複数の認証方法が併用できる。</li>
+<li>Webアプリ、モバイルアプリを認証して API キーを発行する。</li>
+<li>API Gateway, ALB, AppSync へのアクセスに認証を追加できる。</li>
+<li>ソーシャルサインインや SAML(=ADFS), OIDC の IdP など複数の認証方法が併用できる。<ul>
+<li>外部のOIDCプロバイダーでユーザが認証された後、その認証情報をユーザープール側に取り込むことができる</li>
+</ul>
+</li>
 <li>アプリ内でログイン画面を実装するか、ユーザプールのログイン画面 (Hosted UI) を表示できる。</li>
 <li>ユーザープールのトークンで ID プールから一時クリデンシャルを取得することもできる。</li>
+<li>認証に MFA も利用できる。</li>
+<li>アダプティブ認証: リスクレベルに応じて MFA を要求したりブロック・メール通知できる。</li>
 </ul>
 <h2 id="sts">STS</h2>
 <p>GetSessionToken</p>
 <ul>
-<li>STS に MFA 認証を依頼し、MFA-protected な API 呼び出しに使う一時的クリデンシャルを取得する。</li>
+<li>MFA-protected な API 呼び出しに使う一時的クリデンシャルを取得する。</li>
+<li>すでに認証済のユーザから STS に MFA 認証を依頼し、一時クリデンシャルを取得</li>
 </ul>
 <p>GetFederationToken</p>
 <ul>
 <li>カスタム ID ブローカーに設定された IAM ユーザの一時クリデンシャルを取得する。</li>
+<li>Deprecated: Cognito ID プールを利用する。</li>
 </ul>
 <p>AssumeRoleWithSAML</p>
 <ul>
-<li>SAML 2.0 対応の IdP との ID フェデレーション。</li>
+<li>SAML 2.0 対応の IdP からの認証情報でロールを引き受け。</li>
 </ul>
 <p>AssumeRoleWithWebIdentity</p>
 <ul>
-<li>Open ID Connect (OIDC) 互換 IdP との ID フェデレーション。</li>
+<li>Open ID Connect (OIDC) 互換 IdP からの認証情報でロールを引き受け。</li>
 </ul>
 <h2 id="aws-sso">AWS SSO</h2>
 <p>SAML 2.0 IdP のマネージドサービス。</p>
-<p>SAML 2.0 をサポートする 各種 SaaS のSP にシングルサインオン。</p>
+<p>SAML 2.0 をサポートする 各種 SaaS の SP にシングルサインオン。</p>
 <ul>
 <li>Office 365, G-suite, Slack, Box, Salesforce</li>
 </ul>
@@ -1835,7 +2042,7 @@ Resources:
 <li>AWS Directory Service 統合</li>
 <li>オンプレ AD 統合:<ul>
 <li>AWS Managed Microsoft AD でオンプレ AD ドメインと信頼関係を構成</li>
-<li>AD Connector によるログイン転送</li>
+<li>AWS Directory Service <strong>AD Connector</strong> によるログイン転送</li>
 </ul>
 </li>
 </ol>
@@ -1843,19 +2050,23 @@ Resources:
 <p>Simple AD</p>
 <ul>
 <li>Samba v4 の Active Directory Compatible Server のマネージドサービス。</li>
-<li>ドメインの信頼関係の設定はできない</li>
+<li>ドメインの信頼関係の設定はできない。あくまで AWS 上でユーザを管理。</li>
 </ul>
 <p>AWS Managed Microsoft AD</p>
 <ul>
-<li>Windows Server 2012 R2 上の AD によるフル機能 AD のマネージドサービス。</li>
-<li>オンプレ AD ドメインとの信頼関係の構成: オンプレのドメインアカウントで Windows インスタンスにログインしたり、ロールと紐付けたりが可能。</li>
+<li>Windows Server 上の AD によるフル機能 AD のマネージドサービス。</li>
+<li>オンプレ AD ドメインとの信頼関係の構成: オンプレのドメインアカウントで Windows インスタンスにログインできる</li>
 </ul>
 <p>AWS Directory Service AD Connector</p>
 <ul>
 <li>AWS 環境からオンプレのドメインコントローラに通信をリダイレクトするプロキシサービス。</li>
-<li>AD のグループ・ユーザを IAM ロールにマッピングしてアクセス権を与えられる？</li>
 </ul>
 <h2 id="ad">AD 連携</h2>
+<p>Ref. ADFS (Active Directory Federation Services)</p>
+<ul>
+<li>SAML/OIDC 対応 IdP として AD ユーザを外部サービスで使うためのフェデレーション</li>
+<li>ADユーザにロールを引き受けさせるのに使用する</li>
+</ul>
 <p>AWS 管理コンソールへの SSO</p>
 <ul>
 <li>ADFS と AWS サインインエンドポイントで SAML 認証により管理コンソールへ SSO。<ul>
@@ -1869,7 +2080,7 @@ Resources:
 <li>ユーザが組織内の ADFS サインオンページをブラウズすることでフローが開始する。</li>
 </ul>
 <p>Cognito ユーザープールと ADFS の SAML 連携</p>
-<p>API Gateway や ALB でドメインアカウントで認証が可能。</p>
+<p>API Gateway や ALB にドメインアカウントで認証が可能。</p>
 <ol>
 <li>SAML IdP で Cognito ユーザープールを Relying Party として設定。</li>
 <li>Cognito ユーザープールに SAML IdP と属性マッピングを登録。</li>
@@ -1879,7 +2090,6 @@ Resources:
 <ul>
 <li>オンプレ AD ドメインとの信頼関係を構成</li>
 <li>オンプレのドメインアカウントで Windows インスタンスにログイン</li>
-<li>ロールと紐付けて AWS のサービスにアクセス</li>
 </ul>
 <p>AWS Directory Service AD Connector</p>
 <ul>
@@ -1889,7 +2099,7 @@ Resources:
 <p>AWS SSO で各種 SaaS やサービスにドメインアカウントでサインオン</p>
 <ul>
 <li>SSO の ID ディレクトリから AD Connector でログイン転送する</li>
-<li>SSO の ID ディレクトリとして  AWS Managed Microsoft AD を使用、オンプレ AD ドメインと信頼関係を構成</li>
+<li>SSO の ID ディレクトリとして AWS Managed Microsoft AD を使用、オンプレ AD ドメインと信頼関係を構成</li>
 </ul>
 <hr />
 <h1 id="logging-monitoring">Logging &amp; Monitoring</h1>
@@ -2086,8 +2296,9 @@ Resources:
 <p>CloudWatch アラーム</p>
 <ul>
 <li>アラームから SNS 通知、EC2 アクション(停止・再起動等)、Auto Scaling 連携。</li>
-<li>SNS 連携でメール送信や Lambda 関数コール。<ul>
-<li>アラームは CloudWatch Events/EventTrigger のデータソースにならない。</li>
+<li>通知なので直接アクションをとることはできない:<ul>
+<li>SNS 経由でメール送信や Lambda 関数コール</li>
+<li>EventTrigger のデータソースにならない</li>
 </ul>
 </li>
 <li>各状態への移行に SNS 通知を設定できる<ul>

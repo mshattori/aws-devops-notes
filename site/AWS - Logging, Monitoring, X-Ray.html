@@ -625,7 +625,10 @@ $ aws logs put-subscription-filter \
 <li>データレコードサイズ: 最大 1 MB</li>
 <li>書き込み速度: 最大 1MB/秒</li>
 <li>読み取り速度: 最大 2MB/秒</li>
-<li>データ量に応じてシャードを Auto Scaling してスループットを増やせる。</li>
+<li>保持期間デフォルト 24 時間 (最大1年間)</li>
+<li>レコードはシャードに書き込まれてから保持期間まで残り続ける。</li>
+<li>コンシューマーは処理済みのシーケンス番号を進めているだけ。データ自体を削除したり消費しない。</li>
+<li>データ量に応じてシャードを Auto Scaling してスループットを増やせる</li>
 </ul>
 <p><strong>プロデューサー</strong></p>
 <ul>
@@ -660,8 +663,8 @@ $ aws logs put-subscription-filter \
 </ul>
 </li>
 <li>Kinesis Client Library (KCL)<ul>
-<li>シャード管理・チェックポイント自動化</li>
-<li>消費者のスケールアウト最適化</li>
+<li>ワーカー間でのシャードの分担・チェックポイント自動化 (処理済シーケンス番号を DynamoDB に保存)</li>
+<li>ワーカーのスケールアウト</li>
 </ul>
 </li>
 <li>Kinesis Connector Library<ul>

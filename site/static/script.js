@@ -29,3 +29,39 @@ document.addEventListener('visibilitychange', () => {
     saveScrollPosition();
   }
 });
+
+// Floating footer: show title + scroll percentage
+document.addEventListener('DOMContentLoaded', () => {
+  const footer = document.querySelector('.footer');
+  const footerTitle = document.getElementById('title');
+  const scrollPercentage = document.getElementById('scrollPercentage');
+
+  if (footerTitle) {
+    footerTitle.textContent = document.title;
+  }
+
+  const updatePercentage = () => {
+    if (!scrollPercentage) return;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const docHeight = Math.max(document.documentElement.scrollHeight - document.documentElement.clientHeight, 0);
+    const scrolled = docHeight === 0 ? 100 : (scrollTop / docHeight) * 100;
+    scrollPercentage.textContent = scrolled.toFixed(0) + '%';
+  };
+
+  const showFooterTemporarily = () => {
+    if (!footer) return;
+    footer.style.display = 'flex';
+    clearTimeout(footer._hideTimeout);
+    footer._hideTimeout = setTimeout(() => {
+      footer.style.display = 'none';
+    }, 1200);
+  };
+
+  updatePercentage();
+  showFooterTemporarily();
+
+  window.addEventListener('scroll', () => {
+    updatePercentage();
+    showFooterTemporarily();
+  });
+});

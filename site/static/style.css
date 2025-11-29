@@ -12,7 +12,7 @@ body {
 }
 
 /* Layout - centered with max-width */
-header, main, footer {
+header, main {
     max-width: 800px;
     margin: 0 auto;
     padding: 1rem;
@@ -27,13 +27,35 @@ header h1 {
     font-size: 1.5rem;
 }
 
-footer {
-    border-top: 1px solid #ddd;
-    margin-top: 2rem;
-    padding-top: 1rem;
-    text-align: center;
-    font-size: 0.9rem;
-    color: #666;
+
+/* Floating footer for title + scroll percentage */
+.footer {
+    position: fixed;
+    left: 50%;
+    bottom: 1rem;
+    transform: translateX(-50%);
+    display: none;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    border-radius: 999px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    font-size: 0.95rem;
+    z-index: 100;
+}
+
+.footer__title {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.footer__percentage {
+    font-variant-numeric: tabular-nums;
+    padding: 0.15rem 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
 }
 
 /* Typography */
@@ -132,9 +154,24 @@ blockquote {
     }
 
     /* Remove centering and reduce padding for full-width on mobile */
-    header, main, footer {
+    header, main {
         margin: 0;
         padding: 0.5rem;
+    }
+
+    .footer {
+        left: 50%;
+        bottom: 0.75rem;
+        width: calc(100% - 2rem);
+        max-width: 640px;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.65rem 0.85rem;
+    }
+
+    .footer__title {
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     header h1 {

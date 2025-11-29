@@ -2116,12 +2116,12 @@ Resources:
 <tbody>
 <tr>
 <td>CloudWatch Logs</td>
-<td>ログストリーム,<br><br>S3(手動エクスポート)</td>
+<td>ログストリーム,<br>S3(手動エクスポート)</td>
 <td>スケジュール実行の Lambda による Export API 実行や、サブスクリプションフィルター+Firehose で S3 への保存の自動化が可能。</td>
 </tr>
 <tr>
 <td>CloudTrail</td>
-<td>S3, CloudWatch Logs(オプショナル)</td>
+<td>S3 (証跡),<br>CloudWatch Logs (オプショナル)</td>
 <td></td>
 </tr>
 <tr>
@@ -2151,7 +2151,7 @@ Resources:
 </tr>
 <tr>
 <td>Web ACL トラフィックログ</td>
-<td>Kinesis Data Firehose,<br><br>S3, CloudWatch Logs</td>
+<td>Kinesis Data Firehose,<br>S3, CloudWatch Logs</td>
 <td></td>
 </tr>
 <tr>
@@ -2240,7 +2240,7 @@ Resources:
 <li>EC2・Lambda でシャードのデータ処理・送信を行うコンシューマを実装。</li>
 <li>実装には KCL: Kinesis  Consumer Library (Java) などを使う。</li>
 <li>リアルタイム (200ms 程度のレイテンシー)</li>
-<li>データ保持: デフォルト 24 時間、最大 7 日</li>
+<li>データ保持: デフォルト 24 時間、最大 1 年</li>
 </ul>
 <p>Data Firehose</p>
 <ul>
@@ -2271,6 +2271,7 @@ Resources:
 <li>The service should identify and create sessions from real-time clickstream events with a feature to do an ad hoc analysis.</li>
 </ul>
 <p>解答</p>
+<p>Kinesis Data Stream -&gt; Data Analytics -&gt; Lambda -&gt; Data Firehose -&gt; S3 -&gt; Glue Crawler -&gt; Athena</p>
 <ul>
 <li>Collect the real-time clickstream data using Amazon Kinesis Data Stream then build and analyze the sessions using Kinesis Data Analytics.</li>
 <li>The aggregated analytics will trigger the real-time events on Lambda and then send them to Kinesis Data Firehose which in turn, sends data to an S3 bucket.</li>
@@ -2398,15 +2399,19 @@ Resources:
 - <a href="References/AWS%20-%20Security%20-%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS - Security - CloudFormation, Service Catalog, Control Tower</a></p>
 <h1 id="aws-config">AWS Config</h1>
 <p>AWS リソース構成のスナップショットと変更履歴をS3に保存</p>
-<p>AWS Config ルール</p>
+<p>CloudWatch Events 連携</p>
 <ul>
-<li>AWS Config で取得したリソース設定が Lambda 関数に送られてルール評価が実施される</li>
-<li><strong>修復アクション</strong>: Noncompliant が発生した際に SSM Automation アクションを実行</li>
+<li>リソース変更時や Config ルールの Noncompliant 発生時に SSM Automation 以外を行いたい場合。</li>
 </ul>
-<p>AWS Config アグリゲーター:  中央アカウントに集約</p>
+<p>Config アグリゲータ</p>
+<ul>
+<li>マルチアカウント/マルチリージョンの集計結果を中央アカウントに集約。</li>
+<li><img alt="" src="_attachment/image_667.png" /></li>
+</ul>
 <h3 id="aws-config-rules">AWS Config Rules</h3>
 <p>ルールによるコンプライアンス違反の検出。</p>
 <ul>
+<li>AWS Config で取得したリソース設定が Lambda 関数に送られてルール評価が実施される</li>
 <li>ルール評価後、対象リソースの状態が Compliant/Noncompliant に更新される。</li>
 <li>トリガー: リソース作成/変更時、定期 (1~24時間で任意)</li>
 </ul>
@@ -2422,15 +2427,6 @@ Resources:
 <p>修復アクション</p>
 <ul>
 <li>特定ルールの Noncompliant 発生時に実行する SSM Automation ランブックを指定。</li>
-</ul>
-<p>CloudWatch Events 連携</p>
-<ul>
-<li>リソース変更時や Noncompliant 発生時に SSM Automation 以外を行いたい場合。</li>
-</ul>
-<p>Config アグリゲータ</p>
-<ul>
-<li>マルチアカウント/マルチリージョンの集計結果を中央アカウントに集約。</li>
-<li><img alt="" src="_attachment/image_667.png" /></li>
 </ul>
 <p>問題例: CloudTrail が全アカウントで有効になっているのを確認し、修復する</p>
 <p><img alt="" src="_attachment/image_668.png" /></p>
@@ -2463,7 +2459,7 @@ Resources:
 <ul>
 <li>指定したインスタンス群でコマンドドキュメントを実行。</li>
 <li>コンソール出力は S3 や CloudWatch Logs にアウトプットするよう指定可能。</li>
-<li>CodeBuild の buildspec で ssh せずに Run Command を使うべきという問題例:</li>
+<li>CodeBuild の CI でインスタンスにコマンド実行する際、buildspec で ssh せずに Run Command を使うべきという問題例:</li>
 </ul>
 <blockquote>
 <p>CodeBuild プロジェクトに必要な権限を持つ IAM ロールを設定し、buildspec.yaml から AWS 認証情報を削除する。scp や ssh のコマンドは、AWS Systems Manager の Run Command を使用して実行する。</p>
@@ -2473,7 +2469,7 @@ Resources:
 <li>インスタンスや AWS リソースに Runbook で定義した処理を実行する。</li>
 <li>Runbook の例:<ul>
 <li><strong>AWS-UpdateLinuxAmi</strong>:  ベース AMI をインスタンス起動してアップデート実行後に新しい AMI を作成するまでの一連のステップを行う。</li>
-<li><strong>AWSSupport-ExecuteEC2Rescue</strong>: ログ収集やメモリダンプなどのトラブルシューzティングを行う EC2Rescure を実行する。</li>
+<li><strong>AWSSupport-ExecuteEC2Rescue</strong>: ログ収集やメモリダンプなどのトラブルシューティングを行う EC2Rescure を実行する。</li>
 </ul>
 </li>
 <li>SSM Automation は Codepipeline アクションと統合していないため、Invoke アクションの Lambda などを経由して呼び出す。</li>
@@ -2486,7 +2482,7 @@ Resources:
 <h3 id="ssm_2">SSM パッチマネージャー</h3>
 <ul>
 <li>マネージドインスタンスに対するパッチ適用の自動化</li>
-<li>Scanのみ, Scan &amp; Install の2方式</li>
+<li>Scan のみ / Scan &amp; Install の2方式</li>
 <li>パッチ準拠状況のレポート（コンプライアンス状態の可視化）</li>
 <li>オンプレ/ハイブリッド環境にも対応（SSM Agent &amp; Hybrid Activation）</li>
 <li>State Manager / Run Command と連携</li>
@@ -2543,7 +2539,7 @@ Resources:
 <p>ウェブ ACL &amp; ルール</p>
 <ul>
 <li>ウェブ ACL のリストにルールを投入する。</li>
-<li>ACL にはデフォルト Allow/Deny があり、ルールは順番に評価される。</li>
+<li>ACL なのでルールはリストの順番に評価され、最後にデフォルト Allow/Deny がある。</li>
 <li>ウェブ ACL 単位で AWS リソースに割りあてる</li>
 <li>マネージドルールグループ<ul>
 <li>AWS や AWS Marketplace でセキュリティベンダ (F5, Fortinet 等) が提供するルールグループ</li>
@@ -2619,7 +2615,7 @@ Resources:
 <li>ダッシュボード表示と CloudWatch Events のトリガー。</li>
 </ul>
 <h1 id="amazon-guardduty">Amazon GuardDuty (見張り役)</h1>
-<p>脅威検知。</p>
+<p>脅威インテリジェンスによる既知の脅威と異常検出による未知の脅威の検出。</p>
 <p><img alt="" src="_attachment/image_674.png" /></p>
 <ul>
 <li>CloudWatch Events 経由で Lambda による対応アクション (インスタンス隔離等)</li>
@@ -2627,7 +2623,7 @@ Resources:
 <li>S3 Protection で S3 への脅威検知も対応。</li>
 </ul>
 <h1 id="amazon-detective">Amazon Detective</h1>
-<p>ダッシュボードでインシデント調査。(SIEM)</p>
+<p>GuardDutyが検出したセキュリティインシデントを可視化・調査するSIEM</p>
 <p><img alt="" src="_attachment/image_675.png" /></p>
 <ul>
 <li>マルチアカウントのアクティビティログを集約。</li>
@@ -2714,7 +2710,7 @@ Resources:
 <p>Ref. <a href="References/AWS%20-%20Security%20-%20KMS,%20Secrets%20Manager,%20ACM.html">AWS - Security - KMS, Secrets Manager, ACM</a></p>
 <h2 id="kms">KMS</h2>
 <ul>
-<li>暗号化に使うデータキーと、それを暗号化するマスターキーを管理するサービス。</li>
+<li>暗号化に使うデータキーと、それを暗号化するマスターキーを管理するサービス。(鍵で鍵を暗号化するエンベロープ暗号化を実現)</li>
 <li>CMK: Customer Master Key<ul>
 <li>KMS 内の HSM で暗号化された状態で保管されるマスターキー。</li>
 <li>対象鍵 (AES256), 非対称鍵 (RSA, ECC) がサポートされている。</li>
@@ -2722,7 +2718,7 @@ Resources:
 </ul>
 </li>
 <li>CDK: Customer Data Key<ul>
-<li>データの暗号化に使用するキー。使用時以外は CMK で暗号化されたものを保存。</li>
+<li>データの暗号化に使用するキー。使用時以外は CMK で暗号化されたものをローカル保存。</li>
 <li>対象鍵のデータキーと非対称鍵のデータキーペアがある。<ul>
 <li>非対称なら公開鍵をアプリに保存して暗号化時に使用、復号時のみ秘密鍵を Decrypt して復号という使い方もできる。</li>
 <li>非対称は署名用途にも使える。</li>
@@ -2733,7 +2729,7 @@ Resources:
 </ul>
 <p>暗号化の手順</p>
 <ul>
-<li>GenerateDataKey で平文データキー (Plaintext) で暗号化し、暗号化したデータを暗号化データキー (CiphertextBlob) とともに保管。</li>
+<li>GenerateDataKey で取得した平文データキー (Plaintext) で暗号化し、暗号化したデータを暗号化データキー (CiphertextBlob) とともに保管。</li>
 <li>平文データキーは廃棄。</li>
 </ul>
 <p>復号の手順</p>
@@ -2758,7 +2754,7 @@ Resources:
 <li>Encrypt<ul>
 <li>GenerateDataKey のデータキーを暗号化に使用するので、通常は使用しない。</li>
 <li>CMK の KeyId と最大 4KB までの任意のデータを指定して呼び出す。暗号化された CiphertextBlob が返る。</li>
-<li>Ciphertext には CMK の情報と暗号化されたデータが含まれる。Decrypt 時は KeyId 指定不要。</li>
+<li>CiphertextBlob には CMK の情報と暗号化されたデータが含まれる。Decrypt 時は KeyId 指定不要。</li>
 <li>Usecase-1:  DB パスワードなどサイズの小さなシークレットを暗号化する場合。</li>
 <li>Usecase-2: データキーをクロスリージョンで共有するために、データキーを別リージョンの CMK で暗号化して渡す。</li>
 </ul>
@@ -2767,7 +2763,7 @@ Resources:
 <p><strong>KMS Grant（権限委譲）</strong></p>
 <ul>
 <li>キーポリシーを変更せずに、一時的にKMSキー操作権限を委譲するAPI</li>
-<li><code>Decrypt</code> / <code>Encrypt</code> / <code>GenerateDataKey</code> などの権限を特定プリンシパルに付与</li>
+<li><code>Decrypt</code>, <code>GenerateDataKey</code> などの権限を特定プリンシパルに付与</li>
 <li>取得された Grant Token を指定して API を呼び出す</li>
 <li>代表ユースケース：AWSサービス連携時の動的権限委譲、外部システムの復号権限付与</li>
 </ul>
@@ -2775,7 +2771,8 @@ Resources:
 <ul>
 <li>対称鍵での Encrypt/GenerateDataKey 時に指定できる Key/Value ペアの追加認証情報。</li>
 <li>復号時に同じ Key/Value を渡す必要がある。</li>
-<li>CloudTrail でキーポリシーの kms:EncryptionContext 条件で暗号化を行う証跡の ARN を指定して制限する際に使う。</li>
+<li>CloudTrail 証跡を暗号化する CMK のキーポリシーの <code>kms:EncryptionContext</code> 条件で暗号化を行う証跡の ARN を指定して制限する際に使う。</li>
+<li>目的: 意図しない KMS キーで証跡データを暗号化してしまうのを防ぎ、この証跡だけがこの KMS キーを利用できるように制限するため。</li>
 </ul>
 <p>Systems Manager Parameter Store</p>
 <p>Secrets Manager</p>
@@ -2785,13 +2782,14 @@ Resources:
 <a href="References/AWS%20-%20Auto%20Scaling,%20Multi%20AZ/Region/Account.html">AWS - Auto Scaling, Multi AZ/Region/Account</a>
 <a href="References/AWS%20SAA%20-%20VPC,%20ELB,%20Auto%20Scaling,%20Route%2053,%20CloudFront,%20Direct%20Connect.html">AWS SAA - VPC, ELB, Auto Scaling, Route 53, CloudFront, Direct Connect</a>
 <a href="References/AWS%20-%20Security%20-%20EC2,%20ELB,%20VPC.html">AWS - Security - EC2, ELB, VPC</a>
-<img alt="" src="_attachment/image_679.png" />
 <img alt="" src="_attachment/image_679.png" /></p>
 <h2 id="vpc">VPC</h2>
-<p>リージョン内の複数 AZ にまたがって展開できる仮想ネットワーク
-- AZに1つ以上のサブネットを配置
-- サブネットに EC2, RDS などのインスタンスを配置
-- ここの VPC に IP アドレス範囲 (CIDR) を持つ</p>
+<p>リージョン内の複数 AZ にまたがって展開できる仮想ネットワーク</p>
+<ul>
+<li>AZに1つ以上のサブネットを配置</li>
+<li>サブネットに EC2, RDS などのインスタンスを配置</li>
+<li>ここの VPC に IP アドレス範囲 (CIDR) を持つ</li>
+</ul>
 <p>サブネット</p>
 <ul>
 <li>サブネットに AZ を紐づけることで、AZ 内にサブネットを置く。</li>
@@ -2807,27 +2805,28 @@ Resources:
 <li>プライベート/パブリックIP 1対1の Static NAT でインターネットに出て行くゲートウェイ</li>
 <li>パブリックサブネット: ルートテーブルでデフォルト GW に IGW が登録されているサブネット。</li>
 </ul>
+<p>VGW (Virtual Private Gateway)</p>
+<ul>
+<li>VPC からインターネット VPN または専用線 (Direct Connect) でオンプレ拠点と接続するGW。</li>
+</ul>
 <p>NAT Gateway</p>
 <ul>
 <li>プライベートサブネットから NAPT でインターネットに出て行くためのゲートウェイ。</li>
 <li>パブリックサブネットに置かれる。ElP を使用する。</li>
 <li>セキュリティグループを設定出来ない。背後のインスタンスの SG か NACL でコントロール。</li>
-</ul>
-<p>VGW (Virtual Private Gateway)</p>
-<ul>
-<li>VPC からインターネット VPN または専用線 (Direct Connect) でオンプレ拠点と接続するGW。</li>
+<li>論理的にサブネットに関連づけられる仮想ゲートウェイで ENI を持たないため SG 設定できない。</li>
 </ul>
 <p>NAT インスタンス</p>
 <ul>
 <li>Amazon Linux をベースに NAT を構成した AMI (amzn-ami-vpc-nat) のインスタンス。 </li>
-<li>ポート転送や踏み台サーバとしての使用できる。(NAT GW はできない)</li>
+<li>ログインできるため、ポート転送の設定や踏み台サーバとしての利用が可能。(NAT GW はできない)</li>
 <li>セキュリティグループを関連づけてトラフィックをコントロールできる。</li>
 <li>ユーザがソフトウェアアップデートやスケーリングを管理。</li>
 </ul>
 <p>セキュリティグループ</p>
 <ul>
 <li>ENI にアタッチされるホワイトリストベースの仮想 FW ルール。(評価順序はない)</li>
-<li>ステートフルなので送受信で個別に指定する必要はない。</li>
+<li>ステートフルなので送受信で個別にルールを指定する必要はない。</li>
 <li>プロトコル、ポート、インバウンド/アウトバウンド (Ingress/Egress)</li>
 <li>デフォルトはアウトバウンド全許可のルールのみ (インバウンドは空=全拒否)</li>
 <li>Peer に IP だけでなく別のセキュリティグループも指定できる。</li>
@@ -3775,8 +3774,9 @@ Resources:
 </article>
 
     </main>
-    <footer>
-        <p>&copy; 2025 AWS DevOps Notes</p>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">AWS - DevOps - Overview</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
     </footer>
     <script src="static/script.js"></script>
 </body>

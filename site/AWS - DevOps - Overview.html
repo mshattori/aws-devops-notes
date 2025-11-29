@@ -999,14 +999,18 @@ Resources:
 </ul>
 </li>
 </ul>
-<p>.platform/hooks フォルダ
-- /opt/elasticbeanstalk/hooks/ で実行される
-    - preinit - アプリケーションのデプロイ前
-    - appdeploy - アプリケーションのデプロイ中
-    - postinit - アプリケーションのデプロイ後
-    - configdeploy - ユーザによる設定変更時
-    - restartappserver - ユーザによるリスタート時
-- デプロイ後にコマンド実行するには .ebextentions/files で appdeploy/post フォルダにスクリプトを作成する</p>
+<p>.platform/hooks フォルダ</p>
+<ul>
+<li>/opt/elasticbeanstalk/hooks/ で実行される<ul>
+<li>preinit - アプリケーションのデプロイ前</li>
+<li>appdeploy - アプリケーションのデプロイ中</li>
+<li>postinit - アプリケーションのデプロイ後</li>
+<li>configdeploy - ユーザによる設定変更時</li>
+<li>restartappserver - ユーザによるリスタート時</li>
+</ul>
+</li>
+<li>デプロイ後にコマンド実行するには .ebextentions/files で appdeploy/post フォルダにスクリプトを作成する</li>
+</ul>
 <p>デプロイポリシー</p>
 <ul>
 <li>All at once</li>

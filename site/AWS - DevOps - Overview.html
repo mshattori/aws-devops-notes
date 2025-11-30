@@ -72,7 +72,7 @@
 </ul>
 <hr />
 <h1 id="aws">AWS サービスのスコープ分類</h1>
-<h2 id="1vpcvpc-scoped-services">1.VPC内リソース（VPC-scoped services）</h2>
+<h2 id="1-vpcvpc-scoped-services">1. VPC内リソース（VPC-scoped services）</h2>
 <p>ネットワーク的に VPC 内に存在し、AZ（サブネット）に紐づき、専用の ENI を持つリソース。</p>
 <table>
 <thead>
@@ -131,8 +131,8 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>IAM</strong></td>
-<td>グローバルに見えるが内部的にはリージョンレプリケーションあり。</td>
+<td><strong>Lambda</strong></td>
+<td>AWS管理VPCで実行。</td>
 </tr>
 <tr>
 <td><strong>CloudWatch</strong></td>
@@ -170,9 +170,20 @@
 <td><strong>Step Functions</strong></td>
 <td>ステートマシンはリージョン単位。</td>
 </tr>
+<tr>
+<td><strong>IAM</strong></td>
+<td>グローバルに見えるが内部的にはリージョンレプリケーションあり。</td>
+</tr>
 </tbody>
 </table>
-<h1 id="3">3. <strong>グローバルサービス（リージョンを超えるサービス）</strong></h1>
+<ul>
+<li>ELB はリージョン・スコープだが、ターゲットは VPC 内リソース<ul>
+<li>マルチAZにまたがる構造</li>
+<li>VPC 非接続 Lambda もターゲットにできる</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">3. <strong>グローバルサービス（リージョンを超えるサービス）</strong></h2>
 <table>
 <thead>
 <tr>
@@ -500,7 +511,8 @@
 </ul>
 </li>
 <li>ECS<ul>
-<li>AfterAllowTestTraffic フックがある。デプロイグループで ELB のテストリスナー(オプショナル)を指定しない場合は呼ばれない。</li>
+<li>AfterAllowTestTraffic フックがある。デプロイグループでテストリスナー(オプショナル)を指定しない場合は呼ばれない。</li>
+<li>テストリスナーは Green の新タスクグループに一次的に設定される ALB リスナー</li>
 <li><img alt="" src="_attachment/image_638.png" /></li>
 </ul>
 </li>
@@ -2954,7 +2966,7 @@ Resources:
 <li>インスタンスステータスチェック: ARP によるヘルスチェック</li>
 </ul>
 </li>
-<li>ELB によるヘルスチェック (オブション)</li>
+<li>ELB によるヘルスチェック (オプション)</li>
 <li>カスタムヘルスチェック<ul>
 <li>独自のヘルスチェック機能から Unhealthy 状態を Auto Scaling に通知する。</li>
 </ul>
@@ -3135,7 +3147,7 @@ Resources:
 <li>Unhealthy に遷移で CloudWatch Events 通知。ヘルスチェックは続けるので Healthy に戻る場合も。</li>
 <li>インスタンス再起動などの回復機能はない。</li>
 </ul>
-<p>負荷に応じて ELB は自動スケーリング (スケールアウト/スケールイン)</p>
+<p>負荷に応じて ELB 自体が自動スケーリング (スケールアウト/スケールイン)</p>
 <ul>
 <li>スケールアウトが間に合わないと 503 を返す。</li>
 </ul>
@@ -3206,32 +3218,98 @@ Resources:
 <li>ALB は2つ以上の AZ を設定する必要がある。</li>
 <li>ELB をパブリックサブネットに配置してターゲットのインスタンスはプライベートサブネットという構成もできる。</li>
 </ul>
-<p><img alt="" src="_attachment/image_682.png" /></p>
+<h2 id="multi-az-ha">Multi AZ (HA)</h2>
+<p><strong>Multi-AZ が暗黙的に提供されるサービス</strong></p>
 <ul>
-<li>EFS: Elastic File System: VPC に配置する NFS 大規模分散ストレージ。<ul>
-<li>何千ものインスタンスから同時にマウント可能。</li>
-<li>VPC にマウントターゲットを作成し EC2 から NFS マウント。</li>
-<li>マルチ AZ 可能。</li>
-<li>ファイルシステムのアクセスセマンティクス (強い整合性やファイルのロックなど) を提供</li>
+<li><strong>S3</strong>: One Zone-IA を除き、標準で Multi-AZ</li>
+<li><strong>DynamoDB</strong></li>
+</ul>
+<p><strong>手動で Multi-AZ を有効化する必要があるサービス</strong></p>
+<ul>
+<li><strong>EFS, ELB, ASG, Beanstalk</strong><ul>
+<li>AZ を指定して配置する必要がある</li>
 </ul>
 </li>
-<li>EBS は AZ リソース。Multi AZ に対応するにはスナップショットを使ったハックが必要になる。</li>
-<li>ElastiCache for Redis: リードレプリカ, フェイルオーバー, マルチ AZ サポート (Memcached は不可)</li>
+<li><strong>RDS, ElastiCache</strong><ul>
+<li>Multi-AZ（フェイルオーバー用の同期スタンバイ DB）</li>
 </ul>
+</li>
+<li><strong>Aurora</strong><ul>
+<li>データは Multi-AZ に自動的に保存される</li>
+<li>DB クラスターも Multi-AZ 構成が可能</li>
+</ul>
+</li>
+<li><strong>OpenSearch</strong><ul>
+<li>マルチマスター構成</li>
+</ul>
+</li>
+<li><strong>Jenkins（セルフデプロイ版）</strong><ul>
+<li>マルチマスター構成</li>
+</ul>
+</li>
+</ul>
+<p><strong>EFS: Elastic File System</strong>: VPC に配置する NFS 大規模分散ストレージ。</p>
+<ul>
+<li>マルチ AZ 可能。</li>
+<li>何千ものインスタンスから同時にマウント可能。</li>
+<li>VPC にマウントターゲットを作成し EC2 から NFS マウント。</li>
+<li>ファイルシステムのアクセスセマンティクス (強い整合性やファイルのロックなど) を提供</li>
+</ul>
+<p><strong>ElastiCache for Redis</strong>: リードレプリカ, フェイルオーバー, マルチ AZ サポート (Memcached は不可)</p>
+<p>EBS は AZ リソース。Multi-AZ 対応ではスナップショットを使ったハックが必要になる。</p>
 <p>Amazon Data Lifecycle Manager (DLM)</p>
 <ul>
 <li>EBS ボリュームのスナップショット作成、保持、削除を自動化。</li>
 </ul>
-<h1 id="disaster-recovery">Disaster Recovery</h1>
-<p><img alt="" src="_attachment/image_683.png" /></p>
-<p>CloudFormation StackSets</p>
+<h2 id="multi-region-disaster-recovery">Multi Region (Disaster Recovery)</h2>
+<p><strong>マルチリージョン対応機能</strong></p>
 <ul>
+<li><strong>DynamoDB Global Tables</strong><ul>
+<li>Streams による多方向レプリケーション</li>
+</ul>
+</li>
+<li><strong>AWS Config Aggregators</strong><ul>
+<li>マルチリージョン &amp; マルチアカウント対応</li>
+</ul>
+</li>
+<li><strong>RDS Cross Region Read Replicas</strong><ul>
+<li>DR/レイテンシー削減</li>
+</ul>
+</li>
+<li><strong>Aurora Global Database</strong><ul>
+<li>1つのリージョンがマスター、他リージョンはDR/レイテンシー削減</li>
+</ul>
+</li>
+<li><strong>EBS ボリュームスナップショット・AMI・RDS スナップショット</strong><ul>
+<li>他リージョンへコピー可能</li>
+</ul>
+</li>
+<li><strong>VPC Peering</strong><ul>
+<li>リージョン間をプライベート通信させる</li>
+</ul>
+</li>
+<li><strong>Route53</strong><ul>
+<li>グローバル DNS ネットワーク</li>
+</ul>
+</li>
+<li><strong>S3 Cross Region Replication</strong></li>
+<li><strong>CloudFront</strong><ul>
+<li>エッジロケーションでのグローバル CDN</li>
+</ul>
+</li>
+<li><strong>Lambda@Edge</strong><ul>
+<li>エッジロケーションでグローバルに Lambda 実行（A/B テストなど）</li>
+</ul>
+</li>
+<li><strong>CloudFormation StackSets</strong><ul>
 <li>クロスアカウント/クロスリージョンに同一スタックを1 度のオペレーションで作成、更新、削除できる。</li>
 </ul>
-<p>CodePipeline クロスリージョン・クロスアカウント</p>
-<ul>
+</li>
+<li><strong>CodePipeline クロスリージョン・クロスアカウント</strong><ul>
 <li>クロスリージョンや本番アカウントへのサービスデプロイ。</li>
 <li>アーティファクトストア (S3) へのコピーやアクセスのためのポリシー設定必要になる。</li>
+</ul>
+</li>
 </ul>
 <h2 id="rds">RDS</h2>
 <p>Ref.
@@ -3245,18 +3323,12 @@ Resources:
 <li>リードレプリカがあればリードレプリカもマスターに昇格できる</li>
 <li>リードレプリカは<strong>クロスリージョンのレプリケーションが可能</strong>。DR に利用できる。</li>
 <li><img alt="" src="_attachment/image_684.png" /></li>
-<li>問題例: クロスリージョンのリードレプリカで RPO を実現、Route53 のフェイルオーバールーティングで切り替え<ul>
-<li>Clone the application stack except for RDS in a different AWS Region.</li>
-<li>Create Read Replicas in the new region and configure the new application stack to point to the local Amazon RDS database instance.</li>
-<li>Set up a failover routing policy in Route 53 that will automatically route traffic to the new application stack in the event of an outage</li>
-</ul>
-</li>
 </ul>
 <p>スナップショット</p>
 <ul>
 <li>自動バックアップ<ul>
 <li>特定時刻 (過去 5分以内) の状態にリカバリするための機能。デフォルトで有効。</li>
-<li>毎日スナップショットを自動的に作成し、差分のトランザクションログを保存する。</li>
+<li>日次でスナップショットを自動的に作成し、差分のトランザクションログを保存する。</li>
 <li>バックアップウィンドウと保持期間 (デフォルト7日、最大35日) を指定する。</li>
 <li>DB インスタンスを削除されると同時に削除される。</li>
 </ul>
@@ -3295,18 +3367,18 @@ Resources:
 <p>マルチ AZ 配置のメンテナンス</p>
 <ul>
 <li>
-<p>OS 更新</p>
+<p>OS アップデート</p>
 <ol>
 <li>スタンバイにメンテナンスを実行後、スタンバイをプライマリに昇格。</li>
 <li>旧プライマリはスタンバイになり、メンテナンス実行。</li>
 </ol>
 </li>
 <li>
-<p>DB エンジン更新</p>
+<p>DB エンジンバージョン更新</p>
 <ul>
 <li>プライマリとスタンバイ DB インスタンスを両方同時にアップグレード。</li>
 <li>マルチ AZ 配置全体のデータベースエンジンがアップグレード時にオフラインとなる。<ul>
-<li>多分レプリケーションしてるからエンジン合わせないといけないため。</li>
+<li>プライマリ・スタンバイでは同じエンジンバージョンでないといけないため。</li>
 </ul>
 </li>
 </ul>
@@ -3315,7 +3387,7 @@ Resources:
 <li><img alt="" src="_attachment/image_686.png" /></li>
 <li><img alt="" src="_attachment/image_687.png" /></li>
 </ul>
-<p>RDS 通知イベント</p>
+<p>RDS イベント通知</p>
 <ul>
 <li>DB の設定変更、障害、フェイルオーバーなどの各種イベントを SNS で通知。</li>
 </ul>
@@ -3336,6 +3408,29 @@ Resources:
 <ul>
 <li>Lambda が DB コネクションを大量に作成することで過負荷になるのを防ぐのに使う。</li>
 </ul>
+<p>RPO: Recovery Point Objective</p>
+<ul>
+<li>日本訳は「目標復旧時点」</li>
+<li>インシデント発生した時点から直前のバックアップまでの間に、データが失われる可能性がある時間。</li>
+</ul>
+<p>RTO: Recovery Time Objective</p>
+<ul>
+<li>日本訳は「目標復旧時間」</li>
+<li>システムがビジネスに大きな損害を与えることなく停止することができる時間、システムとデー タの復旧にかかる時間。</li>
+</ul>
+<p>問題例: クロスリージョンのリードレプリカで RPO を実現、Route53 のフェイルオーバールーティングで切り替え</p>
+<ul>
+<li>Clone the application stack except for RDS in a different AWS Region.</li>
+<li>Create Read Replicas in the new region and configure the new application stack to point to the local Amazon RDS database instance.</li>
+<li>Set up a failover routing policy in Route 53 that will automatically route traffic to the new application stack in the event of an outage</li>
+</ul>
+<p><img alt="" src="_attachment/image_689.png" /></p>
+<p>回答: A</p>
+<ul>
+<li>B は動作します。ただし、pg_dump プロセスを実行すると、プライマリインスタンス上で大量の I/O が発生します。また、サイズの大きいデータベースの場合、SQL ダンプファイルのサイズが非常に大きくなります。</li>
+<li>C は不正解です。スナップショットは 1 日 1回しか自動作成されず RPO 要件を満たさないため。</li>
+<li>D は動作します。ただし、RPO 要件がわずか 4 時間なので、リージョン間レプリケーションは遅延が大きくなることがあり保証できない。</li>
+</ul>
 <h2 id="aurora">Aurora</h2>
 <p>概要</p>
 <ul>
@@ -3352,27 +3447,29 @@ Resources:
 <li>10GB から 64TB まで自動でスケールアップ</li>
 </ul>
 </li>
+<li>RDS 同様に、手動スナップショット、自動バックアップとポイントタイムリカバリ、メンテナンスウィンドウがある</li>
 </ul>
-<p>Aurora  クラスター</p>
+<p>Aurora クラスター</p>
 <ul>
-<li>クラスターボリューム<ul>
+<li>クラスターボリューム (マルチAZ)<ul>
 <li>マルチ AZ の仮想 DB ストレージボリューム。3つの AZ に 6 つのコピーが作成される</li>
 <li>シームレスにスケール (10GB-&gt;64TB) する仮想ストレージ</li>
 </ul>
 </li>
-<li>DB クラスタ<ul>
+<li>DB クラスタ (オプションでマルチAZ)<ul>
 <li>プライマリ DB インスタンスと Aurora レプリカ (リードレプリカ)</li>
 <li>DB クラスタ作成時にマルチ AZ 配置を指定することでマルチ AZ となる。<ul>
 <li>クラスタボリュームはデフォでマルチ AZ だが、DB クラスタではオプション。 </li>
 </ul>
 </li>
+<li>リストアは数秒単位でクラスタを作成可能</li>
 </ul>
 </li>
 </ul>
 <p><img alt="" src="_attachment/File_19.png" /></p>
 <p>Aurora Serverless</p>
 <ul>
-<li>Aurora のオンデマンド Auto Scaling 構成。アプリの使用状況に応じてキャパシティーをスケール。</li>
+<li>DB インスタンスのオンデマンド Auto Scaling 構成。アプリの使用状況に応じてキャパシティーをスケール。</li>
 <li>DB インスタンスクラスのサイズ指定せずデータベースエンドポイントを作成できる。</li>
 </ul>
 <p>暗号化</p>
@@ -3386,23 +3483,6 @@ Resources:
 <li>1 つのプライマリリージョン (マスター)と最大 5 つのセカンダリリージョン (読み取り専用) で構成。</li>
 <li>問題例: コンプラ対応でカタログデータは Aurora Global DB に、顧客データを Aurora のリージョナル DB に保管する例:</li>
 <li><img alt="" src="_attachment/image_688.png" /></li>
-</ul>
-<p>RPO: Recovery Point Objective</p>
-<ul>
-<li>日本訳は「目標復旧時点」</li>
-<li>インシデント発生した時点から直前のバックアップまでの間に、データが失われる可能性がある時間。</li>
-</ul>
-<p>RTO: Recovery Time Objective</p>
-<ul>
-<li>日本訳は「目標復旧時間」</li>
-<li>システムがビジネスに大きな損害を与えることなく停止することができる時間、システムとデー タの復旧にかかる時間。</li>
-</ul>
-<p><img alt="" src="_attachment/image_689.png" /></p>
-<p>回答: A</p>
-<ul>
-<li>B は動作します。ただし、pg_dump プロセスを実行すると、プライマリインスタンス上で大量の I/O が発生します。また、サイズの大きいデータベースの場合、SQL ダンプファイルのサイズが非常に大きくなります。</li>
-<li>C は不正解です。スナップショットは 1 日 1回しか自動作成されず RPO 要件を満たさないため。</li>
-<li>D は動作します。ただし、RPO 要件がわずか 4 時間なので、リージョン間レプリケーションのコストがかかりすぎます。</li>
 </ul>
 <h1 id="aws-backup">AWS Backup</h1>
 <p><a href="https://docs.aws.amazon.com/ja_jp/aws-backup/latest/devguide/whatisbackup.html">https://docs.aws.amazon.com/ja_jp/aws-backup/latest/devguide/whatisbackup.html</a></p>

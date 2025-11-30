@@ -3208,15 +3208,16 @@ Resources:
 </ul>
 <p>ELB と AZ</p>
 <ul>
-<li>ELB は AZ サービス。DNS とロードバランサーノードで成り立つ。</li>
-<li>ELB 作成時にサブネット(=AZ) を指定。<ul>
-<li>ロードバランサーノードが指定された AZ に作成され、その AZ 内のターゲットに転送。</li>
+<li>ELB は AWS 管理のロードバランサーノードが各 AZ に自動配置される AZ スコープのサービス。</li>
+<li>ELB 作成時にターゲットのサブネット(=AZ) を指定。<ul>
+<li>ロードバランサーノード自身は AWS 管理 AZ に配置され、ターゲットとなる AZ 内のサブネットに転送。</li>
 <li>DNS を引くとそれぞれの AZ のロードバランサーの IP が返ってくる。</li>
 </ul>
 </li>
-<li>耐障害性 (Fault tolerance) のためにマルチ AZ 指定が推奨される。</li>
-<li>ALB は2つ以上の AZ を設定する必要がある。</li>
-<li>ELB をパブリックサブネットに配置してターゲットのインスタンスはプライベートサブネットという構成もできる。</li>
+<li>耐障害性 (Fault tolerance) のために<strong>マルチ AZ 設定が推奨</strong>される。</li>
+<li><strong>ALB は2つ以上の AZ が必須</strong></li>
+<li>ELB をパブリックサブネットに配置し、ターゲット（EC2/ECS）をプライベートサブネットに置く構成が一般的</li>
+<li><strong>ALB には SG を指定可能</strong>。NLB は不可。</li>
 </ul>
 <h2 id="multi-az-ha">Multi AZ (HA)</h2>
 <p><strong>Multi-AZ が暗黙的に提供されるサービス</strong></p>
@@ -3226,7 +3227,7 @@ Resources:
 </ul>
 <p><strong>手動で Multi-AZ を有効化する必要があるサービス</strong></p>
 <ul>
-<li><strong>EFS, ELB, ASG, Beanstalk</strong><ul>
+<li><strong>ELB, ASG, Beanstalk, EFS</strong><ul>
 <li>AZ を指定して配置する必要がある</li>
 </ul>
 </li>
@@ -3248,15 +3249,21 @@ Resources:
 </ul>
 </li>
 </ul>
-<p><strong>EFS: Elastic File System</strong>: VPC に配置する NFS 大規模分散ストレージ。</p>
+<p><strong>EFS: Elastic File System</strong>: VPC 配置の NFS 大規模分散ストレージ。</p>
 <ul>
-<li>マルチ AZ 可能。</li>
+<li>デフォルトでマルチ AZ でレプリケーションされる分散ファイルストレージ</li>
+<li>各 AZ にマウントターゲット (ENI) が作成され EC2 から NFS マウント。</li>
 <li>何千ものインスタンスから同時にマウント可能。</li>
-<li>VPC にマウントターゲットを作成し EC2 から NFS マウント。</li>
 <li>ファイルシステムのアクセスセマンティクス (強い整合性やファイルのロックなど) を提供</li>
+<li>EFS Standard: リージョン内の3つ以上のAZにレプリケーションされる。全 AZ にマウントターゲット。</li>
+<li>EFS One Zone: 単一 AZ だけで保管。安価。指定 AZ のみにマウントターゲット。</li>
 </ul>
 <p><strong>ElastiCache for Redis</strong>: リードレプリカ, フェイルオーバー, マルチ AZ サポート (Memcached は不可)</p>
-<p>EBS は AZ リソース。Multi-AZ 対応ではスナップショットを使ったハックが必要になる。</p>
+<p><strong>EBS は AZ スコープリソース</strong></p>
+<ul>
+<li>別 AZ ではアタッチできず、Multi-AZ 利用ではスナップショットを使ったハックが必要になる。</li>
+<li>AMI はリージョンリソース。</li>
+</ul>
 <p>Amazon Data Lifecycle Manager (DLM)</p>
 <ul>
 <li>EBS ボリュームのスナップショット作成、保持、削除を自動化。</li>
@@ -3526,16 +3533,18 @@ Resources:
 </ul>
 </li>
 <li>Latency (遅延) ルーティング<ul>
-<li>最も遅延の少ないリージョンのリソースにルーティング。</li>
+<li>ユーザ位置から最も遅延の少ないリージョンのリソースにルーティング。</li>
+<li>Route 53 が継続的に計測する遅延の統計データに基づく。</li>
 </ul>
 </li>
 <li>Geolocation (位置情報) ルーティング<ul>
-<li>位置情報に基づくルーティング。国やアメリカの州に結びつける。</li>
+<li>ユーザの位置情報に基づくルーティング。国やアメリカの州に結びつける。</li>
 <li>ユースケース: ローカライズ、コンプライアンス、パフォーマンス。</li>
 </ul>
 </li>
 <li>Geoproximity (地理近接性) ルーティング<ul>
-<li>ユーザの位置情報とリソースのリージョンの地理的近接性によるルーティング。</li>
+<li>ユーザの位置情報とアクセス先リソースのリージョンの地理的近接性によるルーティング。</li>
+<li>Route 53 Traffic Flow 専用のポリシー。</li>
 </ul>
 </li>
 <li>複数値回答 (Multi-value) ルーティング<ul>
@@ -3572,7 +3581,7 @@ Resources:
 <p>Alias レコード</p>
 <ul>
 <li>CNAME のように別名がつけられる Route 53 固有の機能。</li>
-<li>AWS サービスのエンドポイント DNS レコードを登録するのに使用。<ul>
+<li>内部ドメイン名がアサインされる AWS サービスの公開ドメイン名を登録するのに使用。<ul>
 <li>ELB, CloudFront, 静的 Web サイトの S3 バケットなど。</li>
 </ul>
 </li>
@@ -3583,7 +3592,7 @@ Resources:
 <ul>
 <li>Set up health checks in Route 53 for non-alias records to each service endpoint. Configure the network access control list and the route table to allow Route 53 to send requests to the endpoints specified in the health checks.</li>
 <li>Use a Failover routing policy configuration. Set up alias records in Route 53 that route traffic to AWS resources. Set the Evaluate Target Health option to Yes, then create all of the required non-alias records.</li>
-<li>Latency ルーティングは不正解とされた。"Set the Evaluate Target Health option to Yes" が明示的に記載されていて、地理的な遅延対策も要件に入っていればこれでも正解かも。</li>
+<li>Latency ルーティングは不正解。目的が DR なので不適切。Latency は名前の通りレイテンシー低減が目的。</li>
 </ul>
 <h1 id="cloudfront">CloudFront</h1>
 <p>エッジロケーションによる CDN サービス</p>
@@ -3601,60 +3610,58 @@ Resources:
 <li>キャッシュによる DDoS 緩和。</li>
 <li>WAF, AWS Shield が設定できる。(Shield Standard はデフォルトで有効)</li>
 </ul>
-<h2 id="_8">オリジンの保護</h2>
-<p>オリジンサーバのへの URL 直アクセスの禁止。</p>
+<p><strong>オリジンの保護</strong></p>
+<p>オリジンサーバに直接アクセスされた場合にオリジン側でブロックする手法。</p>
 <p>S3 バケット</p>
 <ul>
-<li>OAI (Origin Access Identity) というユーザをディストリビューションに設定する。</li>
+<li><strong>OAI (Origin Access Identity)</strong> というユーザをディストリビューションに設定する。S3 にはそのユーザからアクセスされているように見える。</li>
 <li>バケットポリシーで OAI の ARN を Principal としてアクセスを許可する。</li>
 </ul>
 <p>S3 静的 Web ホスティング</p>
 <ul>
 <li>S3 静的 Web ホスティングはパブリック設定が必要なため保護できない。</li>
 </ul>
-<p>カスタムオリジン (EC2 インスタンスの Web サーバ等)</p>
+<p>カスタムオリジン (EC2 Web サーバ, ALB等)</p>
 <ul>
-<li>CloudFront のオリジンカスタムヘッダーを利用し、指定されたヘッダをオリジンサーバ側でチェックしてアクセスを受け付ける。</li>
-<li>Lambda でセキュリティグループを動的に変更して CloudFront からしかアクセスしないようにもできる。</li>
+<li>CloudFront の<strong>オリジンカスタムヘッダー</strong>を利用し、指定されたヘッダをオリジンサーバ側でチェックしてアクセスを受け付ける。</li>
+<li>定期的に変更される CloudFront の IP レンジを取得し、Lambda で EC2/ALB のセキュリティグループを動的に変更する方法もある。</li>
 </ul>
-<h2 id="https">トランスポート暗号化 (HTTPS)</h2>
-<h3 id="_9">ビューア → エッジ間</h3>
-<p>デフォルトの cloudfront.net SSL 証明書</p>
+<h3 id="https">トランスポート暗号化 (HTTPS)</h3>
+<p><strong>ビューア → エッジ間</strong></p>
+<p>デフォルトの *.cloudfront.net SSL 証明書</p>
 <ul>
 <li>標準で利用可能</li>
 </ul>
 <p>独自ドメイン使用</p>
 <ul>
-<li>X509 PEM 形式のサーバ証明書をインポートする。</li>
-</ul>
-<p>ACM 管理された証明書</p>
-<ul>
-<li>us-east-1 (N.Virginia) の ACM で証明書を生成/インポートする必要がある。</li>
+<li>X509 PEM 形式のサーバ証明書を ACM で発行/インポートし、CloudFront ディストリビューションに割り当てる。</li>
+<li>us-east-1 (N.Virginia) の ACM で登登する必要がある。</li>
 </ul>
 <p>HTTPS 必須にする</p>
 <ul>
 <li>ディストリビューションのビューアプロトコルポリシーを設定。</li>
-<li>[Redirect HTTP to HTTPS]</li>
-<li>[HTTPS Only]</li>
+<li><code>Redirect HTTP to HTTPS</code></li>
+<li><code>HTTPS Only</code></li>
 </ul>
-<h3 id="_10">エッジサーバ → オリジン間</h3>
-<p>S3 バケット・カスタムオリジン</p>
+<p><strong>エッジサーバ → オリジン間</strong></p>
+<p>S3 バケット・カスタムオリジン (ELB/EC2)</p>
 <ul>
 <li>Origin Protocol Policy を次のいずれかに設定:<ul>
-<li>[HTTPS Only]</li>
-<li>[Match Viewer]<ul>
-<li>[Viewer Protocol Policy] で [Redirect HTTP to HTTPS]/[HTTPS Only] を指定する場合</li>
+<li><code>HTTPS Only</code></li>
+<li><code>Match Viewer</code><ul>
+<li><code>Viewer Protocol Policy</code> で <code>Redirect HTTP to HTTPS</code> / <code>HTTPS Only</code> を指定する場合</li>
 </ul>
 </li>
 </ul>
 </li>
 <li>SSL プロトコル (TLSv1.2, TLSv1.1, TLSv1, SSLv3) を選択。</li>
-<li>オリジンが ELB の場合、ACM で証明書をあてることができる。</li>
+<li>オリジンが ELB の場合、ACM で証明書をあてることができる。ELB のリージョンの ACM に登録。</li>
 <li><a href="https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/using-https-cloudfront-to-custom-origin.html">https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/using-https-cloudfront-to-custom-origin.html</a></li>
 </ul>
 <p>S3 静的 Web ホスティング</p>
 <ul>
-<li>S3 静的 Web ホスティングは HTTPS を利用できない。</li>
+<li>S3 静的 Web ホスティングは HTTPS 非対応。</li>
+<li>S3 エンドポイント (<code>https://&lt;bucket&gt;.s3.&lt;region&gt;.amazonaws.com</code>) は HTTPS だが Web サイトのホスティングにはならない。</li>
 </ul>
 <p>CloudFront でカスタムドメインの証明書を使う場合、オリジンの ELB までの経路も HTTPS で保護したい場合、CloudFront 側の証明書は us-east-1 の ACM に登録し、もう1つの ELB の証明書は ELB と同じリージョンの ACM に登録する。</p>
 <p>問題例:</p>
@@ -3677,23 +3684,23 @@ Resources:
 </ul>
 </li>
 <li>署名付き URL/Cookie の使用には CloudFront キーペアやキーグループを登録する。<ul>
-<li>署名者が秘密鍵で署名付きURL/Cookie を署名し、CloudFront が公開鍵で検証する。</li>
+<li>アプリケーション側が秘密鍵で署名付きURL/Cookie を署名し、CloudFront が公開鍵で検証する。</li>
 </ul>
 </li>
 </ul>
-<p>Restrict Bucket Access</p>
+<p>Restrict Bucket Access 設定</p>
 <ul>
 <li>OAI を設定するための CloudFront ディストリビューションの設定項目</li>
 </ul>
-<p>Restrict Viewer Access</p>
+<p>Restrict Viewer Access 設定</p>
 <ul>
-<li>署名付きURL/署名付きCookie  によるアクセスのみを許可する設定項目</li>
+<li>署名付きURL/署名付きCookieがある場合のみアクセスを許可する設定項目</li>
 </ul>
 <p>フィールドレベル暗号化 (Field-Level Encryption)</p>
 <ul>
 <li>POST データの一部をエッジで暗号化、オリジンのみが復号できることで安全性を向上。</li>
 <li>ディストリビューション設定で暗号化したい POST リクエストの一連のフィールドと暗号化に使用するパブリックキーを指定する。</li>
-<li>鍵はキーペアを作成して公開鍵を CloudFront に設定する。(AWS KMS ではない)</li>
+<li>鍵はキーペアを作成して公開鍵を CloudFront に設定する。(AWS KMS は使えない。Edge Location が KMS を呼べないため)</li>
 </ul>
 <p>地域制限: Geo restriction</p>
 <ul>
@@ -3706,7 +3713,8 @@ Resources:
 </ul>
 <p>Lambda@Edge</p>
 <ul>
-<li>CloudFront エッジロケーションでリクエスト/レスポンスを傍受でき、CloudFront イベント発生時に Lambda 関数を実行してリクエストを書き換えたりできる。</li>
+<li>CloudFront エッジロケーションでリクエスト/レスポンスをフックでき、Lambda 関数でリクエストを書き換えたりキャッシュできる。</li>
+<li>実行タイミング: Viewer Request -&gt; Origin Request -&gt; Origin Response -&gt; Viewer Response</li>
 </ul>
 <p>問題例: CloudFront を使ったシステムでのログイン処理の遅延への対処</p>
 <p>回答:</p>

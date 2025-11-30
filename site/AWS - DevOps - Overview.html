@@ -2598,9 +2598,9 @@ Resources:
 <li>Set up AWS WAF rules that identify and block common DDoS request patterns to effectively mitigate a DDoS attack on the company's cloud infrastructure. Ensure that the Network Access Control Lists (ACLs) only allow the required ports and network addresses in the VPC.</li>
 </ul>
 <h1 id="aws-firewall-manager">AWS Firewall Manager</h1>
-<p>Organization の複数アカウントのリソースに WAF ルールとセキュリティグループを適用できる。</p>
+<p>Organizations の複数アカウントのリソースに WAF ルールとセキュリティグループを適用できる。</p>
 <ul>
-<li>アカウントが Organization に所属している必要がある。</li>
+<li>アカウントが Organizations に所属している必要がある。</li>
 </ul>
 <p>リソースタイプ (CloudFront distribution や ALB など) にポリシーを設定する。</p>
 <ul>
@@ -3749,15 +3749,21 @@ Resources:
 </li>
 </ul>
 <h1 id="multi-account">Multi Account</h1>
-<h2 id="organization">Organization</h2>
+<h2 id="aws-organization">AWS Organization</h2>
 <p>Ref. <a href="References/AWS%20-%20Security%20-%20IAM,%20STS,%20Organization.html">AWS - Security - IAM, STS, Organization</a></p>
 <ul>
 <li>複数アカウントを階層的なポリシーで管理。</li>
 <li>一括請求と SCP (Service Control Policy) によるアクセス許可ガードレール。</li>
-<li>ルートユーザの権限を制限できる点が特に重要。</li>
+<li>各アカウントの<strong>ルートユーザの権限を制限できる</strong>点が特に重要。</li>
 <li>マスターアカウント: Organization を作成したアカウント。管理アカウントとなる。</li>
 <li>OU にメンバーアカウントを所属させる。(Root OU に直接含めることもできる)</li>
 <li>上位 OU から SCP のポリシーが継承される。</li>
+<li>CloudTrail 組織証跡</li>
+</ul>
+<p>例: 本番アカウントに対して「開発者が直接デプロイできないようにする」とき</p>
+<ul>
+<li>本番 OU に SCP で CloudFormation/EC2 の Create/Update を Deny</li>
+<li>ただしパイプラインが使用するロールのみを Allow</li>
 </ul>
 <h2 id="control-tower">Control Tower</h2>
 <p>Ref. <a href="References/AWS%20-%20Security%20-%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS - Security - CloudFormation, Service Catalog, Control Tower</a></p>
@@ -3790,12 +3796,7 @@ Resources:
 <h1 id="hybrid">Hybrid</h1>
 <h2 id="aws-vm-importexport">AWS VM Import/Export</h2>
 <ul>
-<li>Enables you to easily import VM images from your existing environment to EC2 instances and export them back to your on-premises environment.</li>
-<li>Amazon Linux のイメージが欲しい場合、 ISO を直接ダウンロードできないのでインスタンスを立ち上げてこのサービスを使う。<ul>
-<li>Launch an Amazon EC2 instance with the latest Amazon Linux OS in AWS.</li>
-<li>Use the AWS VM Import/Export service to import the EC2 image, export it to a VMware ISO in an S3 bucket, and then import the ISO to an on-premises server.</li>
-</ul>
-</li>
+<li>VM イメージ (VHD, OVA) と EC2 インスタンス間のインポート・エクスポート。</li>
 </ul>
 <h2 id="aws-application-discovery-service-ads">AWS Application Discovery Service (ADS)</h2>
 <ul>
@@ -3820,7 +3821,7 @@ Resources:
 </ul>
 </li>
 <li>解答<ul>
-<li>Using the AWS Application Discovery Service, deploy the Agentless Discovery Connector in an OVA file format to your VMware vCenter and then install the AWS Discovery Agents on the EC2 instances to collect the required data.</li>
+<li>Using the AWS Application Discovery Service, deploy the <strong>Agentless Discovery Connector in an OVA file format to your VMware vCenter</strong> and then <strong>install the AWS Discovery Agents on the EC2 instances to</strong> collect the required data.</li>
 <li>Use the AWS Migration Hub Dashboard to analyze your hybrid infrastructure.</li>
 </ul>
 </li>

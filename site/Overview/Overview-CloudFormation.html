@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-CloudFormation - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-CloudFormation</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="cloudformation">CloudFormation</h1>
+<p>Pseudo Parameters</p>
+<p><img alt="" src="_attachment/image_648.png" /></p>
+<p>SSM Parameters Store 参照</p>
+<pre><code>Parameters:
+  InstanceType:
+    Type: 'AWS::SSM::Parameter::Value&lt;String&gt;'
+    Default: /EC2/InstanceType
+
+  ImageId:
+    Type: 'AWS::SSM::Parameter::Value&lt;AWS::EC2::Image::Id&gt;'
+    Default: /EC2/AMI_ID
+</code></pre>
+<p>Mappings セクション</p>
+<ul>
+<li>リージョンごとに使用する AMI ID を指定するマッピングテーブルなどを定義する。<ul>
+<li>AMI はリージョンリソースなので、リージョンごとに AMI ID が異なる。</li>
+</ul>
+</li>
+<li>Fn::FindInMap function でアクセス<ul>
+<li>!FindInMap [ <em>MapName, TopLevelKey, SecondLevelKey</em> ]</li>
+</ul>
+</li>
+</ul>
+<p>Conditions セクション</p>
+<ul>
+<li>テンプレート内で宣言的に条件指定を行って Resources, Outputs の生成を制御する。</li>
+<li><img alt="" src="_attachment/image_649.png" /></li>
+<li>各 Resource, Output の Condition 属性で参照する</li>
+</ul>
+<p>Outputs セクション</p>
+<ul>
+<li>スタック内の値をコンソールや CLI にアウトプットする。</li>
+<li>ネストしたスタックの Outputs は 親スタックから Stack リソースの属性として参照できる。<ul>
+<li>!GetAtt StackName.Output.Name</li>
+</ul>
+</li>
+<li>Export することで Fn::ImportValue で他のスタックからも参照できる。</li>
+<li>Export 名の名前空間は同一アカウントのリージョン内。</li>
+</ul>
+<p>CreationPolicy 属性</p>
+<ul>
+<li>生成完了ポリシー指定: 例) AutoScalingGroup リソースが作成時、グループ内の2個のインスタンスからシグナルがとどくまで生成完了とならず、次に進まない。</li>
+</ul>
+<pre><code class="language-yaml">CreationPolicy:
+  ResourceSignal:
+    Count: 2 
+</code></pre>
+<p>UpdatePolicy 属性</p>
+<ul>
+<li>AWS::AutoScaling::AutoScalingGroup<ul>
+<li>AutoScalingRollingUpdate</li>
+<li>AutoScalingReplacingUpdate</li>
+</ul>
+</li>
+<li>AWS::Lambda::Alias<ul>
+<li>Lambda の加重エイリアスを設定する。</li>
+</ul>
+</li>
+</ul>
+<pre><code>  alias:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !Ref function
+      FunctionVersion: !GetAtt newVersion.Version
+      Name: BLUE
+      RoutingConfig:
+        AdditionalVersionWeights:
+          - FunctionVersion: !GetAtt version.Version
+            FunctionWeight: 0.5
+</code></pre>
+<p>DeletionPolicy 属性</p>
+<ul>
+<li>Delete, Retain, Snapshot</li>
+<li>スナップショット対象: EBS, RDS, ElastiCache, Redshift</li>
+</ul>
+<h3 id="_1">スタックのオプション</h3>
+<p>TimeoutInMinutes</p>
+<ul>
+<li>スタックのステータスが CREATE_FAILED になるまでに待機可能な時間。</li>
+</ul>
+<p>DisableRollback</p>
+<ul>
+<li>ロールバック自体の無効化。</li>
+<li>Fail した場合も残ったリソースはスタックごと手動で削除できる。</li>
+</ul>
+<p>OnFailure</p>
+<ul>
+<li>スタック作成に失敗した場合に実行するロールバック操作を指定。</li>
+<li>DO_NOTHING、ROLLBACK、DELETE のいず れか。</li>
+<li>DETETE ではスタックの情報そのものが消去されるのでスタックのログも見られない。</li>
+<li>DisableRollback が有効な場合、OnFailure は設定できない。</li>
+</ul>
+<p>CAPABILITY_IAM / CAPABILITY_NAMED_IAM</p>
+<ul>
+<li>IAM リソースを作成するテンプレートの create-stack/update-stack には CAPABILITY_IAM または CAPABILITY_NAMED_IAM の capability の指定が必要になる。</li>
+</ul>
+<p>スタックのネスト</p>
+<ul>
+<li>AWS::CloudFormation::Stack リソースで別のテンプレートをネストする。</li>
+<li>ネットワーク層とアプリ層のテンプレートをネストする例<ul>
+<li>DependsOn で作成順序をコントロール。そうしないと並列で作成されてしまう。</li>
+<li>ネットワークスタックの Outputs の値をアプリケーションスタックの Parameters で渡す。</li>
+</ul>
+</li>
+<li>スタック更新時は親スタック (root stack) を更新する。</li>
+</ul>
+<p>クロススタックリファレンス (Export/ImportValue)</p>
+<ul>
+<li>ネストと異なり同時にスタックを作らない場合のスタックの関連付け 。</li>
+<li>他のスタックで Export した名前を別スタックで ImportValue で参照する。</li>
+</ul>
+<p>MetaData 属性 (リソースメタデータ)</p>
+<ul>
+<li>各リソースの MetaData 属性に指定できる任意の Key-value オブジェクト。</li>
+<li>AWS::CloudFormation::Init キーに指定されたオブジェクトの指定を cfn-init が処理。</li>
+</ul>
+<pre><code>AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MyS3Bucket:
+    Type: AWS::S3::Bucket
+    Metadata:
+      Object1: Location1
+      Object2: Location2
+</code></pre>
+<p>UserData 属性 (EC2)</p>
+<ul>
+<li>Fn::Base64 でテンプレート内に記載した UserData スクリプトの全体を渡すことができる。</li>
+<li>(参考) UserData 実行のアウトプットは /var/log/cloud-init-output.log に書き込まれる。<ul>
+<li>cloud-init は UserData を実行する機能。</li>
+</ul>
+</li>
+</ul>
+<p>cfn-init</p>
+<ul>
+<li>パッケージのインストール、 ファイル作成、サービス開始などの初期化処理に使用。</li>
+<li>MetaData に指定された AWS::CloudFormation::Init に記述された処理を実行する。</li>
+<li>通常はインスタンスの UserData スクリプトの一部として実行される。</li>
+<li>ログ出力: /var/log/cfn-init.log</li>
+</ul>
+<p>cfn-signal</p>
+<ul>
+<li>CreationPolicy 属性と WaitCondition リソースの ResourceSignal 属性で使用されるシグナルを送信するために使用</li>
+<li>WaitCondition はテンプレートのリソースの1つとして作られ、このリソースが生成されるまでスタック生成全体が終了されないようにできる。</li>
+</ul>
+<p>cfn-hup</p>
+<ul>
+<li>リソースメタデータの変更が検出されたときにカスタムフックを実行するために使用される。</li>
+<li>スタック更新で起動中インスタンス内で更新処理を実行したい場合に使う。</li>
+<li>デーモンとしてバックグラウンド動作するので通常は UserData で起動する。</li>
+</ul>
+<p>cfn-get-metadata</p>
+<ul>
+<li>リソースメタデータを取得して独自処理をする場合に使用する。</li>
+<li>MetaData の内容が JSON で取得される。</li>
+</ul>
+<p>トラブルシューティング</p>
+<p><img alt="" src="_attachment/image_650.png" /></p>
+<ul>
+<li>プライベートサブネットのインスタンスからシグナルを送るために CloudFormation サービスに NAT 等でアクセスできるようにする必要がある。</li>
+</ul>
+<h3 id="_2">リソースの保護</h3>
+<p>DeletionPolicy 属性</p>
+<ul>
+<li>スタックが削除される時にリソースを保持(Retain)またはバックアップ(Snapshot)できる。</li>
+</ul>
+<p>TerminationProtection: スタックの削除保護</p>
+<ul>
+<li>スタックの削除が実行できなくなる。スタック作成時と作成後にも設定できる。</li>
+<li>削除保護を変更すると、ネストされたスタックにも反映される。</li>
+</ul>
+<p>スタックポリシー</p>
+<ul>
+<li>スタックにつけられるリソースベースポリシー。</li>
+<li>重要なスタックリソースを変更する意図しないスタック更新を拒否できる。</li>
+<li>まず全て Allow して、保護したいものを Deny で指定する</li>
+</ul>
+<p>ドリフト検出</p>
+<ul>
+<li>CloudFormation 外部でスタックのリソースに直接変更が行われたか検出できる。</li>
+<li>AWS コンソールでスタックアクションからドリフト検出を実施し、ドリフト詳細の表示を行う。</li>
+<li>スタック全体のステータス: NOT_CHECKED, IN_SYNC, DRIFTED</li>
+<li>リソースのステータス: NOT_CHECKED, IN_SYNC, DELETED, MODIFIED</li>
+<li>ネストされたスタックのドリフトは検出しない。ネストされたスタックに対して直接ドリフト検出の実行が必要。</li>
+</ul>
+<p>カスタムリソース</p>
+<ul>
+<li>外部リソースをカスタムリソースプロバイダー (Lambda 等) で作成・更新・削除する。SNS と S3 署名付き URL で実装。</li>
+<li>ユースケース:<ul>
+<li>空でない S3 バケットではスタック削除が Fail するため、Lambda カスタムリソースで削除するのは頻出のユースケース。(DeletaionPolicy が Delete でも Fail する)</li>
+<li>リージョン毎に異なる AMI ID を Lambda カスタムリソースで取得して、カスタムリソースの Attribute として AMI ID を返すようなユースケース。</li>
+</ul>
+</li>
+<li>Create/Update/Delete といったリクエストを SNS メッセージでカスタムリソースプロバイダに送信。<ul>
+<li>カスタムリソースプロバイダがメッセージを処理し、Success/Fail の結果が S3 署名付き URL 経由で CloudFormation に返される。</li>
+<li>Lambda を使用する場合は直接 Lambda の ARN を指定でき、SNS トピックを作成する必要がない。</li>
+</ul>
+</li>
+</ul>
+<p>CloudFormation スタックセット</p>
+<ul>
+<li>クロスアカウント/クロスリージョンに同一スタックを1度のオペレーションで作成、更新、削除できる。</li>
+<li>全アカウントに AWS Config を展開したり、共通の IAM ロールを配布するなどの用途。</li>
+<li>ターゲットアカウントにスタックを作成する前に、 管理者アカウントとターゲットアカウントの間に信頼関係をセットアップする必要がある。</li>
+<li>スタックセットはリージョンリソースなので、他のリージョンで表示や変更できない。</li>
+<li>StackSets のテンプレートがある: クロスアカウントで CloudTrail, Config を有効にするのに使われる</li>
+<li><img alt="" src="_attachment/image_651.png" /></li>
+</ul>
+<p>AWS CDK (Cloud Development Kit/クラウド開発キット)</p>
+<ul>
+<li>プログラミング言語から CloudFormation テンプレートの構築・操作をコーディングするライブラリとツールキット。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-CloudFormation</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

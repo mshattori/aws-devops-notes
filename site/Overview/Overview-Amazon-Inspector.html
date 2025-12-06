@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Amazon-Inspector - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Amazon-Inspector</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="amazon-inspector">Amazon Inspector (検閲官)</h1>
+<p>インスタンスの脆弱性・セキュリティレポートを生成。</p>
+<ul>
+<li>apt, Windows Installer でインストールされたソフトウェアのバージョンと CVE 等を照合。</li>
+<li>評価テンプレート: スケジュール、ルールパッケージ、SNS トピックを指定。</li>
+<li>ルールパッケージ:<ul>
+<li>CVE, CIS</li>
+<li>ベストプラクティス</li>
+<li>ネットワーク到達可能性ルール。</li>
+</ul>
+</li>
+<li>エージェントレススキャン: SSM Agent 不要でEBSスナップショットを24時間ごとに評価。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Amazon-Inspector</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

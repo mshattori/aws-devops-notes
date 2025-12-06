@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-OpsWorks - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-OpsWorks</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="aws-opsworks">AWS OpsWorks</h1>
+<p><img alt="" src="_attachment/image_653.png" /></p>
+<p>スタック</p>
+<ul>
+<li>複数レイヤにまとめられた AWS リソースのスタック</li>
+</ul>
+<p>レイヤー (Layer)</p>
+<ul>
+<li>機能別のインスタンスグループ<ul>
+<li>ロードバランサー層、アプリケーションサーバ層、DB 層などのレイヤにまとめられた AWS リソース</li>
+</ul>
+</li>
+<li>インスタンスタイプ<ul>
+<li>24/7: 常時稼働</li>
+<li>Time-based: スケジュールで起動・停止（例: 夜間バッチ）</li>
+<li>Load-based: CPU などの負荷指標でスケール制御</li>
+</ul>
+</li>
+</ul>
+<p>クックブックとレシピ</p>
+<ul>
+<li>クックブックリポジトリ<ul>
+<li>Git、S3、HTTP など、Chef クックブックの保存場所。</li>
+</ul>
+</li>
+<li>レシピ<ul>
+<li>レイヤーごとに実行される設定スクリプト。</li>
+<li>OpsWorks スタックは各ライフサイクルイベントで対応するレシピを自動実行。</li>
+<li>インスタンスにアプリケーションをデプロイする際、<code>Deploy</code> ライフサイクルイベントがトリガーされ、レイヤーのデプロイレシピがインスタンスで実行される。</li>
+</ul>
+</li>
+</ul>
+<p>ライフサイクルイベント</p>
+<p>各レイヤーで<strong>ライフサイクルイベントごとに実行するレシピを指定</strong>できる。</p>
+<ul>
+<li>Setup<ul>
+<li>This event occurs after a started instance has finished booting.</li>
+</ul>
+</li>
+<li><strong>Configure</strong><ul>
+<li>This event occurs on all of the stack's instances when one of the following occurs:<ul>
+<li>An instance enters or leaves the online state.</li>
+<li>You associate an EIP address with an instance or disassociate one from an instance.</li>
+<li>You attach an ELB to a layer, or detach one from a layer.</li>
+</ul>
+</li>
+<li>いずれか1つのインスタンスが<strong>オンライン/オフラインになった際に全てのインスタンスで実行</strong>される。</li>
+</ul>
+</li>
+<li>Deploy<ul>
+<li>This event occurs when you run a Deploy command, typically to deploy an application to a set of application server instances.</li>
+</ul>
+</li>
+<li>Undeploy<ul>
+<li>This event occurs when you delete an app or run an Undeploy command to remove an app from a set of application server instances.</li>
+</ul>
+</li>
+<li>Shutdown<ul>
+<li>This event occurs after you direct OpsWorks Stacks to shut an instance down but before the associated  EC2 instance is actually terminated.</li>
+</ul>
+</li>
+</ul>
+<p>問題例</p>
+<p>You are working as a DevOps engineer for a leading telecommunications company which is planning to host a distributed system in AWS. Their system must be hosted on multiple Linux-based application servers which must use the same configuration file that tracks any changes in the cluster such as adding or removing a server. The configuration file is named as <em>tdojo-nodes.config</em> which contains the list of private IP addresses of the servers in the cluster and other metadata.</p>
+<p>Which of the following is the MOST automated way to meet the above requirements?</p>
+<p>解答</p>
+<p>Layer the application server nodes of the cluster using AWS OpsWorks Stacks and add a Chef recipe associated with the <strong>Configure</strong> Lifecycle Event which populates the <em>tdojo-nodes.config</em> file. Set up a configuration which runs each layer's <strong>Configure</strong> recipes that updates the configuration file when a cluster change is detected.</p>
+<p>自動ヒーリング</p>
+<ul>
+<li>OpsWorks Stacks agent との疎通確認でインスタンスのヘルスチェック。</li>
+<li>Fail すると自動ヒーリングが新しいインスタンスのプロビジョンを実行。</li>
+<li>Fail のイベントは EventBridge で監視できる。</li>
+<li>OpsWorks は Auto Scaling を使用していないため必要。</li>
+</ul>
+<hr />
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-OpsWorks</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

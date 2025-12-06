@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Monitoring - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Monitoring</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="_1">モニタリング</h1>
+<p>CloudWatch メトリクス</p>
+<ul>
+<li>インスタンスの CPU 状態や Lambda のエラー回数などを監視。</li>
+<li>メトリクスにしきい値を設定し、CloudWatch アラームを発生させる。</li>
+<li>標準メトリクス<ul>
+<li>AWS サービスのメトリクス。デフォルトは標準解像度(分単位)。</li>
+</ul>
+</li>
+<li>カスタムメトリクス<ul>
+<li>CloudWatch Agent や PutMetricData API で発行。</li>
+<li>EC2 インスタンスのメモリ使用量、EBS ボリュームの残りサイズ等。</li>
+<li>標準解像度(分単位) / 高解像度(秒単位) から選択できる。</li>
+</ul>
+</li>
+<li>ダッシュボード: メトリクスのグラフや統計の表示。</li>
+</ul>
+<p>CloudWatch アラーム</p>
+<ul>
+<li>アラームから SNS 通知、EC2 アクション(停止・再起動等)、Auto Scaling 連携。</li>
+<li>通知なので直接アクションをとることはできない:<ul>
+<li>SNS 経由でメール送信や Lambda 関数コール</li>
+<li>EventTrigger のデータソースにならない</li>
+</ul>
+</li>
+<li>各状態への移行に SNS 通知を設定できる<ul>
+<li>OK: しきい値以下</li>
+<li>ALARM: しきい値超過</li>
+<li>INSUFFICIENT_DATA: 開始直後やメトリクスが利用できないなどデータ不足の状態</li>
+</ul>
+</li>
+<li>Anomaly detection<ul>
+<li>特定の値でなく標準偏差の幅をしきい値に指定する</li>
+</ul>
+</li>
+</ul>
+<h2 id="cloudwatch-eventseventbridge">CloudWatch Events/EventBridge</h2>
+<p>CloudTrail, AWS Config 等のイベントソースと、他の AWS サービスをターゲットを指定したルールを設定。</p>
+<p>ルール:</p>
+<ul>
+<li>イベントソースとターゲットを指定したルール。</li>
+<li>スケジュールの場合はイベントソースにスケジュール式 (rate, cron) を指定</li>
+</ul>
+<p>ターゲット</p>
+<ul>
+<li>ECS タスクや EC2 CreateSnapshot API をターゲットにできるとのこと</li>
+</ul>
+<p>Event Bus</p>
+<ul>
+<li>クロスアカウントでのイベント送信。各アカウントはデフォルトのイベントバスを 1 つ持つ。</li>
+<li>送信側アカウント<ul>
+<li>受信側のイベントバスをターゲットとしてルールを設定する。</li>
+</ul>
+</li>
+<li>受信側アカウント<ul>
+<li>イベントバスで送信側アカウント ID を許可する。</li>
+<li>送信側アカウントからのイベントをイベントソースとしたルールを設定する。</li>
+</ul>
+</li>
+<li>中央アカウントのイベントバスに各アカウントからイベント送信するように設定、中央アカウントで 特定のイベントを Lambda 監視する、等のユースケース。</li>
+</ul>
+<p>S3 イベントとの違い</p>
+<ul>
+<li>S3 イベントはバケットレベルオプションとして指定し、取得できるのはオブジェクトレベルのイベントだけ。</li>
+<li>CloudWatch Event の S3 データソースは管理イベントとデータイベント (オブジェクトレベル) 両方のイベントを対象にできる。<ul>
+<li>オブジェクトレベルイベントを取るには CloudTrail の証跡がデータイベントに対して有効になっている必要がある</li>
+</ul>
+</li>
+<li>S3 イベントのターゲットは SNS, SQS, Lambda だけ。</li>
+</ul>
+<h2 id="x-ray">X-Ray</h2>
+<p>サービスマップ</p>
+<ul>
+<li>リクエストを追跡することでが作成されるサービスのマップ</li>
+<li>次のようなことが可能<ul>
+<li>依存関係ツリーの可視化</li>
+<li>複数 AZ やリージョンで実行しているときに発生するレイテンシーやエラーを検出</li>
+<li>正常に実行されていないサービスの特定</li>
+</ul>
+</li>
+</ul>
+<p>トレース</p>
+<ul>
+<li>各回のリクエスト呼び出しのメトリクスによるコールトレース。</li>
+</ul>
+<p>X-Ray デーモン</p>
+<ul>
+<li>2000/udp でリッスンし、ローカルの SDK から受信したセグメントデータを X-Ray サービスに PutTraceSegments API でバッチでアップロードする。</li>
+<li>EC2 の場合<ul>
+<li>ユーザデータスクリプトで X-Ray デーモンを落としてきてインストール。</li>
+</ul>
+</li>
+<li>ECS の場合<ul>
+<li>X-Ray デーモンを実行するコンテナをタスク定義に含める (サイドカーコンテナ)。</li>
+<li>ポートマッピングを設定して 2000/udp へのトラフィックをマップする。</li>
+<li>問題例: ECS で X-Ray を利用する</li>
+<li>解答<ul>
+<li>Produce a Docker image that runs the X-Ray daemon.</li>
+<li>Upload the image to a Docker image repository, and then deploy it to your Amazon ECS cluster.</li>
+<li>Configure the network mode settings and port mappings in your task definition file to allow traffic on UDP port 2000.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Lambda の場合<ul>
+<li>Lambda コンソールで AWS X-Ray のアクティブトレースを有効化。<ul>
+<li>関数の実行ロールにポリシーが追加される。</li>
+</ul>
+</li>
+<li>X-Ray デーモンは Lambda ランタイムで自動的に実行される。</li>
+<li>X-Ray SDK を関数パッケージにバンドルしてコードから使用する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Monitoring</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

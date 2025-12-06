@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Cross-Region-Data-and-Endpoint-Special-Types - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Cross-Region-Data-and-Endpoint-Special-Types</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="4">4. リージョンを跨いでデータ/エンドポイントが存在する特殊タイプ</h1>
+<table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>補足</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S3</strong></td>
+<td>API・ネームスペースはグローバル。</td>
+</tr>
+<tr>
+<td><strong>DynamoDB Global Tables</strong></td>
+<td>複数リージョンで同期。</td>
+</tr>
+<tr>
+<td><strong>Aurora Global Database</strong></td>
+<td>リーダー領域が複数リージョンで構成される。</td>
+</tr>
+<tr>
+<td><strong>EFS One Zone / Standard</strong></td>
+<td>データはAZだがアクセス可能性はリージョン。</td>
+</tr>
+<tr>
+<td><strong>CloudWatch Logs Cross-region</strong></td>
+<td>実質リージョンごとのストレージ＋一部グローバル統合。</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>S3 はグローバルエンドポイント <code>s3.amazonaws.com</code> と <code>s3.ap-northeast-1.amazonaws.com</code> のようなリージョンエンドポイントがある。(グローバルエンドポイントは現在は非推奨)</li>
+</ul>
+<hr />
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Cross-Region-Data-and-Endpoint-Special-Types</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

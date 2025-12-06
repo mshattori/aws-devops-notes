@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-Config.supplement - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-Config.supplement</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h3 id="1">🔍 1. 問題点・誤り・補足すべき箇所</h3>
+<ul>
+<li>Config ルールの評価タイミングと修復アクションの流れが簡略で、Periodic ルールやスコープ指定、ドリフト検出の用途に触れていない。</li>
+<li>Aggregator の前提となる組織委任やクロスアカウント権限、配信チャネル（Delivery Channel/S3/CloudWatch Logs）への言及がなく、運用設計の視点が不足。</li>
+<li>CloudTrail 監査や Config Recorder の有効化要件を明示せず、DOP 試験で問われる必須前提が抜けている。</li>
+</ul>
+<h3 id="2">🛠 2. 改訂版（修正・補足反映後の完成文）</h3>
+<ul>
+<li><strong>前提</strong>: 各リージョンで Config Recorder を有効化し、Delivery Channel で S3/CloudWatch Logs 出力を設定。CloudTrail 併用で変更履歴を完全取得。</li>
+<li><strong>Aggregator</strong>: Org 管理アカウントまたは委任アカウントで複数アカウント/リージョンのコンプライアンスを集約。クロスアカウント Role 付与が必要。</li>
+<li><strong>Config Rules</strong>: マネージド/カスタム（Lambda/Guard）を作成し、変更時 or Periodic (1–24h)。スコープ指定でリソースタイプ/タグ/ID を絞り込む。</li>
+<li><strong>修復アクション</strong>: Noncompliant イベントで SSM Automation ランブックを呼び出し自動是正。必要に応じて Systems Manager 以外の通知やワークフローは EventBridge で分岐。</li>
+<li><strong>代表ユースケース</strong>: CloudTrail 有効確認や暗号化設定の強制、ドリフト検出。評価結果は Compliant/Noncompliant としてダッシュボード/Exporter へ出力。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-Config.supplement</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

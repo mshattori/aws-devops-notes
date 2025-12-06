@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Trusted-Advisor - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Trusted-Advisor</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="trusted-advisor">Trusted Advisor</h1>
+<p><img alt="" src="_attachment/image_678.png" /></p>
+<p>AWS Trusted Advisor のチェックの自動更新は Weekly-base</p>
+<p>AWS Support API: Trusted Adviser の API</p>
+<ul>
+<li>DescribeTrustedAdvisorChecks</li>
+<li>RefreshTrustedAdvisorCheck</li>
+</ul>
+<p>CloudWatch Events 連携で処理を自動化</p>
+<ul>
+<li>例:  Check Item Refresh Status イベントを Lambda 連携し、使用率の高い EC2 インスタンスがあれば SSM Automation でインスタンスをリサイズ</li>
+<li>なお、グローバルサービスなので us-east-1 でしかイベントソースに表示されない</li>
+</ul>
+<p>CloudWatch メトリクスも CloudWatch Events 同様の項目で存在</p>
+<ul>
+<li>問題例: 使用されていない ELB の通知を実現できるオプション<ul>
+<li>メトリクスからアラームで通知: Use Amazon CloudWatch to create alarms on Trusted Advisor metrics in order to detect the load balancers with low utilization. Specify an SNS topic for notification.</li>
+<li>CloudWatch Events 連携: Utilize CloudWatch Events to monitor Trusted Advisor recommendation results. Set up a trigger to send an email using SNS to notify you about the results of the check.</li>
+<li>スケジュール Lambda から Trusted Advisor API コール: Create a Lambda function and integrate it with CloudWatch Events. Configure the function to run on a regular basis and to check AWS Trusted Advisor via API. Based on the results, publish a message to an Amazon SNS Topic to notify the subscribers.</li>
+</ul>
+</li>
+<li>Trusted Advisor ビルドインの通知もあるが、自動リフレッシュが Weekly-base なので Daily scheduled の Lambda による Trusted Advisor チェックリストの更新・取得のポーリングが正解とされる。</li>
+</ul>
+<h2 id="iam-access-analyzer">IAM Access Analyzer</h2>
+<ul>
+<li>リソースベースポリシーを分析し、外部プリンシパルと共有されるリソースを表示。</li>
+<li>IAM ロール, S3 バケット, KMS キー, Lambda 関数/レイヤー, SQS キュー</li>
+<li>例<ul>
+<li>クロスアカウントが許可されたロールの確認</li>
+<li>パブリックアクセスのバケットの確認</li>
+</ul>
+</li>
+</ul>
+<h2 id="s3-access-analyzer-access-analyzer-for-s3">S3 Access Analyzer (Access Analyzer for S3)</h2>
+<ul>
+<li>パブリックバケット・他の AWS アカウントに公開されたバケットを検出。</li>
+<li>IAM Access Analyzer がベース。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Trusted-Advisor</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

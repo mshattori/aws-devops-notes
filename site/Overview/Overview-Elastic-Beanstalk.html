@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Elastic-Beanstalk - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Elastic-Beanstalk</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="elastic-beanstalk">Elastic Beanstalk</h1>
+<ul>
+<li>Web サーバ環境と Worker 環境 (Web server tier &amp; Worker tier)</li>
+<li>プロビジョニング・負荷分散・モニタリングなどを自動設定:<ul>
+<li>EC2, EBS, RDS, セキュリティグループ, IAM ロール</li>
+<li>ELB, Auto Scaling</li>
+<li>CloudWatch Alarms, SNS</li>
+</ul>
+</li>
+<li>プラットフォームのアップデート。</li>
+</ul>
+<p>アプリケーション</p>
+<ul>
+<li>環境、環境設定、アプリケーションバージョンの入れ物</li>
+<li>複数環境を起動できる。</li>
+</ul>
+<p>環境</p>
+<ul>
+<li>インフラ環境 (Web/Worker)</li>
+<li>アプリケーションバージョン (アプリのコード) をデプロイする場所。</li>
+</ul>
+<p>アプリケーションバージョン</p>
+<ul>
+<li>eb deploy するたびにアプリケーションバージョンができる</li>
+<li>ライフサイクル: バージョンの保持期限を個数又は日数で管理する</li>
+</ul>
+<p>環境タイプ</p>
+<ul>
+<li>単一インスタンス: Single-instance<ul>
+<li>単一の Web サーバインスタンスに EIP がつき、単一の DB インスタンスができる。</li>
+</ul>
+</li>
+<li>負荷分散: Load balanced<ul>
+<li>ELB と Auto Scaling が付き、Multi-AZ を設定できる。</li>
+<li>DB がプライマリー・スタンバイ構成になる。</li>
+</ul>
+</li>
+</ul>
+<p>保存済み設定: Saved configurations</p>
+<ul>
+<li>起動中の環境設定をテンプレートとして保存して他のリージョンやアカウントで展開できる</li>
+<li>インスタンスタイプや ASG などの環境設定なので、コードや .ebextensions は含まれない。</li>
+<li>eb config save dev-env --cfg prod<ul>
+<li>サービス側に設定が保存される。</li>
+<li>.elasticbeanstalk/saved_configs 配下に prod.cfg.yaml ができ、ローカルで直にファイルを編集できる。</li>
+</ul>
+</li>
+<li>eb config put prod<ul>
+<li>ローカルで編集した設定をサービス側に保存する。</li>
+</ul>
+</li>
+<li>eb config dev-env --cfg prod<ul>
+<li>サービス側に保存された設定を環境に適用。</li>
+</ul>
+</li>
+</ul>
+<p>.ebextensions フォルダ</p>
+<ul>
+<li>アプリケーションパッケージ内に配置する設定スクリプト</li>
+<li>操作を指定した (分割された) 設定ファイルを配置。eb deploy で環境に適用。</li>
+</ul>
+<p><img alt="" src="_attachment/image_652.png" /></p>
+<ul>
+<li>services:<ul>
+<li>各種サービスのコンフィグを設定: EC2, VPC, Auto Scaling, ELB, RDS  等。</li>
+</ul>
+</li>
+<li>resources:<ul>
+<li>CloudFromation テンプレートのリソース記述で任意のリソースを作成できる。</li>
+<li>ただし DB のように消えたら困るリソースは環境外に個別に作成したほうがよい。</li>
+</ul>
+</li>
+<li>commands<ul>
+<li>インスタンス起動後、アプリケーションのファイルが展開される前に実行されるコマンド</li>
+<li>バックアップや旧ファイルのクリーンアップなど。</li>
+</ul>
+</li>
+<li>container_commands<ul>
+<li>アプリケーションのファイルが展開された後、アプリのデプロイ前に実行される</li>
+<li>デプロイ前の DB マイグレーションや設定ファイルの更新など</li>
+<li><strong>leader_only: true</strong> ... 複数あるインスタンスのうち１つだけで実行</li>
+</ul>
+</li>
+</ul>
+<p>.platform/hooks フォルダ</p>
+<ul>
+<li>/opt/elasticbeanstalk/hooks/ で実行される<ul>
+<li>preinit - アプリケーションのデプロイ前</li>
+<li>appdeploy - アプリケーションのデプロイ中</li>
+<li>postinit - アプリケーションのデプロイ後</li>
+<li>configdeploy - ユーザによる設定変更時</li>
+<li>restartappserver - ユーザによるリスタート時</li>
+</ul>
+</li>
+<li>デプロイ後にコマンド実行するには .ebextentions/files で appdeploy/post フォルダにスクリプトを作成する</li>
+</ul>
+<p>デプロイポリシー</p>
+<ul>
+<li>All at once</li>
+<li>Rolling</li>
+<li>Rolling with additional batch</li>
+<li>Immutable</li>
+</ul>
+<p>Worker 環境</p>
+<ul>
+<li>SQS キューのリッスンまたはスケジュールでタスクを処理する Worker アプリケーション。</li>
+<li>スケジュールは cron.yaml で設定。</li>
+<li>Web サーバ環境と並行して Worker 環境を立てて時間のかかる処理を非同期実行。</li>
+</ul>
+<p>Docker in Beanstalk</p>
+<ul>
+<li>プラットフォームに Docker を選ぶ場合 ECS の使用を選択できる。</li>
+<li>EC2 Auto Scaling でスケーリングされる ECS クラスターが作成される。</li>
+<li>環境のコンテナ群 (タスクセット) が ECS Service により起動される。</li>
+<li>ECS Service Auto Scaling によるタスク数のスケーリングも設定される。</li>
+</ul>
+<p>設定の優先順位</p>
+<ol>
+<li>環境に直接 API (CLI) で適用される設定</li>
+<li>保存済み設定</li>
+<li>設定ファイル (.ebextensions)</li>
+<li>デフォルト値</li>
+</ol>
+<p>問題例: Beanstalk からの RDS のデカップリング</p>
+<ul>
+<li>RDS is used as the database, and it is tightly coupled to the Elastic Beanstalk environment.</li>
+<li>A DevOps Engineer noticed that if you terminate the environment, its database goes down as well.</li>
+<li>This issue prevents you from performing seamless updates with blue-green deployments.</li>
+<li>How can the DevOps Engineer decouple the database instance from the environment with the LEAST amount of data loss?</li>
+</ul>
+<p>解答</p>
+<ul>
+<li>Decouple the RDS instance from your Elastic Beanstalk environment using the blue/green deployment strategy to decouple. (Blue/Green で既存環境を稼働させてダウンタイム縮小しながら RDS をデカップリング)</li>
+<li>Take an RDS DB snapshot of the database and enable deletion protection. (スナップショットと保護)</li>
+<li>Set up a new Elastic Beanstalk environment with the necessary information to connect to the RDS instance.</li>
+<li><strong>Before terminating the old Elastic Beanstalk environment, remove its security group rule first before proceeding.</strong></li>
+<li>Beanstalk 環境のインスタンスから RDS に接続するには RDS 側の SG で環境の SG からの Ingress アクセスを許可する必要があるが、このルールによる依存関係の残したままだと環境の削除が FAIL する。</li>
+<li>環境側の SG が RDS の SG に参照されたままなので、利用中あつかいになる。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Elastic-Beanstalk</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

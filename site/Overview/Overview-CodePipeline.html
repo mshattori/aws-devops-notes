@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-CodePipeline - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-CodePipeline</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="codepipeline">CodePipeline</h1>
+<p>ステージ</p>
+<ul>
+<li>ソースステージ</li>
+<li>ビルドステージ (オプショナル)</li>
+<li>デプロイステージ (オプショナル)</li>
+</ul>
+<p>ソースステージ</p>
+<ul>
+<li>入力アーティファクトが更新されると自動でパイプラインが起動される。</li>
+<li>CodeBuild のソースプロバイダー + ECR</li>
+<li>AWS リソースの CodeCommit, ECR, S3 は CloudWatch Events/EventBridge で監視。</li>
+<li>外部リソースの GitHub, Bitbucket  は CodeStarSourceConnection プロバイダーで Webhook で監視。</li>
+</ul>
+<p>ビルドステージ</p>
+<ul>
+<li>CodeBuild, Jenkins</li>
+</ul>
+<p>デプロイステージ</p>
+<p><img alt="" src="_attachment/image_640.png" /></p>
+<p>アクション</p>
+<p><img alt="" src="_attachment/image_641.png" /></p>
+<ul>
+<li>Approval アクション: 手動承認 (SNS)<ul>
+<li>Codepipeline コンソール上または SNS で通知される URL で Approve/Reject できる。(サブスクライバは任意に追加可能)</li>
+</ul>
+</li>
+<li>カスタムアクション<ul>
+<li>Codepipeline サービスから Job をポーリングして、Job 実行後にレスポンスを返す。</li>
+</ul>
+</li>
+<li>パラレルアクション(=アクショングループ)とシーケンシャルアクション</li>
+<li><strong>runOrder:</strong> シーケンスの順番。パラレルアクションは同じ runOrder になる。<ul>
+<li>問題例: 複数の Lambda のデプロイを並行させることでパイプラインの処理時間を早める</li>
+<li><img alt="" src="_attachment/image_642.png" /></li>
+</ul>
+</li>
+</ul>
+<p>アーティファクト</p>
+<ul>
+<li>各ステージのアーティファクトが S3 に置かれ、次のステージに渡される。</li>
+<li>S3 バージョンを使用して作成の度にバージョニングされる。</li>
+<li>デフォルトで S3 の AWS 管理キー (aws/s3) を作成して SSE-KMS 暗号化。</li>
+<li>カスタマー管理キーでないとキーポリシーを変更できずクロスアカウントでの使用ができない。</li>
+</ul>
+<p>クロスリージョンアクション</p>
+<ul>
+<li>クロスリージョンでビルドプロバイダー/デプロイプロバイダー等を呼び出すことが可能。<ul>
+<li>ソースアクション、サードパーティーアクション、カスタムアクションは不可。</li>
+</ul>
+</li>
+<li>各リージョンにアーティファクトストア (S3バケット) と SSE-KMS キーが必要となる。</li>
+<li>リージョン間でのアーティファクトのコピーが行われる。</li>
+<li><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/actions-create-cross-region.html">https://docs.aws.amazon.com/codepipeline/latest/userguide/actions-create-cross-region.html</a></li>
+</ul>
+<p>クロスアカウント</p>
+<ul>
+<li>パイプラインのある開発アカウントとデプロイ先の本番アカウントのクロスアカウント設定。</li>
+<li>パイプライン側で KMS カスタマー管理キーを作成。デプロイ先アカウントから使用できるようキーポリシーを設定。</li>
+<li>S3 バケットにもデプロイ先アカウントからアクセスできるようバケットポリシーを設定。</li>
+<li>デプロイ先アカウントに CodeDeploy プロジェクトを作成。デプロイ先インスタンスのインスタンスロールに KMS, S3 へのアクセス権も設定。</li>
+<li>この CodeDeploy を開発側アカウントのパイプラインから実行できるよう、クロスアカウントロールを作成して、パイプラインのサービスロールに設定。</li>
+</ul>
+<p>Ref. クロスアカウントロール</p>
+<ul>
+<li>ロールの信頼ポリシーでリモートアカウントからの AssumeRole を許可。</li>
+<li>プリンシパルのポリシーでリモートロールへの AssumeRole を許可。</li>
+</ul>
+<p>EventBridge 連携</p>
+<ul>
+<li>単にパイプラインから Lambda 呼びたければ Invoke アクションがあるので、Fail の際などに呼ぶ場合にこちらを使う。</li>
+</ul>
+<p>問題例: CloudFormation アクションで CFn テンプレートのパラメータを指定して prod/staging/dev のコンフィグを分ける</p>
+<ul>
+<li>Launch a new pipeline using AWS CodePipeline that has multiple stages for each environment and configure it to use input parameters.</li>
+<li>Switch the associated UserData of the EC2 instances to match the environment where the application stack is being launched using CloudFormation mappings.</li>
+<li>Specify parameter overrides for AWS CloudFormation actions.</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-CodePipeline</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

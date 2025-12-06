@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-ECR - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-ECR</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="ecr">ECR</h1>
+<p>プライベートなコンテナイメージレポジトリ。 IAM ポリシーでアクセス制御できる。</p>
+<p>認証情報の取得</p>
+<ul>
+<li>docker login でレポジトリにログインにする際の認証情報。</li>
+<li><code>aws ecr get-login-password</code> (AWS CLI v2 )<ul>
+<li>パスワードだけ吐き出す</li>
+</ul>
+</li>
+</ul>
+<pre><code>aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin
+</code></pre>
+<ul>
+<li><code>aws ecr get-login</code> (AWS CLI v1)<ul>
+<li><code>docker login -u AWS -p &lt;password&gt; -e none &lt;ecr_server&gt;</code> コマンド全体を吐き出す。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-ECR</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-ELB - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-ELB</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="elb">ELB</h1>
+<p>外部公開サーバを高信頼・高可用性で構築するには必須。</p>
+<p>ASG から連携されて使用される。</p>
+<p>CodeDeploy の EC2, ECS の Blue/Green デプロイメントの実現手段</p>
+<p>ECS (Service 使用時), Beanstalk (High Availability), OpsWorks でも使われる。</p>
+<p>ターゲットグループ</p>
+<ul>
+<li>ターゲットの種類: インスタンス ID, IP アドレス, Lambda (ALB のみ)</li>
+<li>ASG, ECS Service から統合されている。</li>
+</ul>
+<p>リスナー</p>
+<ul>
+<li>リスナールール: ルーティングのルールを定義する。</li>
+<li>ルールの条件が満たされると指定されたターゲットグループに転送などのアクションをとる。</li>
+</ul>
+<p>ヘルスチェック</p>
+<ul>
+<li>TCP/HTTP/HTTPS でキープアライブ。</li>
+<li>インターバルと Healthy/Unhealthy に移行する試行回数を指定。</li>
+<li>Unhealthy に遷移で CloudWatch Events 通知。ヘルスチェックは続けるので Healthy に戻る場合も。</li>
+<li>インスタンス再起動などの回復機能はない。</li>
+</ul>
+<p>負荷に応じて ELB 自体が自動スケーリング (スケールアウト/スケールイン)</p>
+<ul>
+<li>スケールアウトが間に合わないと 503 を返す。</li>
+</ul>
+<p>ALB: Application Load Balancer</p>
+<ul>
+<li>L7 (HTTP/HTTPS) レベルのロードバランシング</li>
+<li>パスベースのルーティング: URL のパスで振り分け。</li>
+<li>ホストベースのルーティング: Host ヘッダで振り分け。(複数ドメイン)</li>
+<li>クエリ文字列/ヘッダベースのルーティング</li>
+<li>HTTP/2, WebSockets サポート。</li>
+<li>別の URL へのリダイレクト。</li>
+<li>Lambda ターゲットのサポート。(NLB/CLB はサポートしない)<ul>
+<li>非 VPC の Lambda も VPC Lambda も両方呼べる</li>
+</ul>
+</li>
+<li>ユーザ認証: インスタンス上の Web アプリを改修せず認証を追加できる。<ul>
+<li>Cognito ユーザープール統合:  ALB がユーザープールの Hosted UI にリダイレクト。</li>
+<li>OpenID Connect (OIDC) 準拠 IdP 連携による認証。(Cognito 使わない ALB の機能)</li>
+</ul>
+</li>
+</ul>
+<p>NLB: Network Load Balancer</p>
+<ul>
+<li>L4 (TCP/UDPレベル) NAT ロードバランサー</li>
+<li>UDP をサポート</li>
+<li>大規模トラフィック対応: 毎秒数百万のリクエストを処理できる</li>
+<li>静的 (Static) IP アドレスのサポート<ul>
+<li>EIP で独自の固定 IP を設定することも可能。</li>
+<li>FW などの制約で宛先を IP 指定しなければいけない場合など。</li>
+</ul>
+</li>
+<li>送信元 IP アドレスの保持</li>
+</ul>
+<p>複数ポートのサポート</p>
+<ul>
+<li>同一インスタンスの複数ポートのサーバに負荷分散。(ALB/NLB でサポート)</li>
+</ul>
+<p>TLS オフロード (TLS Termination)</p>
+<ul>
+<li>ELB が TLS を終端しターゲット側は TLS 対応せずに済む</li>
+<li>E2E 通信暗号化のため NLB/CLB で TCP pass through するという逆のユースケースも。<ul>
+<li>ALB は HTTP プロキシなので TCP pass through ではない。</li>
+</ul>
+</li>
+<li>(参考) ELB とターゲット間の HTTPS 通信<ul>
+<li>オフロードにより ELB で終端してターゲットグループ設定で HTTPS を使用。</li>
+</ul>
+</li>
+<li>(参考) HTTP to HTTPS リダイレクション<ul>
+<li>HTTP (80) リスナーを作成し、443 へのリダイレクトアクションを設定する。</li>
+</ul>
+</li>
+</ul>
+<p>スティッキーセッション (Sticky session)</p>
+<ul>
+<li>設定された有効期限の間、同一ターゲットとセッションを維持。デフォルト無効。</li>
+<li>ロードバランサーが設定する Cookie により実現。</li>
+</ul>
+<p>ELB と AZ</p>
+<ul>
+<li>ELB は AWS 管理のロードバランサーノードが各 AZ に自動配置される AZ スコープのサービス。</li>
+<li>ELB 作成時にターゲットのサブネット(=AZ) を指定。<ul>
+<li>ロードバランサーノード自身は AWS 管理 AZ に配置され、ターゲットとなる AZ 内のサブネットに転送。</li>
+<li>DNS を引くとそれぞれの AZ のロードバランサーの IP が返ってくる。</li>
+</ul>
+</li>
+<li>耐障害性 (Fault tolerance) のために<strong>マルチ AZ 設定が推奨</strong>される。</li>
+<li><strong>ALB は2つ以上の AZ が必須</strong></li>
+<li>ELB をパブリックサブネットに配置し、ターゲット（EC2/ECS）をプライベートサブネットに置く構成が一般的</li>
+<li><strong>ALB には SG を指定可能</strong>。NLB は不可。</li>
+</ul>
+<h2 id="multi-az-ha">Multi AZ (HA)</h2>
+<p><strong>Multi-AZ が暗黙的に提供されるサービス</strong></p>
+<ul>
+<li><strong>S3</strong>: One Zone-IA を除き、標準で Multi-AZ</li>
+<li><strong>DynamoDB</strong></li>
+</ul>
+<p><strong>手動で Multi-AZ を有効化する必要があるサービス</strong></p>
+<ul>
+<li><strong>ELB, ASG, Beanstalk, EFS</strong><ul>
+<li>AZ を指定して配置する必要がある</li>
+</ul>
+</li>
+<li><strong>RDS, ElastiCache</strong><ul>
+<li>Multi-AZ（フェイルオーバー用の同期スタンバイ DB）</li>
+</ul>
+</li>
+<li><strong>Aurora</strong><ul>
+<li>データは Multi-AZ に自動的に保存される</li>
+<li>DB クラスターも Multi-AZ 構成が可能</li>
+</ul>
+</li>
+<li><strong>OpenSearch</strong><ul>
+<li>マルチマスター構成</li>
+</ul>
+</li>
+<li><strong>Jenkins（セルフデプロイ版）</strong><ul>
+<li>マルチマスター構成</li>
+</ul>
+</li>
+</ul>
+<p><strong>EFS: Elastic File System</strong>: VPC 配置の NFS 大規模分散ストレージ。</p>
+<ul>
+<li>デフォルトでマルチ AZ でレプリケーションされる分散ファイルストレージ</li>
+<li>各 AZ にマウントターゲット (ENI) が作成され EC2 から NFS マウント。</li>
+<li>何千ものインスタンスから同時にマウント可能。</li>
+<li>ファイルシステムのアクセスセマンティクス (強い整合性やファイルのロックなど) を提供</li>
+<li>EFS Standard: リージョン内の3つ以上のAZにレプリケーションされる。全 AZ にマウントターゲット。</li>
+<li>EFS One Zone: 単一 AZ だけで保管。安価。指定 AZ のみにマウントターゲット。</li>
+</ul>
+<p><strong>ElastiCache for Redis</strong>: リードレプリカ, フェイルオーバー, マルチ AZ サポート (Memcached は不可)</p>
+<p><strong>EBS は AZ スコープリソース</strong></p>
+<ul>
+<li>別 AZ ではアタッチできず、Multi-AZ 利用ではスナップショットを使ったハックが必要になる。</li>
+<li>AMI はリージョンリソース。</li>
+</ul>
+<p>Amazon Data Lifecycle Manager (DLM)</p>
+<ul>
+<li>EBS ボリュームのスナップショット作成、保持、削除を自動化。</li>
+</ul>
+<h2 id="multi-region-disaster-recovery">Multi Region (Disaster Recovery)</h2>
+<p><strong>マルチリージョン対応機能</strong></p>
+<ul>
+<li><strong>DynamoDB Global Tables</strong><ul>
+<li>Streams による多方向レプリケーション</li>
+</ul>
+</li>
+<li><strong>AWS Config Aggregators</strong><ul>
+<li>マルチリージョン &amp; マルチアカウント対応</li>
+</ul>
+</li>
+<li><strong>RDS Cross Region Read Replicas</strong><ul>
+<li>DR/レイテンシー削減</li>
+</ul>
+</li>
+<li><strong>Aurora Global Database</strong><ul>
+<li>1つのリージョンがマスター、他リージョンはDR/レイテンシー削減</li>
+</ul>
+</li>
+<li><strong>EBS ボリュームスナップショット・AMI・RDS スナップショット</strong><ul>
+<li>他リージョンへコピー可能</li>
+</ul>
+</li>
+<li><strong>VPC Peering</strong><ul>
+<li>リージョン間をプライベート通信させる</li>
+</ul>
+</li>
+<li><strong>Route53</strong><ul>
+<li>グローバル DNS ネットワーク</li>
+</ul>
+</li>
+<li><strong>S3 Cross Region Replication</strong></li>
+<li><strong>CloudFront</strong><ul>
+<li>エッジロケーションでのグローバル CDN</li>
+</ul>
+</li>
+<li><strong>Lambda@Edge</strong><ul>
+<li>エッジロケーションでグローバルに Lambda 実行（A/B テストなど）</li>
+</ul>
+</li>
+<li><strong>CloudFormation StackSets</strong><ul>
+<li>クロスアカウント/クロスリージョンに同一スタックを1 度のオペレーションで作成、更新、削除できる。</li>
+</ul>
+</li>
+<li><strong>CodePipeline クロスリージョン・クロスアカウント</strong><ul>
+<li>クロスリージョンや本番アカウントへのサービスデプロイ。</li>
+<li>アーティファクトストア (S3) へのコピーやアクセスのためのポリシー設定必要になる。</li>
+</ul>
+</li>
+</ul>
+<h2 id="rds">RDS</h2>
+<p>Ref.
+<a href="References/AWS%20DVA%20-%20S3,%20RDS,%20DynamoDB,%20ElastiCache,%20and%20other%20storage%20services.html">AWS DVA - S3, RDS, DynamoDB, ElastiCache, and other storage services</a></p>
+<p>可用性向上 → マルチAZ 構成に設定</p>
+<ul>
+<li>マルチ AZ 配置のマスター/スタンバイ構成となる</li>
+</ul>
+<p>負荷分散 → リードレプリカ</p>
+<ul>
+<li>リードレプリカがあればリードレプリカもマスターに昇格できる</li>
+<li>リードレプリカは<strong>クロスリージョンのレプリケーションが可能</strong>。DR に利用できる。</li>
+<li><img alt="" src="_attachment/image_684.png" /></li>
+</ul>
+<p>スナップショット</p>
+<ul>
+<li>自動バックアップ<ul>
+<li>特定時刻 (過去 5分以内) の状態にリカバリするための機能。デフォルトで有効。</li>
+<li>日次でスナップショットを自動的に作成し、差分のトランザクションログを保存する。</li>
+<li>バックアップウィンドウと保持期間 (デフォルト7日、最大35日) を指定する。</li>
+<li>DB インスタンスを削除されると同時に削除される。</li>
+</ul>
+</li>
+<li>バックアップからのリストア<ul>
+<li>新しいプライマリ DB インスタンスが作成され、自動スナップショットからリストアされる。</li>
+<li>新しいエンドポイントを使用して作成される。エンドポイントが変わる！</li>
+<li>アプリケーションが新しいエンドポイントに接続するように変更され、リストアが完了する。</li>
+</ul>
+</li>
+<li>DB スナップショット (手動)<ul>
+<li>スナップショットは DB インスタンスを削除しても削除されない。</li>
+</ul>
+</li>
+<li>スナップショットをクロスリージョンの DR に使用する問題例</li>
+<li><img alt="" src="_attachment/image_685.png" /></li>
+</ul>
+<p>メンテナンス</p>
+<ul>
+<li>OS や DB エンジンのバージョン更新。</li>
+<li>わずかにパフォーマンスに影響が出る場合や DB インスタンスが少しの間オフラインになる場合も。</li>
+<li>セキュリティやインスタンスの信頼性に関連するパッチは 「必須」として自動的にスケジューリング<ul>
+<li>必須 – メンテナンスアクションがリソースに適用され、延期はできません。</li>
+<li>利用可能 – 利用可能ですが自動的には適用されません。手動で適用できます。</li>
+<li>次のウィンドウ – 次回のメンテナンスウィンドウ中にリソースに適用されます。</li>
+<li>進行中 – メンテナンスアクションはリソースに適用中です。</li>
+</ul>
+</li>
+</ul>
+<p>メンテナンスウインドウ</p>
+<ul>
+<li>すべての DB インスタンスは週次 30分のメンテナンスウィンドウがある。</li>
+<li>指定しない場合はランダムに設定される。</li>
+<li>ほとんどの場合は 30分以内に終了するが、大規模なアップデートではその限りでない。</li>
+</ul>
+<p>マルチ AZ 配置のメンテナンス</p>
+<ul>
+<li>
+<p>OS アップデート</p>
+<ol>
+<li>スタンバイにメンテナンスを実行後、スタンバイをプライマリに昇格。</li>
+<li>旧プライマリはスタンバイになり、メンテナンス実行。</li>
+</ol>
+</li>
+<li>
+<p>DB エンジンバージョン更新</p>
+<ul>
+<li>プライマリとスタンバイ DB インスタンスを両方同時にアップグレード。</li>
+<li>マルチ AZ 配置全体のデータベースエンジンがアップグレード時にオフラインとなる。<ul>
+<li>プライマリ・スタンバイでは同じエンジンバージョンでないといけないため。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>問題例: マルチ AZ 配置の DB バージョン更新にあたり、先にリードレプリカの CFn スタックを立てておくことでダウンタイムを減少させる。</li>
+<li><img alt="" src="_attachment/image_686.png" /></li>
+<li><img alt="" src="_attachment/image_687.png" /></li>
+</ul>
+<p>RDS イベント通知</p>
+<ul>
+<li>DB の設定変更、障害、フェイルオーバーなどの各種イベントを SNS で通知。</li>
+</ul>
+<p>問題例: クロスリージョンの Aurora DB のフェイルオーバーでダウンタイムを最小にするには？</p>
+<ul>
+<li>なお、Route53 を使用している。</li>
+</ul>
+<p>解答</p>
+<ul>
+<li>Launch a read replica of the primary database to the second region.</li>
+<li>Set up Amazon RDS Event Notification to publish status updates to an SNS topic.</li>
+<li>Create a Lambda function subscribed to the topic to monitor database health.</li>
+<li>Configure the Lambda function to promote the read replica as the primary in the event of a failure.</li>
+<li>Update the Route 53 record to redirect traffic from the primary region to the secondary region.</li>
+<li>Route 53 フェイルオーバールーティングを使わないのは、おそらく Route 53 のヘルスチェックは Web 層のエラーの確認までしかできず、間接的にしか状態が分からないため。</li>
+</ul>
+<p>Amazon RDS Proxy</p>
+<ul>
+<li>Lambda が DB コネクションを大量に作成することで過負荷になるのを防ぐのに使う。</li>
+</ul>
+<p>RPO: Recovery Point Objective</p>
+<ul>
+<li>日本訳は「目標復旧時点」</li>
+<li>インシデント発生した時点から直前のバックアップまでの間に、データが失われる可能性がある時間。</li>
+</ul>
+<p>RTO: Recovery Time Objective</p>
+<ul>
+<li>日本訳は「目標復旧時間」</li>
+<li>システムがビジネスに大きな損害を与えることなく停止することができる時間、システムとデー タの復旧にかかる時間。</li>
+</ul>
+<p>問題例: クロスリージョンのリードレプリカで RPO を実現、Route53 のフェイルオーバールーティングで切り替え</p>
+<ul>
+<li>Clone the application stack except for RDS in a different AWS Region.</li>
+<li>Create Read Replicas in the new region and configure the new application stack to point to the local Amazon RDS database instance.</li>
+<li>Set up a failover routing policy in Route 53 that will automatically route traffic to the new application stack in the event of an outage</li>
+</ul>
+<p><img alt="" src="_attachment/image_689.png" /></p>
+<p>回答: A</p>
+<ul>
+<li>B は動作します。ただし、pg_dump プロセスを実行すると、プライマリインスタンス上で大量の I/O が発生します。また、サイズの大きいデータベースの場合、SQL ダンプファイルのサイズが非常に大きくなります。</li>
+<li>C は不正解です。スナップショットは 1 日 1回しか自動作成されず RPO 要件を満たさないため。</li>
+<li>D は動作します。ただし、RPO 要件がわずか 4 時間なので、リージョン間レプリケーションは遅延が大きくなることがあり保証できない。</li>
+</ul>
+<h2 id="aurora">Aurora</h2>
+<p>概要</p>
+<ul>
+<li>MySQL/PostgreSQL 互換<ul>
+<li>MySQL/PostgreSQL を利用した既存アプリのコードがそのまま再利用できる、</li>
+</ul>
+</li>
+<li>高スループット<ul>
+<li>MySQL スループットの 5 倍、PostgreSQL スループットの 3 倍</li>
+</ul>
+</li>
+<li>データベースのクラスター化とレプリケーションの自動化</li>
+<li>スケーラビリティ<ul>
+<li>10GB から 64TB まで自動でスケールアップ</li>
+</ul>
+</li>
+<li>RDS 同様に、手動スナップショット、自動バックアップとポイントタイムリカバリ、メンテナンスウィンドウがある</li>
+</ul>
+<p>Aurora クラスター</p>
+<ul>
+<li>クラスターボリューム (マルチAZ)<ul>
+<li>マルチ AZ の仮想 DB ストレージボリューム。3つの AZ に 6 つのコピーが作成される</li>
+<li>シームレスにスケール (10GB-&gt;64TB) する仮想ストレージ</li>
+</ul>
+</li>
+<li>DB クラスタ (オプションでマルチAZ)<ul>
+<li>プライマリ DB インスタンスと Aurora レプリカ (リードレプリカ)</li>
+<li>DB クラスタ作成時にマルチ AZ 配置を指定することでマルチ AZ となる。<ul>
+<li>クラスタボリュームはデフォでマルチ AZ だが、DB クラスタではオプション。 </li>
+</ul>
+</li>
+<li>リストアは数秒単位でクラスタを作成可能</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/File_19.png" /></p>
+<p>Aurora Serverless</p>
+<ul>
+<li>DB インスタンスのオンデマンド Auto Scaling 構成。アプリの使用状況に応じてキャパシティーをスケール。</li>
+<li>DB インスタンスクラスのサイズ指定せずデータベースエンドポイントを作成できる。</li>
+</ul>
+<p>暗号化</p>
+<ul>
+<li>AWS KMS キーによる暗号化を指定できる。</li>
+<li>DB インスタンス作成時に有効にする。作成後は有効・無効の変更はできない。</li>
+</ul>
+<p>Aurora グローバルデータベース</p>
+<ul>
+<li>別リージョンにリードレプリカを配置する。</li>
+<li>1 つのプライマリリージョン (マスター)と最大 5 つのセカンダリリージョン (読み取り専用) で構成。</li>
+<li>問題例: コンプラ対応でカタログデータは Aurora Global DB に、顧客データを Aurora のリージョナル DB に保管する例:</li>
+<li><img alt="" src="_attachment/image_688.png" /></li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-ELB</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

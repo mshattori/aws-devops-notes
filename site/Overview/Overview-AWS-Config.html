@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-Config - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-Config</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="aws-config">AWS Config</h1>
+<p>AWS リソース構成のスナップショットと変更履歴をS3に保存</p>
+<p>CloudWatch Events 連携</p>
+<ul>
+<li>リソース変更時や Config ルールの Noncompliant 発生時に SSM Automation 以外を行いたい場合。</li>
+</ul>
+<p>Config アグリゲータ</p>
+<ul>
+<li>マルチアカウント/マルチリージョンの集計結果を中央アカウントに集約。</li>
+<li><img alt="" src="_attachment/image_667.png" /></li>
+</ul>
+<h3 id="aws-config-rules">AWS Config Rules</h3>
+<p>ルールによるコンプライアンス違反の検出。</p>
+<ul>
+<li>AWS Config で取得したリソース設定が Lambda 関数に送られてルール評価が実施される</li>
+<li>ルール評価後、対象リソースの状態が Compliant/Noncompliant に更新される。</li>
+<li>トリガー: リソース作成/変更時、定期 (1~24時間で任意)</li>
+</ul>
+<p>マネージドルール</p>
+<ul>
+<li><img alt="" src="_attachment/image_665.png" /></li>
+<li><img alt="" src="_attachment/image_666.png" /></li>
+</ul>
+<p>カスタムルール</p>
+<ul>
+<li>ユーザが Lambda で実装。リソースの設定項目が Lambda 関数に送られる。</li>
+</ul>
+<p>修復アクション</p>
+<ul>
+<li>特定ルールの Noncompliant 発生時に実行する SSM Automation ランブックを指定。</li>
+</ul>
+<p>問題例: CloudTrail が全アカウントで有効になっているのを確認し、修復する</p>
+<p><img alt="" src="_attachment/image_668.png" /></p>
+<ul>
+<li>Config ルールはデフォルトでは修復機能を持たないので下段は不正解。</li>
+<li>ちなみに cloudtrail-enabled ルールは "Configuration changes" には使用できず periodical にする必要があるとのこと。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-Config</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

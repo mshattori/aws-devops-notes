@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-IAM-Roles.supplement - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-IAM-Roles.supplement</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h3 id="1">🔍 1. 問題点・誤り・補足すべき箇所</h3>
+<ul>
+<li>IAM ロール関連 に関する前提・制約・統合ポイントが不足しており、設計判断に必要な情報が欠けている。</li>
+<li>運用・セキュリティ・コスト管理の観点が整理されておらず、DOP 試験で問われる重要ポイントを拾いきれていない。</li>
+<li>自動化やベストプラクティスを反映した簡潔なまとめがないため、復習用ノートとして使いにくい。</li>
+</ul>
+<h3 id="2">🛠 2. 改訂版（修正・補足反映後の完成文）</h3>
+<ul>
+<li><strong>役割</strong>: IAM ロール関連 の主要目的とユースケースを一文で把握し、どのワークロードに適用するかを明示。</li>
+<li><strong>設計の要点</strong>: 認証/ネットワーク/可用性/スケーリング/料金モデルなど、試験で問われる論点を箇条書きで整理。</li>
+<li><strong>運用</strong>: 監視・ログ・セキュリティ統制・自動化（IaC/パイプライン/修復）を列挙し、マルチアカウントやリージョン展開時の注意点を加える。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-IAM-Roles.supplement</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-CodeCommit - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-CodeCommit</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="codecommit">CodeCommit</h1>
+<p>認証情報は IAM コンソールで登録</p>
+<ul>
+<li>SSH: キーペアを作り IAM ユーザに公開鍵を登録。</li>
+<li>HTTPS: IAM ユーザの Git 認証情報 (ユーザ名/パスワード) を生成する。</li>
+</ul>
+<p>認証情報ヘルパー</p>
+<ul>
+<li>git コマンドの認証情報ヘルパーで aws-cli 経由でユーザの認証情報を取得。</li>
+</ul>
+<p>KMS で保存コードをデフォルトで暗号化。</p>
+<p>IAM ポリシーでリポジトリへのアクセス制御。(なお、リポジトリのリソースベースポリシーはない)</p>
+<p>プルリクエストをコンソールまたは CLI で作成。</p>
+<p>リポジトリトリガー (Trigger)</p>
+<ul>
+<li>コード Push などのリポジトリイベントで SNS, Lambda をトリガー。</li>
+<li>GitHub のフックにあたるもの。</li>
+</ul>
+<p>通知ルール (Notification)</p>
+<ul>
+<li>SNS か AWS Chatbot に通知を投げる。主にプルリク系とブランチ系の通知。</li>
+<li><img alt="" src="_attachment/image_635.png" /></li>
+<li>Code シリーズ共通に存在する機能。</li>
+</ul>
+<p>CodeBuild/CodePipeline 連携</p>
+<ul>
+<li>EventBridge ルールを作成してイベントソースを CodeCommit にする。</li>
+<li>ターゲットを CodeBuild プロジェクトや CodePipeline パイプラインの ARN とする。</li>
+</ul>
+<p>CloudTrail 連携</p>
+<ul>
+<li>CodeCommit API コールをキャプチャして証跡として S3 バケットに保存</li>
+</ul>
+<p>管理ポリシー</p>
+<ul>
+<li>AWSCodeCommitFullAccess<ul>
+<li>Grants full access to CodeCommit.</li>
+</ul>
+</li>
+<li>AWSCodeCommitPowerUser<ul>
+<li>Allows users access to all of the functionality of CodeCommit and repository-related resources</li>
+<li>Except it does not allow them to delete CodeCommit repositories or create or delete repository-related resources in other AWS services, such as CloudWatch Events.</li>
+</ul>
+</li>
+<li>AWSCodeCommitReadOnly<ul>
+<li>Grants read-only access to CodeCommit and repository-related resources in other AWS services, as well as the ability to create and manage their own CodeCommit-related resources (such as Git credentials and SSH keys for their IAM user to use when accessing repositories).</li>
+</ul>
+</li>
+<li>開発ユーザ全員に AWSCodeCommitPowerUser を与え、Lead 以外は master ブランチへの Push や Merge を明示的 Deny する、という問題例がよく出る。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-CodeCommit</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

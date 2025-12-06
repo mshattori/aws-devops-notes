@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-CodeBuild - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-CodeBuild</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="codebuild">CodeBuild</h1>
+<p>環境を Docker イメージで立ち上げ、ビルドとテストに使用。</p>
+<p>ソースプロバイダー</p>
+<ul>
+<li>S3, CodeCommit, GitHub, GitHub Enterprise, Bitbucket</li>
+</ul>
+<p>アーティファクト</p>
+<ul>
+<li>S3 バケットにアップロード。デフォルトで S3-KMS 暗号化。</li>
+</ul>
+<p>ビルドコマンド</p>
+<ul>
+<li>buildspec.yml に記述。</li>
+</ul>
+<p>タイムアウト</p>
+<ul>
+<li>最長8時間まで。(さらに長時間のテストは Step Functions の Activity 等を使う)</li>
+<li>Lambda で出来ない時間のかかるパフォーマンステスト等を実施できる。</li>
+</ul>
+<p>VPC</p>
+<ul>
+<li>環境からの VPC アクセスのオプション指定。</li>
+</ul>
+<p>環境変数</p>
+<ul>
+<li>環境変数の設定。SSM パラメータストアからの取得も可能。</li>
+</ul>
+<p>ログ</p>
+<ul>
+<li>オプショナルで CloudWatch Logs と S3 バケットにログを保存。</li>
+</ul>
+<p>ビルドキャッシュ</p>
+<ul>
+<li>ビルドツールや依存モジュールのダウンロードやビルド時間を短縮できる。</li>
+<li>キャッシュタイプ<ul>
+<li>S3<ul>
+<li>サイズが大きくなくビルドに時間がかかるモジュールに向く。</li>
+</ul>
+</li>
+<li>ローカル<ul>
+<li>ダウンロードに時間がかかるような大きなファイルに向く。</li>
+<li>ビルドホストにマウントされるインスタンスストレージでのキャッシュ。<ul>
+<li>DockerLayerCache ... コンテナイメージのビルドのためのキャッシュ</li>
+<li>SourceCache ... .git メタデータのキャッシュ</li>
+<li>CustomCache ... buildspec.yaml で指定するキャッシュ</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>buildspec.yml</p>
+<ul>
+<li>install フェーズ<ul>
+<li>runtime-versions でビルドランタイムのインストール指定。</li>
+<li>dotnet, java, golang, php, nodejs, python, ruby をサポート。</li>
+</ul>
+</li>
+<li>pre_build, build, post_build フェーズ<ul>
+<li>command ブロックで コマンド実行。</li>
+</ul>
+</li>
+<li>run-as<ul>
+<li>全体および各フェーズで実行ユーザ指定可能。</li>
+</ul>
+</li>
+<li>finally ブロック<ul>
+<li>各セクションに指定。command ブロックでエラーがあっても必ず実行される。</li>
+</ul>
+</li>
+<li>artifact セクション<ul>
+<li>artifact として S3 に保存するファイルを指定。</li>
+</ul>
+</li>
+<li>env セクション<ul>
+<li>環境変数設定。パラメータストアからも簡単に取得できる。</li>
+</ul>
+</li>
+</ul>
+<p>サービスロール</p>
+<ul>
+<li>CodeBuild サービスが各種サービスにアクセスするのに必要なロール。</li>
+<li>CodeCommit からのソース取得, S3 へのアーティファクト保存, ECR へのプッシュ等</li>
+<li>ビルドサーバのコンテナ環境にもサービスロール権限が引き継がれる (クリデンシャルが環境変数経由で渡される)</li>
+</ul>
+<p>IAM ポリシー</p>
+<ul>
+<li>ビルドプロジェクトへのアクセス制御</li>
+<li>AWSCodeBuildAdminAccess, AWSCodeBuildDeveloperAccess, AWSCodeBuildReadOnlyAccess 等</li>
+</ul>
+<p>CodePipeline 連携</p>
+<ul>
+<li>Build または Test アクションに設定可能</li>
+</ul>
+<p>EventBridge 連携</p>
+<ul>
+<li>例: CodeCommit をイベントソース、CodeBuild プロジェクトをターゲットにして、PR 契機に自動ビルドを実施</li>
+</ul>
+<p>BuildArtifacts API</p>
+<ul>
+<li>ビルドアーティファクトの SHA256 ハッシュをとってパイプライン内でアーティファクトをチェックするという問題があった</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-CodeBuild</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

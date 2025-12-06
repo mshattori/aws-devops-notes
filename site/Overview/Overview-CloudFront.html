@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-CloudFront - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-CloudFront</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="cloudfront">CloudFront</h1>
+<p>エッジロケーションによる CDN サービス</p>
+<ul>
+<li>クライアントへのレスポンス向上。</li>
+<li>オリジンサーバの負荷軽減。</li>
+</ul>
+<p>DNS が Geolocation で位置情報 DB から直近のエッジーサーバの IP を返す</p>
+<ul>
+<li>デフォルトのドメインは *.<a href="http://cloudfront.net">cloudfront.net</a><ul>
+<li>デフォルトドメインの HTTPS サーバ証明書がデフォルトで作られる</li>
+<li>カスタムドメイン使うには Alias or CNAME 設定と SSL/TLS 証明書設定。</li>
+</ul>
+</li>
+<li>キャッシュによる DDoS 緩和。</li>
+<li>WAF, AWS Shield が設定できる。(Shield Standard はデフォルトで有効)</li>
+</ul>
+<p><strong>オリジンの保護</strong></p>
+<p>オリジンサーバに直接アクセスされた場合にオリジン側でブロックする手法。</p>
+<p>S3 バケット</p>
+<ul>
+<li><strong>OAI (Origin Access Identity)</strong> というユーザをディストリビューションに設定する。S3 にはそのユーザからアクセスされているように見える。</li>
+<li>バケットポリシーで OAI の ARN を Principal としてアクセスを許可する。</li>
+</ul>
+<p>S3 静的 Web ホスティング</p>
+<ul>
+<li>S3 静的 Web ホスティングはパブリック設定が必要なため保護できない。</li>
+</ul>
+<p>カスタムオリジン (EC2 Web サーバ, ALB等)</p>
+<ul>
+<li>CloudFront の<strong>オリジンカスタムヘッダー</strong>を利用し、指定されたヘッダをオリジンサーバ側でチェックしてアクセスを受け付ける。</li>
+<li>定期的に変更される CloudFront の IP レンジを取得し、Lambda で EC2/ALB のセキュリティグループを動的に変更する方法もある。</li>
+</ul>
+<h3 id="https">トランスポート暗号化 (HTTPS)</h3>
+<p><strong>ビューア → エッジ間</strong></p>
+<p>デフォルトの *.cloudfront.net SSL 証明書</p>
+<ul>
+<li>標準で利用可能</li>
+</ul>
+<p>独自ドメイン使用</p>
+<ul>
+<li>X509 PEM 形式のサーバ証明書を ACM で発行/インポートし、CloudFront ディストリビューションに割り当てる。</li>
+<li>us-east-1 (N.Virginia) の ACM で登登する必要がある。</li>
+</ul>
+<p>HTTPS 必須にする</p>
+<ul>
+<li>ディストリビューションのビューアプロトコルポリシーを設定。</li>
+<li><code>Redirect HTTP to HTTPS</code></li>
+<li><code>HTTPS Only</code></li>
+</ul>
+<p><strong>エッジサーバ → オリジン間</strong></p>
+<p>S3 バケット・カスタムオリジン (ELB/EC2)</p>
+<ul>
+<li>Origin Protocol Policy を次のいずれかに設定:<ul>
+<li><code>HTTPS Only</code></li>
+<li><code>Match Viewer</code><ul>
+<li><code>Viewer Protocol Policy</code> で <code>Redirect HTTP to HTTPS</code> / <code>HTTPS Only</code> を指定する場合</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>SSL プロトコル (TLSv1.2, TLSv1.1, TLSv1, SSLv3) を選択。</li>
+<li>オリジンが ELB の場合、ACM で証明書をあてることができる。ELB のリージョンの ACM に登録。</li>
+<li><a href="https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/using-https-cloudfront-to-custom-origin.html">https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/using-https-cloudfront-to-custom-origin.html</a></li>
+</ul>
+<p>S3 静的 Web ホスティング</p>
+<ul>
+<li>S3 静的 Web ホスティングは HTTPS 非対応。</li>
+<li>S3 エンドポイント (<code>https://&lt;bucket&gt;.s3.&lt;region&gt;.amazonaws.com</code>) は HTTPS だが Web サイトのホスティングにはならない。</li>
+</ul>
+<p>CloudFront でカスタムドメインの証明書を使う場合、オリジンの ELB までの経路も HTTPS で保護したい場合、CloudFront 側の証明書は us-east-1 の ACM に登録し、もう1つの ELB の証明書は ELB と同じリージョンの ACM に登録する。</p>
+<p>問題例:</p>
+<ul>
+<li>Their DevOps team needs to set up a CloudFront web distribution that uses a custom domain name where the origin is set to point to the ALB.</li>
+<li>How can the DevOps Engineers properly implement an end-to-end HTTPS connection from the origin to the CloudFront viewers?</li>
+</ul>
+<p>解答: Origin (ALB) と CloudFront それぞれに証明書設定。</p>
+<ul>
+<li>Generate an SSL certificate that is signed by a trusted third-party certificate authority.</li>
+<li>Import the certificate into AWS Certificate Manager and use it for the Application Load balancer.</li>
+<li>Set the Viewer Protocol Policy to HTTPS Only in CloudFront and then use an SSL/TLS certificate from a 3rd party certificate authority which was imported to either AWS Certificate Manager or the IAM certificate store.</li>
+</ul>
+<p>署名付き URL/署名付き Cookie</p>
+<ul>
+<li>レンタルコンテンツ配信や限定されたユーザへのコンテンツ配信など。</li>
+<li>署名付き Cookie<ul>
+<li>URL を変更したくない場合や複数の URL が使用される HLS で使用する。</li>
+<li>HLS: HTTP Live Streaming</li>
+</ul>
+</li>
+<li>署名付き URL/Cookie の使用には CloudFront キーペアやキーグループを登録する。<ul>
+<li>アプリケーション側が秘密鍵で署名付きURL/Cookie を署名し、CloudFront が公開鍵で検証する。</li>
+</ul>
+</li>
+</ul>
+<p>Restrict Bucket Access 設定</p>
+<ul>
+<li>OAI を設定するための CloudFront ディストリビューションの設定項目</li>
+</ul>
+<p>Restrict Viewer Access 設定</p>
+<ul>
+<li>署名付きURL/署名付きCookieがある場合のみアクセスを許可する設定項目</li>
+</ul>
+<p>フィールドレベル暗号化 (Field-Level Encryption)</p>
+<ul>
+<li>POST データの一部をエッジで暗号化、オリジンのみが復号できることで安全性を向上。</li>
+<li>ディストリビューション設定で暗号化したい POST リクエストの一連のフィールドと暗号化に使用するパブリックキーを指定する。</li>
+<li>鍵はキーペアを作成して公開鍵を CloudFront に設定する。(AWS KMS は使えない。Edge Location が KMS を呼べないため)</li>
+</ul>
+<p>地域制限: Geo restriction</p>
+<ul>
+<li>特定地域のユーザーによるアクセスを回避。<ul>
+<li>承認された国のリストからのアクセスを許可。</li>
+<li>禁止された国のリストからのアクセスを禁止。</li>
+</ul>
+</li>
+<li>403 (Forbidden) を返す (カスタムエラーページの作成も可能)</li>
+</ul>
+<p>Lambda@Edge</p>
+<ul>
+<li>CloudFront エッジロケーションでリクエスト/レスポンスをフックでき、Lambda 関数でリクエストを書き換えたりキャッシュできる。</li>
+<li>実行タイミング: Viewer Request -&gt; Origin Request -&gt; Origin Response -&gt; Viewer Response</li>
+</ul>
+<p>問題例: CloudFront を使ったシステムでのログイン処理の遅延への対処</p>
+<p>回答:</p>
+<ul>
+<li>In the given scenario, you can use Lambda@Edge to to execute the authentication process in AWS locations closer to the users.</li>
+<li>In addition, you can set up an origin failover by creating an origin group with two origins with one as the primary origin and the other as the second origin, which CloudFront automatically switches to when the primary origin fails. This will alleviate the occasional HTTP 504 errors that users are experiencing.</li>
+</ul>
+<p>問題例: スタティックな Single Page App を AWS でホストしてヘッダを追加したい</p>
+<ul>
+<li>The application has no server-side code and is just composed of a UI powered by Vue.js and Bootstrap.</li>
+<li>Since the online calculator may contain sensitive financial data, adding HTTP response headers such as X-Content-Type-Options, X-Frame-Options and X-XSS-Protection should be implemented to comply with the OWASP standards.</li>
+</ul>
+<p>回答:</p>
+<ul>
+<li>Host the application on an S3 bucket configured for website hosting.</li>
+<li>Set up a CloudFront web distribution and set the S3 bucket as the origin with the origin response event set to trigger a Lambda@Edge function.</li>
+<li>Add the required security headers in the HTTP response using the Lambda function.</li>
+</ul>
+<h2 id="aws-certificate-manager-acm">AWS Certificate Manager: ACM</h2>
+<ul>
+<li>証明書管理とデプロイ<ul>
+<li>オンプレサーバや AWS の統合サービスへの証明書デプロイ</li>
+</ul>
+</li>
+<li>統合サービス<ul>
+<li>ALB/NLB, CloudFront, API Gateway, Elastic Beanstalk</li>
+</ul>
+</li>
+<li>証明書はインポートするか ACM が生成するパブリック証明書 (ACM 証明書) を使用。<ul>
+<li>ACM 証明書は統合サービスで無料で利用できる証明書</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-CloudFront</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

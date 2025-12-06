@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Step-Functions - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Step-Functions</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="step-functions">Step Functions</h1>
+<p>Ref.<a href="References/AWS%20DVA%20-%20SQS,%20SNS,%20Step%20Functions.html">AWS DVA - SQS, SNS, Step Functions</a></p>
+<p>ステートマシン</p>
+<ul>
+<li>
+<p>実行方法</p>
+<ol>
+<li>コンソール・AWS CLI・SDK による実行 (StartExecution)</li>
+<li>API Gateway: 統合バックエンドとして登録</li>
+<li>CloudWatch Events: S3 の保存や EC2 起動を契機</li>
+</ol>
+</li>
+<li>
+<p>最大実行時間は 1年。</p>
+</li>
+</ul>
+<p>呼び出し可能なサービス</p>
+<ul>
+<li>関数実行<ul>
+<li>Lambda</li>
+</ul>
+</li>
+<li>バッチジョブ系<ul>
+<li>ECS : ECS タスク実行</li>
+<li>AWS Batch : ジョブの起動、ジョブ完了の待機</li>
+<li>Glue : ジョブの実行</li>
+<li>SageMaker : トレーニングジョブ、トランスフォームジョブの起動</li>
+</ul>
+</li>
+<li>レコード投入<ul>
+<li>DynamoDB : アイテム取得、新規アイテム登録 </li>
+<li>SNS : トピックへのメッセージ送信</li>
+<li>SQS : キューへのメッセージ送信</li>
+</ul>
+</li>
+<li>その他<ul>
+<li>Activity: 自前のアプリケーションによる非同期コールバック</li>
+<li>SDK サービス統合: 対応サービスの任意の API を実行</li>
+<li><a href="https://docs.aws.amazon.com/step-functions/latest/dg/supported-services-awssdk.html">https://docs.aws.amazon.com/step-functions/latest/dg/supported-services-awssdk.html</a></li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Step-Functions</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

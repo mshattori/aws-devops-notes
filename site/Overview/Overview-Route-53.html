@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Route-53 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Route-53</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="route-53">Route 53</h1>
+<p>Ref. <a href="References/AWS%20SAA%20-%20VPC,%20ELB,%20Auto%20Scaling,%20Route%2053,%20CloudFront,%20Direct%20Connect.html">AWS SAA - VPC, ELB, Auto Scaling, Route 53, CloudFront, Direct Connect</a></p>
+<p>ルーティングポリシー</p>
+<ul>
+<li>(レコードに複数リソースがある場合の) 動的なトラフィックルーティング。</li>
+<li>シンプルルーティング<ul>
+<li>レコード複数のリソース (IP アドレス等) がある場合は全ての値をランダムな順序で返す。</li>
+</ul>
+</li>
+<li>Failover ルーティング<ul>
+<li>DNS フェイルオーバーにより、ヘルスチェックで Healthy なエンドにのみルーティング。</li>
+</ul>
+</li>
+<li>加重 (Weighted) ルーティング<ul>
+<li>複数のリソースを重み付けして登録。重みの高いものに多くルーティングされる。</li>
+<li>複数リソースに同じ名前とタイプでレコードを作成、レコードごとに重みを割り当てる。</li>
+</ul>
+</li>
+<li>Latency (遅延) ルーティング<ul>
+<li>ユーザ位置から最も遅延の少ないリージョンのリソースにルーティング。</li>
+<li>Route 53 が継続的に計測する遅延の統計データに基づく。</li>
+</ul>
+</li>
+<li>Geolocation (位置情報) ルーティング<ul>
+<li>ユーザの位置情報に基づくルーティング。国やアメリカの州に結びつける。</li>
+<li>ユースケース: ローカライズ、コンプライアンス、パフォーマンス。</li>
+</ul>
+</li>
+<li>Geoproximity (地理近接性) ルーティング<ul>
+<li>ユーザの位置情報とアクセス先リソースのリージョンの地理的近接性によるルーティング。</li>
+<li>Route 53 Traffic Flow 専用のポリシー。</li>
+</ul>
+</li>
+<li>複数値回答 (Multi-value) ルーティング<ul>
+<li>ランダムに選ばれた最大8つの Healthy なレコードを応答。</li>
+<li>シンプルルーティングの複数値と異なり各インスタンスにヘルスチェックが行われる。</li>
+</ul>
+</li>
+</ul>
+<p>ヘルスチェック</p>
+<ul>
+<li>Route 53 用の世界各地に15 以上あるヘルスチェッカーからエンドポイントにリクエスト。</li>
+<li>1つも正常なエンドポイントがない場合、全てのエンドポイントを正常とみなして動作。</li>
+<li>セキュリティグループ等にモニタリングパケットを受けられるよう設定が必要。<ul>
+<li>aws route53 get-checker-ip-ranges</li>
+</ul>
+</li>
+<li>ヘルスチェックの種類<ul>
+<li>TCP ヘルスチェック<ul>
+<li>エンドポイントとの TCP 接続の確立。</li>
+</ul>
+</li>
+<li>HTTP/HTTPS ヘルスチェック<ul>
+<li>エンドポイントからの HTTP  2xx または 3xx 応答。</li>
+</ul>
+</li>
+<li>HTTP/HTTPS ヘルスチェックと文字列一致<ul>
+<li>HTTP/HTTPS ヘルスチェックに加え、レスポンス本文から指定された文字列を検索。</li>
+</ul>
+</li>
+<li>CloudWatch アラーム</li>
+</ul>
+</li>
+</ul>
+<p>Alias レコード</p>
+<ul>
+<li>CNAME のように別名がつけられる Route 53 固有の機能。</li>
+<li>内部ドメイン名がアサインされる AWS サービスの公開ドメイン名を登録するのに使用。<ul>
+<li>ELB, CloudFront, 静的 Web サイトの S3 バケットなど。</li>
+</ul>
+</li>
+<li>CNAME よりレスポンスが高速。</li>
+<li><img alt="" src="_attachment/image_690.png" /></li>
+</ul>
+<p>問題例: DR で別リージョンのバックアップ環境への DNS フェイルオーバーが必要という要件</p>
+<ul>
+<li>Set up health checks in Route 53 for non-alias records to each service endpoint. Configure the network access control list and the route table to allow Route 53 to send requests to the endpoints specified in the health checks.</li>
+<li>Use a Failover routing policy configuration. Set up alias records in Route 53 that route traffic to AWS resources. Set the Evaluate Target Health option to Yes, then create all of the required non-alias records.</li>
+<li>Latency ルーティングは不正解。目的が DR なので不適切。Latency は名前の通りレイテンシー低減が目的。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Route-53</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

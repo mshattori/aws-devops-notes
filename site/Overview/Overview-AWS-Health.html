@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-Health - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-Health</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="aws-health">AWS Health</h1>
+<p><a href="https://docs.aws.amazon.com/health/latest/ug/what-is-aws-health.html">https://docs.aws.amazon.com/health/latest/ug/what-is-aws-health.html</a></p>
+<p><a href="https://aws.amazon.com/jp/premiumsupport/technology/personal-health-dashboard/">https://aws.amazon.com/jp/premiumsupport/technology/personal-health-dashboard/</a></p>
+<p>AWS Service Health Dashboard</p>
+<ul>
+<li>AWS サービス全般の Health ステータスが表示される</li>
+</ul>
+<p>AWS Personal Health Dashboard</p>
+<ul>
+<li>アカウント固有の Health イベントのアラートやガイダンスを提供。</li>
+<li>お客様の AWS 環境に関する明確な通知が事前に表示されます。</li>
+<li>CloudWatch Events で AWS Personal Health Dashboard (AWS Health) イベントと連携できる。</li>
+</ul>
+<p>AWS Health API</p>
+<ul>
+<li>AWS Health 情報を取得する API</li>
+</ul>
+<p>AWS_RISK_CREDENTIALS_EXPOSED</p>
+<ul>
+<li>IAM クリデンシャルの露出の CloudWatch イベント</li>
+<li>問題例:<ul>
+<li>Set up three Lambda functions in AWS Step Functions that deletes the exposed IAM access key, summarizes the recent API activity for the exposed key using CloudTrail and sends notification to the IT Security team using Amazon SNS.</li>
+<li>Create a CloudWatch Events rule with an aws.health event source and the AWS_RISK_CREDENTIALS_EXPOSED event to monitor any exposed IAM keys from the Internet.</li>
+<li>Set the Step Functions as the target of the CloudWatch Events rule.</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-Health</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

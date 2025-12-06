@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-ECS - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-ECS</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="ecs">ECS</h1>
+<p><img alt="" src="_attachment/20190731_AmazonECS_DeepDive_AWSBlackBelt_2.png" /></p>
+<p>Task Definition</p>
+<ul>
+<li>(複数の)コンテナ定義、コンテナの CPU/メモリサイズ、タスク実行ロール</li>
+<li>コンテナへのボリュームマッピングやポートマッピング</li>
+<li>ネットワークモード (VPC)</li>
+<li>docker-compose.yaml 相当の設定</li>
+</ul>
+<p>Service</p>
+<ul>
+<li>ロードバランシングされスケーリングも可能な、インバウンド接続される外部公開サービスの1単位</li>
+<li>Task の desired count の維持 -&gt; Auto Healing</li>
+<li>ELB によるトラフィックルーティング</li>
+<li>起動方式: Launch Type (EC2/Fargate), Capacity Provider Strategy</li>
+<li>デプロイ管理: Rolling update / Blue-Green（CodeDeploy）</li>
+<li>Service Auto Scaling: CPUなどのメトリクスに応じてタスク数を増減</li>
+</ul>
+<p>Capacity Provider（CP）</p>
+<ul>
+<li>タスク実行インフラの抽象化。旧来の Launch Type（Fargate/EC2）より柔軟で、現在の推奨方式。</li>
+<li>Capacity Storategy: <code>FARGATE</code> / <code>FARGATE_SPOT</code> / <code>EC2（ASG）</code> のタスク配分</li>
+</ul>
+<p>ECS クラスタ</p>
+<ul>
+<li>タスク実行環境の論理スコープ。VPC と実行環境設定 (Launch Type/CP) を設定。</li>
+<li>クラスタごとに1つ以上の CP が登録できる (FARGATE CP &amp; EC2 CP)</li>
+<li>Fargate であってもコンテナは VPC 内リソース。クラスタ作成時に VPC を設定する。</li>
+</ul>
+<p>ECS エージェント</p>
+<ul>
+<li>コンテナインスタンス (EC2) で起動するデーモン。ECS API のやり取りを行う。Fargate では意識不要。</li>
+<li><strong>コンテナインスタンスロール</strong>が適用される。<ul>
+<li>ECS クラスターの EC2 インスタンスのインスタンスロールのこと。</li>
+<li>ECS API 系だけでなく、ECR の <code>ecr::GetAuthorizationToken</code> 権限も指定。</li>
+<li>ただし、実際の pull はタスク実行ロールでコンテナランタイムが実施。</li>
+</ul>
+</li>
+</ul>
+<p>ECS エージェントの問題例: イメージを更新してタスクを再起動してもコンテナが更新されない場合がある</p>
+<ul>
+<li>正しく起動しているコンテナもあるので、クラスターインスタンスの ECS エージェントの異常が原因と考えられる。</li>
+<li><img alt="" src="_attachment/image_655.png" /></li>
+</ul>
+<h2 id="taskdefinition">TaskDefinition</h2>
+<p><img alt="" src="_attachment/image_656.png" /></p>
+<p>family</p>
+<ul>
+<li>タスク定義の名前。family + revision でタスク定義を特定する。</li>
+<li>タスク定義はイミュータブルなので、タスク定義更新時は新しい revision を作成する必要がある。</li>
+</ul>
+<p>タスクロール: taskRoleArn</p>
+<ul>
+<li>コンテナ内のアプリケーションに割り当てるロール。</li>
+<li>ECS タスク ("ecs-tasks.amazonaws.com") に AssumeRole を許可する信頼ポリシーをもつロールを作成。</li>
+<li>設定すると ECS Agent により AWS_CONTAINER_CREDENTIALS_RELATIVE_URI という環境変数が設定され、コンテナ内の SDK/CLI はこの環境変数があるとそちらからクリデンシャルを取得する。</li>
+</ul>
+<p>タスク実行ロール: executionRoleArn</p>
+<ul>
+<li>コンテナランタイムに使用されるロール。TaskDefinition に記載する諸々の処理に必要な権限。</li>
+<li>コンテナイメージのプル、コンテナログの CloudWatch Logs への書き込み (ref. awslogs ロギングドライバ)、Secrets Manager/Systems Manager へのアクセス許可。</li>
+</ul>
+<p>networkMode</p>
+<ul>
+<li><img alt="" src="_attachment/image_657.png" /></li>
+</ul>
+<p>containerDefinitions</p>
+<ul>
+<li>各コンテナの定義 (containerDefinition) のリスト。</li>
+<li>イメージや portMappings 等、docker run に指定するパラメータとなる。</li>
+<li>memory/memoryReservation<ul>
+<li>各コンテナのメモリ上限・予約指定 (オプショナル)</li>
+<li>タスクサイズ (cpu/memory) がタスク全体の割り当てサイズを指定。</li>
+</ul>
+</li>
+<li>環境変数の設定<ul>
+<li>environment</li>
+<li>secrets<ul>
+<li>ASM/SSM Parameter Store のパラメータ名の ARN で参照。</li>
+<li>タスク実行ロールでアクセス権が必要。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>logConfiguration<ul>
+<li>docker run --log-driver オプションの指定。</li>
+<li>"awslogs" で CloudWatch にログを送れる。</li>
+<li>問題例: ECS (ALB 使用) のログを取得する</li>
+<li>Create the required IAM Policy and attach it to the ecsInstanceRole. Install the Amazon CloudWatch Logs agent on the Amazon ECS instances. Use the awslogs Log Driver in the Amazon ECS task definition.</li>
+<li>Capture detailed information about requests sent to your load balancer by enabling access logging on the Application Load Balancer. Configure it to store the logs to the S3 bucket.</li>
+</ul>
+</li>
+</ul>
+<p>Task Definition の実行</p>
+<ul>
+<li>Task Definition を直接実行する run-task と、Service で指定数のタスク起動を維持する方法の2つがある。</li>
+<li>Task Definition は EventBridge からも実行できる</li>
+</ul>
+<h2 id="service">Service</h2>
+<p>Service は ECS Cluster 内に作成し、起動する Task Definition とタスク数等を指定する。</p>
+<p>基本指定項目</p>
+<ul>
+<li>タスク定義: family &amp; revision</li>
+<li>クラスター</li>
+<li>サービス名</li>
+<li>サービスタイプ<ul>
+<li>REPLICA</li>
+<li>DAEMON: インスタンス数と同じ数のタスクを実行する</li>
+</ul>
+</li>
+<li>タスク数 (desired)</li>
+<li>最小ヘルス率 (min)</li>
+<li>最大率 (max)</li>
+</ul>
+<p>デプロイメントタイプ</p>
+<ul>
+<li>ローリングアップデート<ul>
+<li>サービスのタスク定義を更新すると ECS がローリングデプロイを実施。</li>
+</ul>
+</li>
+<li>Blue/Green<ul>
+<li>CodeDeploy を使用。CodeDeploy アプリケーションが自動的に作成されう。</li>
+</ul>
+</li>
+</ul>
+<p>ネットワーク</p>
+<ul>
+<li>Fargate の場合 awsvpc ネットワークモードとし、コンテナが接続する VPC/サブネット(=AZ)、SG を指定する。</li>
+</ul>
+<p>ELB 連携</p>
+<ul>
+<li>起動したコンテナが ELB ターゲットグループに追加される。</li>
+<li>インバウンド接続されるサーバを立てる場合には必須。</li>
+<li>ALB, NLB, CLB を選択可能。</li>
+<li>リスナールールの追加とその宛先ターゲットグループの設定を行う。<ul>
+<li>タスク内に複数コンテナがあってもタスクからの外部公開ポートは1つという前提？</li>
+<li>Service 毎にターゲットグループは1つの模様。CodeDeploy の AppSpec でも containerPort を1つしか指定できない。</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_658.png" /></p>
+<p>動的ポートマッピングを ALB で使用するため、TaskDefinition のポートマッピング定義でホストポートを 0 (ANY) に設定することで動的にポートがアサインされる。</p>
+<pre><code>      &quot;portMappings&quot;: [
+        {
+          &quot;hostPort&quot;: 0,
+          &quot;protocol&quot;: &quot;tcp&quot;,
+          &quot;containerPort&quot;: 80
+        }
+      ],
+</code></pre>
+<p>クラスタの EC2 インスタンスのセキュリティグループで、ALB にアサインしたセキュリティグループからの全トラフィックの接続を許可する。</p>
+<p>ECS Service Auto Scaling</p>
+<ul>
+<li>平均 CPU 使用率などのメトリクスで Auto Scaling で Service の維持タスク数を増減する。</li>
+<li>EC2 クラスタの場合、EC2 インスタンスも自動で増える訳でないので自前で EC2 Auto Scaling も調整する必要がある。(Beanstalk の Docker ECS を使うと両方のスケーリングを設定してくれる)</li>
+</ul>
+<p>forceNewDeployment</p>
+<ul>
+<li>UpdateService API のオプション</li>
+<li>latest タグのレポジトリのイメージが更新されていた場合に、サービス更新しても新しいバージョンはデプロイされないが、このオプションを指定することで新しいイメージがデプロイされる。</li>
+</ul>
+<pre><code>aws ecs update-service --force-new-deployment --service store-prd --task-definition task-store-prd
+</code></pre>
+<p>タスク配置</p>
+<p><img alt="" src="_attachment/image_659.png" /></p>
+<ul>
+<li>例: ポートマッピングでホストのポートを占有するタスクを複数個起動するには、その個数分のインスタンスが必要。</li>
+<li>binpack<ul>
+<li>コンテナをホスト集中することでコストを最適化</li>
+<li>使用中のコンテナインスタンスの数を最小限に抑え、未使用の CPU またはメモリを最小に。</li>
+</ul>
+</li>
+<li>spread<ul>
+<li>均等配置。(instanceId または attribute:ecs.availability-zone)</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-ECS</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

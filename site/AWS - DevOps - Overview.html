@@ -107,16 +107,12 @@
 <td>クラスタは VPC 内に配置。</td>
 </tr>
 <tr>
-<td><strong>FSx</strong></td>
-<td>VPC 内でアクセス。</td>
+<td><strong>EFS</strong></td>
+<td>VPC 内のNFS共有ストレージ。EC2/ECS/EKSからマウント可能</td>
 </tr>
 <tr>
 <td><strong>OpenSearch</strong></td>
 <td>VPC内に配置。</td>
-</tr>
-<tr>
-<td><strong>Lambda（VPC接続時）</strong></td>
-<td>ENI をサブネットに作成。</td>
 </tr>
 </tbody>
 </table>
@@ -131,6 +127,10 @@
 </thead>
 <tbody>
 <tr>
+<td><strong>S3</strong></td>
+<td>バケットはリージョンに存在。</td>
+</tr>
+<tr>
 <td><strong>Lambda</strong></td>
 <td>AWS管理VPCで実行。</td>
 </tr>
@@ -141,6 +141,10 @@
 <tr>
 <td><strong>CloudTrail</strong></td>
 <td>リージョン単位（＋Globalサービスイベント）。</td>
+</tr>
+<tr>
+<td><strong>EventBridge</strong></td>
+<td>イベントバスはリージョン単位。</td>
 </tr>
 <tr>
 <td><strong>KMS</strong></td>
@@ -155,30 +159,22 @@
 <td>パラメータはリージョン単位。</td>
 </tr>
 <tr>
-<td><strong>EventBridge</strong></td>
-<td>イベントバスはリージョン単位。</td>
-</tr>
-<tr>
 <td><strong>SNS / SQS</strong></td>
 <td>キュー・トピックはリージョン単位。</td>
-</tr>
-<tr>
-<td><strong>Glue</strong></td>
-<td>リージョン単位でデータカタログ管理。</td>
 </tr>
 <tr>
 <td><strong>Step Functions</strong></td>
 <td>ステートマシンはリージョン単位。</td>
 </tr>
 <tr>
-<td><strong>IAM</strong></td>
-<td>グローバルに見えるが内部的にはリージョンレプリケーションあり。</td>
+<td><strong>Glue</strong></td>
+<td>リージョン単位でデータカタログ管理。</td>
 </tr>
 </tbody>
 </table>
 <ul>
 <li>ELB はリージョン・スコープだが、ターゲットは VPC 内リソース<ul>
-<li>マルチAZにまたがる構造</li>
+<li>マルチ AZ にまたがる構造</li>
 <li>VPC 非接続 Lambda もターゲットにできる</li>
 </ul>
 </li>
@@ -192,10 +188,6 @@
 </tr>
 </thead>
 <tbody>
-<tr>
-<td><strong>S3（サービスはグローバル、バケットはリージョン）</strong></td>
-<td>API エンドポイントはグローバルで使える。</td>
-</tr>
 <tr>
 <td><strong>Route 53</strong></td>
 <td>DNSは完全にグローバル。</td>
@@ -226,8 +218,10 @@
 </tr>
 </tbody>
 </table>
+<ul>
+<li>IAM は内部的なリージョンレプリケーションで実質グローバルサービス</li>
+</ul>
 <h1 id="4">4. リージョンを跨いでデータ/エンドポイントが存在する特殊タイプ</h1>
-<p>S3 のように“バケットはリージョン”だが、サービスとしては AWS 全体にまたがる特性を持つ。</p>
 <table>
 <thead>
 <tr>
@@ -238,7 +232,7 @@
 <tbody>
 <tr>
 <td><strong>S3</strong></td>
-<td>データはリージョン、API/namespace はグローバル。</td>
+<td>API・ネームスペースはグローバル。</td>
 </tr>
 <tr>
 <td><strong>DynamoDB Global Tables</strong></td>
@@ -258,6 +252,135 @@
 </tr>
 </tbody>
 </table>
+<ul>
+<li>S3 はグローバルエンドポイント <code>s3.amazonaws.com</code> と <code>s3.ap-northeast-1.amazonaws.com</code> のようなリージョンエンドポイントがある。(グローバルエンドポイントは現在は非推奨)</li>
+</ul>
+<hr />
+<h1 id="iam">IAM ロール関連</h1>
+<ul>
+<li>
+<p>CodeBuild - サービスロール:</p>
+<ul>
+<li>CodeBuildサービスが各種AWSサービス（例：CodeCommitからのソース取得、S3へのアーティファクト保存、ECRへのプッシュ）にアクセスするために必要。</li>
+<li>認証情報は環境変数を介してビルドサーバーのコンテナ環境に引き継ぎ。</li>
+</ul>
+</li>
+<li>
+<p>CodeDeploy - サービスロール:</p>
+<ul>
+<li>デプロイグループに指定し、デプロイターゲットのサービス等へのアクセスを許可。</li>
+<li>AWSCodeDeployRole, AWSCodeDeployRoleForECS, AWSCodeDeployRoleForLambda など。</li>
+</ul>
+</li>
+<li>
+<p>CodeDeploy - インスタンスロール:</p>
+<ul>
+<li>CodeDeployエージェントがS3からリビジョンをpullするための、EC2インスタンスロールへの s3:Get<em>, s3:List</em> パーミッションの付与が必要。</li>
+<li>CloudWatchエージェントでインストールログを CloudWatch Logs に送る場合もパーミッションが必要。</li>
+</ul>
+</li>
+<li>
+<p>CodeDeploy - オンプレミスインスタンス用のIAMロール:</p>
+<ul>
+<li>オンプレミスインスタンスが使用する、CodeDeployアクセス許可を持つIAMロールの作成。</li>
+<li>オンプレミスインスタンス上で sts assume-role を使用した一時的な認証情報の取得。</li>
+</ul>
+</li>
+<li>
+<p>CodePipeline - クロスアカウントロール:</p>
+<ul>
+<li>開発アカウントのパイプラインから本番アカウントへデプロイを実行できるよう、クロスアカウントロールを作成し、パイ
+    プラインのサービスロールに設定。</li>
+<li>ロールの信頼ポリシーでリモートアカウントからの AssumeRole を許可。</li>
+</ul>
+</li>
+<li>
+<p>Elastic Beanstalk - IAMロール:</p>
+<ul>
+<li>環境構築時に自動的にプロビジョニングされるリソースの一つ。</li>
+</ul>
+</li>
+<li>
+<p>ECS - タスク実行ロール (executionRoleArn):</p>
+<ul>
+<li>コンテナランタイムが使用するロールで、コンテナイメージのプル、CloudWatch Logsへのログ書き込み、Secrets
+    Manager/Systems Managerへのアクセス許可などに必要。</li>
+</ul>
+</li>
+<li>
+<p>ECS - タスクロール (taskRoleArn):</p>
+<ul>
+<li>コンテナ内のアプリケーションに割り当てるロール。</li>
+<li>"ecs-tasks.amazonaws.com" に AssumeRole を許可する信頼ポリシーを持つ必要あり。</li>
+</ul>
+</li>
+<li>
+<p>ECS - コンテナインスタンスロール:</p>
+<ul>
+<li>ECSクラスターのEC2インスタンスのインスタンスロール。</li>
+<li>ECS API系だけでなく、ECRの ecr::GetAuthorizationToken 権限も指定。</li>
+</ul>
+</li>
+<li>
+<p>Lambda - 実行ロール:</p>
+<ul>
+<li>Lambda関数がイベントソース（例: DynamoDB Streams）を読み込む権限など、AWSサービスへアクセスするために必要。</li>
+</ul>
+</li>
+<li>
+<p>CloudFormation - IAMリソース作成時のCapability:</p>
+<ul>
+<li>IAMリソース（ロールなど）を作成するテンプレートには CAPABILITY_IAM または CAPABILITY_NAMED_IAM の指定が必要。</li>
+</ul>
+</li>
+<li>
+<p>CloudFormation スタックセット - IAMロール:</p>
+<ul>
+<li>全アカウントに共通のIAMロールを配布するなどの用途で利用。</li>
+</ul>
+</li>
+<li>
+<p>Service Catalog - 起動制約 (Launch Constraint):</p>
+<ul>
+<li>エンドユーザーが製品（CloudFormationテンプレート）を起動する際に使用するロールの指定。</li>
+</ul>
+</li>
+<li>
+<p>Cognito ID プール - IAMロールのマッピング:</p>
+<ul>
+<li>外部IdPのユーザートークンのクレームに基づき、特定のIAMロールにマッピングするためのルールを設定。</li>
+<li>ルールに合致しない未認証ID（ゲスト）用のロールも設定可能。</li>
+</ul>
+</li>
+<li>
+<p>STS (Security Token Service):</p>
+<ul>
+<li>AssumeRoleWithSAML: SAML 2.0対応IdPからの認証情報でロールを引き受け。</li>
+<li>AssumeRoleWithWebIdentity: OIDC互換IdPからの認証情報でロールを引き受け。</li>
+</ul>
+</li>
+<li>
+<p>AWS SSO と AD連携:</p>
+<ul>
+<li>ADFS（Active Directory Federation Services）をIdPとして使い、ADユーザーがロールを引き受けるために使用。</li>
+<li>AWS管理コンソールへのSSOでは、AssumeRoleWithSAML を許可するロールを関連付け。</li>
+</ul>
+</li>
+<li>
+<p>IAM Access Analyzer:</p>
+<ul>
+<li>リソースベースのポリシーを分析し、外部プリンシパルと共有されているIAMロールなどを検出。</li>
+</ul>
+</li>
+<li>
+<p>Organizations - SCP (Service Control Policy):</p>
+<ul>
+<li>メンバーアカウントのルートユーザーの権限を制限可能。</li>
+<li>例として、本番OUにデプロイ操作をDenyしつつ、パイプラインが使用するロールのみを許可する、といったガードレールの
+    適用。</li>
+</ul>
+</li>
+</ul>
 <hr />
 <h1 id="cicd">CI/CD</h1>
 <p><a href="AWS%20-%20CICD.html">AWS - CICD</a></p>
@@ -422,24 +545,24 @@
 <li>ECS (Fargate)</li>
 <li>Lambda</li>
 </ul>
-<p>アプリケーション</p>
+<p>CodeDeploy アプリケーション</p>
 <ul>
 <li>設定の単位。</li>
 </ul>
-<p>リビジョン</p>
+<p>リビジョン (EC2/オンプレのみ)</p>
 <ul>
 <li>S3, GitHub のいずれか。</li>
-<li>S3 の場合はデプロイ先 EC2 インスタンスのロールに S3 へのアクセス許可も必要。</li>
+<li>S3 の場合はデプロイ先 EC2 インスタンスロールで CodeDeploy エージェントに S3 へのアクセス権限の付与が必要。</li>
+<li>ECS はタスク定義の familiy+revision, Lambda はバージョンを更新する。</li>
 </ul>
-<p>デプロイグループ</p>
+<p>デプロイグループ (EC2/オンプレのみ)</p>
 <ul>
-<li>タググループか EC2 Auto Scaling グループを指定。</li>
-<li>ECS の場合は ECS クラスター名と ELB を指定。</li>
+<li>タググループか EC2 ASG を指定。</li>
 </ul>
 <p>デプロイタイプ</p>
 <ul>
 <li>EC2: インプレースデプロイ, Blue/Green デプロイ<ul>
-<li>ASG の Blue/Green では ASG 全体の置き換えによるデプロイメントを指定できる。</li>
+<li>ASG の Blue/Green では ASG 全体の置き換えによるデプロイメントも選択可能。</li>
 <li>Blue/Green ではトラフィックのルーティングをコントロールする ELB の指定が必須。</li>
 </ul>
 </li>

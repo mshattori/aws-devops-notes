@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-Security-Hub.supplement - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-Security-Hub.supplement</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h3 id="1">🔍 1. 問題点・誤り・補足すべき箇所</h3>
+<ul>
+<li>Security Hub が集約するファインディングソース（GuardDuty/Inspector/Macie/Config/WAF など）と ASFF 形式が未説明。</li>
+<li>標準の有効化（CIS、Foundational Security Best Practices、PCI）とスコープ/抑止期間の設定が不足。</li>
+<li>マルチアカウント集約（管理/委任管理者、跨リージョン）と自動アクション（Automation/Playbook）への接続を補足すべき。</li>
+</ul>
+<h3 id="2">🛠 2. 改訂版（修正・補足反映後の完成文）</h3>
+<ul>
+<li><strong>前提</strong>: Organizations で管理アカウントまたは委任管理者を設定し、メンバーを自動招待。クロスリージョン集約を有効化可能。</li>
+<li><strong>標準</strong>: CIS v1.2/1.4、Foundational Security Best Practices、PCI DSS を選択し、必要なサブスクリプションを有効化。</li>
+<li><strong>ファインディング</strong>: GuardDuty/Inspector/Macie/Config/WAF/Firewall Manager/Partner ASFF を統合。抑止期間を設定し、ステータスを管理。</li>
+<li><strong>対応</strong>: EventBridge ルールや Security Hub 自動化で SSM Automation/Step Functions/ChatOps へ連携し是正。Insights で集約ビューを作成。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-Security-Hub.supplement</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

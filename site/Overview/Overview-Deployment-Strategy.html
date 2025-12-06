@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Deployment-Strategy - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Deployment-Strategy</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="deployment-strategy">Deployment Strategy</h1>
+<p><a href="AWS%20-%20Deployment%20Strategy.html">AWS - Deployment Strategy</a></p>
+<p>用語</p>
+<ul>
+<li>ダークローンチ<ul>
+<li>フィーチャーフラグで一部のインスタンスで機能を有効にする。</li>
+</ul>
+</li>
+<li>セグメンテーション<ul>
+<li>デプロイを小さなチャンクに分割することでリスク軽減。</li>
+<li>リージョン, AZ, タグ, ASG, etc.</li>
+</ul>
+</li>
+</ul>
+<p>インプレース</p>
+<ul>
+<li>インスタンスが並列しないので低コスト。</li>
+<li>CodeDeploy, Beanstalk (All at once)</li>
+</ul>
+<p>イミュータブル</p>
+<ul>
+<li>インプレースの反対。新しいインスタンスまたは並列環境を作ってデプロイする。</li>
+</ul>
+<p>ローリング</p>
+<ul>
+<li>本番環境の稼働中インスタンスを一部切り離してデプロイし、再びオンラインに戻すを繰り返す。</li>
+<li>システム全体のダウンタイムなし。ダウングレードはある。</li>
+<li>CodeDeploy: インプレースの OneAtATime, HalfAtATime, Custom</li>
+<li>Beanstalk: ローリング, 追加バッチとローリング</li>
+<li>EC2 Auto Scaling: AutoScalingRollingUpdate</li>
+<li>ECS Service: deploymentController=ECS</li>
+</ul>
+<p>Blue/Green</p>
+<ul>
+<li>トラフィックを振り分けるため、トラフィックルーティングの仕組みが必要。</li>
+<li>システムのダウングレードなし。</li>
+<li>ロールバックが容易。</li>
+<li>CodeDeploy, Beanstalk(Immutable)</li>
+<li>EC2 Auto Scaling: AutoScalingReplacingUpdate</li>
+</ul>
+<h2 id="bluegreen">Blue/Green デプロイの実現方法</h2>
+<p>Route53 CNAME 切り替え (AllAtOnce)</p>
+<ul>
+<li>エイリアス (CNAME) が指す ELB の DNS 名を切り替える。</li>
+</ul>
+<p>Route53 加重ラウンドロビン</p>
+<p>ELB ターゲットグループ切り替え</p>
+<p>ALB 加重ターゲットグループ</p>
+<ul>
+<li>Blue/Green のターゲットグループに重みを指定。</li>
+<li>NLB にはない機能。</li>
+</ul>
+<p>Auto Scaling スケールアウト/スケールイン</p>
+<ul>
+<li>デフォルトの終了ポリシーが古い起動設定により起動されたインスタンスから終了させることを利用。</li>
+<li>起動テンプレートでAMIを変更後、インスタンス数を増やしてから減らすと自動的に古いインスタンスがなくなる。</li>
+</ul>
+<p>API Gateway Canary ステージ</p>
+<p>Lambda 加重エイリアス</p>
+<ul>
+<li>route-config 設定でセカンダリのバージョンと比率を設定。</li>
+</ul>
+<p>SAM の AWS::Serverless::Function</p>
+<ul>
+<li>DeploymentPreference プロパティで CodeDeploy の Lambda  デプロイメントを設定できる。</li>
+</ul>
+<p>CodeDeploy</p>
+<ul>
+<li>EC2:  ALB の加重ターゲットグループで移行。</li>
+<li>ECS: 新しいタスクセットと ELB ターゲットグループを作成、加重ターゲットグループで移行。</li>
+<li>Lambda: 加重エイリアスを使用。</li>
+</ul>
+<p>Elastic Beanstalk</p>
+<ul>
+<li>eb clone/swap による DNS カットオーバー</li>
+<li>eb deploy の展開タイプ - イミュータブル (Immutable)</li>
+</ul>
+<h2 id="codedeploy">CodeDeploy のデプロイ</h2>
+<p>CodeDeploy のデプロイタイプ</p>
+<ul>
+<li>EC2/オンプレ<ul>
+<li>インプレース (=AllAtOnce 以外はローリング)</li>
+<li>Blue/Green (=イミュータブル)</li>
+</ul>
+</li>
+<li>ECS, Lamda<ul>
+<li>Blue/Green のみ (仕組み的にコンテナやLambdaはインプレース切り替えの概念がない)</li>
+</ul>
+</li>
+</ul>
+<p>デプロイ設定</p>
+<p><img alt="" src="_attachment/image_643.png" /></p>
+<p>カスタム</p>
+<ul>
+<li>HalfAtOnce の代わりの割合か台数で必要な稼働中インスタンス数 (min. health) を指定する。</li>
+</ul>
+<p>EC2/オンプレ</p>
+<ul>
+<li>インプレース(=ローリング)<ul>
+<li>稼働中インスタンスを停止せずに新バージョンのアプリを配置/起動。</li>
+<li>各インスタンスでアプリを停止後、新リビジョンをインストールして起動・検証。</li>
+</ul>
+</li>
+</ul>
+<p>EC2</p>
+<ul>
+<li>Blue/Green デプロイ<ul>
+<li>Green インスタンス群を起動、新リビジョンをインストールして起動・検証。</li>
+<li>ELB で実現されるので ELB が必須。</li>
+<li>「Auto Scaling グループの自動コピー」オプション<ul>
+<li>ASG 全体の置き換えによるデプロイメントを行う。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>ECS</p>
+<ul>
+<li>新しいタスクセットと ELB ターゲットグループを作成、加重ターゲットグループで移行。</li>
+</ul>
+<p>Lambda</p>
+<p>- 指定された新旧バージョンで加重エイリアス(カナリアリリース)を行う。
+- route-configでセカンダリバージョンの比率を指定。</p>
+<h2 id="elastic-beanstalk">Elastic Beanstalk のデプロイ</h2>
+<h3 id="deployment-policy">デプロイポリシー (Deployment policy)</h3>
+<p>All at once</p>
+<ul>
+<li>単純なインプレースデプロイ。新バージョンを全インスタンスに同時展開。</li>
+<li>環境の全インスタンスのアプリケーションが短時間停止する。</li>
+<li>展開終了までの合計時間は最短。インスタンスの追加コストなし。</li>
+</ul>
+<p>Rolling</p>
+<ul>
+<li>環境のインスタンスを複数バッチに分割、バッチごとに新バージョンをデプロイ。(インプレース)</li>
+<li>バッチサイズ分のインスタンスを LB からデタッチしてデプロイ実施。ヘルスチェックが通ればそのバッチを LB に再アタッチ。全インスタンスにデプロイがされるまで繰り返し。</li>
+<li>インスタンスの追加コストなし。</li>
+</ul>
+<p>Rolling with additional batch</p>
+<ul>
+<li>バッチサイズ分の新しいインスタンスにデプロイして環境に追加した後でローリングを実行。</li>
+<li>追加バッチのインスタンスは最終的には消去される。</li>
+</ul>
+<p>Immutable (=Blue/Green)</p>
+<ul>
+<li>テンポラリな ASG を作成して新バージョンを展開したインスタンスのフルセットを起動。</li>
+<li>新しいインスタンスでヘルスチェックが Fail した場合は終了し、元のインスタンスがそのまま残る。</li>
+<li>Fail 時のロールバックが迅速。</li>
+<li>Success した場合は Green のインスタンスをプロダクションの ASG に移動する。</li>
+<li>Blue のインスタンスは削除されるのでイミュータブル。</li>
+<li>一時的にインスタンスコストが倍。</li>
+</ul>
+<p>手動 Blue/Green デプロイ</p>
+<ul>
+<li>eb clone で既存環境のクローンを作成後、新バージョンをデプロイしてテスト。</li>
+<li>eb swap で内部の CNAME を既存環境から新環境に切り替え。(DNS カットオーバー)</li>
+<li><img alt="" src="_attachment/image_644.png" /></li>
+<li><img alt="" src="_attachment/image_645.png" /></li>
+<li>2つの環境を作って Route53 加重ルーティングをする例</li>
+<li><img alt="" src="_attachment/image_646.png" /></li>
+</ul>
+<p>問題例: Serveless のバックエンド API 層と Web アプリケーション層を Blue/Green する要件</p>
+<ul>
+<li>Deploy the DynamoDB tables, Lambda functions, and Amazon ES domain using AWS CloudFormation.　<ul>
+<li>Deploy changes with an AWS CodeDeploy blue/green deployment.</li>
+</ul>
+</li>
+<li>Host the web application in AWS Elastic Beanstalk and set the deployment policy to <strong>Immutable</strong>.</li>
+</ul>
+<h2 id="ecs">ECS のデプロイ</h2>
+<p>サービスの deploymentController 設定を次のいずれかに設定する:</p>
+<ul>
+<li>ECS<ul>
+<li>ローリング更新</li>
+<li>サービスのタスク定義を更新すると ECS はローリングデプロイを実施する。</li>
+<li>古いバージョ ンのコンテナへの接続をドレイニングし、新しいコンテナを ALB に登録する。</li>
+</ul>
+</li>
+<li>CODE_DEPLOY<ul>
+<li>Blue/Green</li>
+</ul>
+</li>
+<li>EXTERNAL<ul>
+<li>ECS API でサービス・タスクを制御する外部のデプロイコントローラー</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Deployment-Strategy</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

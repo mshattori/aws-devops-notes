@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-API-Gateway - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-API-Gateway</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="api-gateway">API Gateway</h1>
+<p>API エンドポイント = API の URL のこと。</p>
+<ul>
+<li>形式: {api-id}.execute-api.{region}.amazonaws.com</li>
+</ul>
+<p>リージョン API エンドポイント (デフォルト)</p>
+<p>エッジ最適化 API エンドポイント:</p>
+<ul>
+<li>CloudFront に API エンドポイントをデプロイ。地理的に分散したアクセスのレイテンシー改善。</li>
+</ul>
+<p>プライベート API エンドポイント:</p>
+<ul>
+<li>インターフェイス VPC エンドポイント (AWS PrivateLink) としてデプロイ。</li>
+</ul>
+<p>統合バックエンド</p>
+<ul>
+<li>Lambda, AWSサービス, VPCリンク, HTTP, Mock</li>
+</ul>
+<p>CORS</p>
+<ul>
+<li>リソース (URL path) 単位で CORS を有効にできる。</li>
+</ul>
+<p>ステージ</p>
+<ul>
+<li>prod, staging, dev 等。エンドポイントのパスの一部に含まれる。<ul>
+<li>https://{api-id}.execute-api.{region}.amazonaws.com/{stage}</li>
+</ul>
+</li>
+<li>ステージへの「デプロイ」を行わない限り API は有効にならない。</li>
+<li>ステージ変数: ${stageVariables} から参照できるステージ毎に異なる変数。</li>
+</ul>
+<p>オーソライザー: 認証・認可 </p>
+<ul>
+<li>IAM アクセス権限<ul>
+<li>AWS 署名v4 認証。</li>
+</ul>
+</li>
+<li>Cognito オーソライザー<ul>
+<li>Cognito ユーザープールで認証して取得したトークン (JWT) を Authorization ヘッダで送信。</li>
+</ul>
+</li>
+<li>JWT オーソライザー<ul>
+<li>HTTP API のみサポート。</li>
+<li>OpenID Connect/OAuth 2.0 準拠の IdP が発行した JWT による認証 (Cognito ユーザープール含む)</li>
+</ul>
+</li>
+<li>Lambda オーソライザー<ul>
+<li>カスタムのオーソライザー</li>
+</ul>
+</li>
+</ul>
+<p>リソースポリシー</p>
+<ul>
+<li>API Gateway のリソースベースポリシー。IAM ポリシーと併用できる。</li>
+<li>呼び出し元のプリンシパル(IAM アカウント/ロール)、IP アドレス(範囲/CIDR)、VPC を指定。</li>
+</ul>
+<p>カナリアリリース</p>
+<ul>
+<li>指定した比率で特別なステージ「Canary」にリクエストを流せる。</li>
+<li>Canary はステージ毎に有効化できる。</li>
+<li>Canary はメインのステージに「昇格」できる。(Promote Canary)</li>
+</ul>
+<p>セキュリティ</p>
+<ul>
+<li>プライベート API エンドポイントとする。</li>
+<li>AWS Shield で DDoS 対策されている。</li>
+<li>WAF をステージに設定できる。</li>
+<li>CloudFront レイヤーで Shield/WAF を設置。</li>
+<li>「カスタムドメイン」の証明書設定<ul>
+<li>ACM で証明書を管理できる。</li>
+<li>ドメイン自体は Route53 等で API エンドポイントへ CNAME 登録</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-API-Gateway</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-WAF - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-WAF</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="aws-waf">AWS WAF</h1>
+<p>統合サービス: ALB, CloudFront, API Gateway</p>
+<p>ウェブ ACL &amp; ルール</p>
+<ul>
+<li>ウェブ ACL のリストにルールを投入する。</li>
+<li>ACL なのでルールはリストの順番に評価され、最後にデフォルト Allow/Deny がある。</li>
+<li>ウェブ ACL 単位で AWS リソースに割りあてる</li>
+<li>マネージドルールグループ<ul>
+<li>AWS や AWS Marketplace でセキュリティベンダ (F5, Fortinet 等) が提供するルールグループ</li>
+</ul>
+</li>
+</ul>
+<p>ルール</p>
+<ul>
+<li>ルールステートメント<ul>
+<li>HTTP リクエスト各コンポーネントの正規表現マッチ</li>
+<li>リクエストサイズ, Rate limit</li>
+<li>IP, GeoIP</li>
+<li>SQLi, XSS</li>
+<li>例: 特定の User Agent によるリクエストのブロック。</li>
+</ul>
+</li>
+<li>アクション: Block, Allow, Count の3種。</li>
+<li>WAF v2 ではステートメントの AND/OR が指定できる。</li>
+<li>IP ブラックリスト指定等も可能。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-WAF</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

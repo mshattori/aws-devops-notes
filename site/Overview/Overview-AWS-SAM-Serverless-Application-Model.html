@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-SAM-Serverless-Application-Model - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-SAM-Serverless-Application-Model</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="aws-sam-serverless-application-model">AWS SAM (Serverless Application Model)</h1>
+<p>SAM テンプレートで CloudFormation テンプレートより簡潔に次のリソースを定義できる:</p>
+<ul>
+<li>API Gateway, Lambda, DynamoDB, Step Functions </li>
+<li>CloudFormation がサポートする全てのリソースも指定できる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_661.png" /></p>
+<ul>
+<li>AWS::Serverless::Application: Nested Stack にあたる機能。<ul>
+<li>SAM テンプレートの置き場所の URI か Serverless Application Repository の ARN を指定。</li>
+</ul>
+</li>
+<li>AWS::Serverless::StateMachine: Step Functions</li>
+</ul>
+<p>CodeDeploy が組み込まれており Lambda の Blue/Green デプロイメントの指定ができる:</p>
+<pre><code>MyLambdaFunction:
+  Type: AWS::Serverless::Function
+  Properties:
+    Handler: index.handler
+    Runtime: nodejs12.x
+    CodeUri: s3://bucket/code.zip
+
+    AutoPublishAlias: prod
+
+    DeploymentPreference:
+      Type: Canary10Percent10Minutes
+      Alarms:
+        # A list of alarms that you want to monitor
+        - !Ref AliasErrorMetricGreaterThanZeroAlarm
+        - !Ref LatestVersionErrorMetricGreaterThanZeroAlarm
+      Hooks:
+        # Validation Lambda functions that are run before &amp; after traffic shifting
+        PreTraffic: !Ref PreTrafficLambdaFunction
+        PostTraffic: !Ref PostTrafficLambdaFunction
+</code></pre>
+<p>AutoPublishAlias プロパティ</p>
+<ul>
+<li>Lambda のエイリアス名を指定する。</li>
+<li>デプロイ時に関数が更新されていると自動的に関数バージョンを上げてそのエイリアスに紐づけてくれる。</li>
+</ul>
+<p>DeploymentPreference プロパティ</p>
+<ul>
+<li>デプロイタイプ (Canary10Percent10Minutes 等)</li>
+<li>Pre-traffic / Post-traffic テストの Lambda 関数</li>
+<li>CloudWatch alarms 監視と自動ロールバック</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-SAM-Serverless-Application-Model</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

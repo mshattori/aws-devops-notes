@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-Shield.supplement - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-Shield.supplement</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h3 id="1">🔍 1. 問題点・誤り・補足すべき箇所</h3>
+<ul>
+<li>Shield Standard/Advanced の違い、Advanced での WAF 自動適用・DDoS Cost Protection・Emergency Response が未説明。</li>
+<li>保護対象（ALB/NLB/CloudFront/Route 53/Global Accelerator）と検知フローの概要が不足。</li>
+<li>料金・契約条件（年間契約、追加リソース費用）を補足すると試験対策として有用。</li>
+</ul>
+<h3 id="2">🛠 2. 改訂版（修正・補足反映後の完成文）</h3>
+<ul>
+<li><strong>レベル</strong>: Shield Standard は無料で L3/4 DDoS 緩和。Shield Advanced は有料サブスクリプションで L3-7 対応と 24/7 SRT 連携、DDoS Cost Protection を提供。</li>
+<li><strong>対象リソース</strong>: CloudFront/ALB/NLB/Route 53/Global Accelerator を保護し、Advanced では自動アラートと WAF ルール適用（DRT push）が可能。</li>
+<li><strong>運用</strong>: CloudWatch アラームや Health イベントで検知し、SRT へのケース作成で支援を受ける。年間契約ベースで、保護リソース追加は別途従量課金。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-Shield.supplement</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

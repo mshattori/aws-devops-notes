@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Hybrid - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Hybrid</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="hybrid">Hybrid</h1>
+<h2 id="aws-vm-importexport">AWS VM Import/Export</h2>
+<ul>
+<li>VM イメージ (VHD, OVA) と EC2 インスタンス間のインポート・エクスポート。</li>
+</ul>
+<h2 id="aws-application-discovery-service-ads">AWS Application Discovery Service (ADS)</h2>
+<ul>
+<li>オンプレサーバの各種情報を収集。ADS のダッシュボードで確認。<ul>
+<li>アプリケーションの検出、依存関係、性能 (CPU, RAM, I/O, etc.)。</li>
+</ul>
+</li>
+<li>AWS Migration Hub と統合 → 移行の進捗をトラッキング</li>
+<li>エージェントレス型<ul>
+<li>VMware vCenter Server 環境</li>
+<li>AWS Agentless Discovery Connector (OVA 形式の仮想アプライアンス) を使用する。</li>
+</ul>
+</li>
+<li>エージェント型<ul>
+<li>Ubuntu, CentOS, RedHat, Windows Server</li>
+</ul>
+</li>
+<li>問題例:<ul>
+<li>The company is using a VMWare vCenter Server for data center management of their vSphere environments and virtual servers.</li>
+<li>A DevOps engineer is tasked to implement a solution that will collect various information from their on-premises and EC2 instances, such as operating system details, MAC address, IP address, and many others.</li>
+<li>The Operations team should also be able to analyze the collected data in a visual format.</li>
+</ul>
+</li>
+<li>解答<ul>
+<li>Using the AWS Application Discovery Service, deploy the <strong>Agentless Discovery Connector in an OVA file format to your VMware vCenter</strong> and then <strong>install the AWS Discovery Agents on the EC2 instances to</strong> collect the required data.</li>
+<li>Use the AWS Migration Hub Dashboard to analyze your hybrid infrastructure.</li>
+</ul>
+</li>
+</ul>
+<p><img alt="" src="_attachment/image_692.png" /></p>
+<p>Direct Connect</p>
+<ul>
+<li>オンプレ拠点 (オフィスや DC) と VPC を専用線で接続</li>
+<li>セットアップに数週間はかかるしお高い。</li>
+<li>Direct Connect ロケーション<ul>
+<li>AWS と通信事業者などの AWS Direct Connect パートナーが IX に用意した相互接続ポイント。</li>
+<li>東京リージョンは東京2カ所、大阪1カ所、台北2カ所。</li>
+</ul>
+</li>
+<li>プライベート接続<ul>
+<li>VPC/オンプレ相互にプライベート IP を使用。</li>
+<li>VPC のサブネットに接続。</li>
+</ul>
+</li>
+<li>パブリック接続<ul>
+<li>AWS のパブリックサービスへの接続。</li>
+<li>パブリック IP に接続するためにオンプレ側もパブリック IP (NAT) が必要。</li>
+</ul>
+</li>
+</ul>
+<p>Transit Gateway</p>
+<ul>
+<li>複数 VPC 同士やオンプレとの Direct Connect や VPN を HUB となるゲートウェイで接続。</li>
+<li>スター型ネットワークでルーティングテーブルの制御を Transit Gateway で集中管理。</li>
+<li>VPN ピア接続は推移的な通信ができないため複数 VPC だとそれぞれピア接続を設定したり Direct Connect や VPN を接続する必要があり複雑になるが、Transit Gateway なら集中接続できる。</li>
+</ul>
+<p><img alt="" src="_attachment/image_693.png" /></p>
+<ul>
+<li>テストの設定が DynamoDB に入っている</li>
+</ul>
+<p><img alt="" src="_attachment/image_694.png" />
+<img alt="" src="_attachment/image_695.png" /></p>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Hybrid</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

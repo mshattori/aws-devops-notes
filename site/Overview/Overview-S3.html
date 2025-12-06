@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-S3 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-S3</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="s3">S3</h1>
+<p>Ref.<a href="References/AWS%20-%20Security%20-%20S3,%20Glacier,%20RDS,%20DynamoDB.html">AWS - Security - S3, Glacier, RDS, DynamoDB</a></p>
+<p>ライフサイクルルール</p>
+<ul>
+<li>バケットのオプション。一定期間が過ぎたオブジェクトのライフサイクルを指定。</li>
+<li>移行 (Transition): 別のストレージクラスに移行。Glacier へのアーカイブも可能。</li>
+<li>失効 (Expiration): 削除</li>
+<li>フィルター要素<ul>
+<li>キープレフィックスおよびタグで対象を選択できる</li>
+</ul>
+</li>
+<li>バージョニングの最新とそれ以前で個別に設定できる。</li>
+<li>問題例: LegalHold タグ true のドキュメント以外は 90 日で削除したい<ul>
+<li>S3 イベントでオブジェクト作成時に Lambda 関数を開始する。LegalHold タグが存在しない場合は false の値を追加する。</li>
+<li>LegalHold タグが false のフィルタールールを指定した S3 ライフサイクルポリシーを作成し、90 日より古いオブジェクトを削除するよう設定する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-S3</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

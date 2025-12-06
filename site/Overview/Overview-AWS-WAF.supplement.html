@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-WAF.supplement - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-WAF.supplement</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h3 id="1">🔍 1. 問題点・誤り・補足すべき箇所</h3>
+<ul>
+<li>WAFv2 のスコープ（CloudFront/ALB/API Gateway/AppSync）と WebACL/RuleGroup/Rule の関係が記載されていない。</li>
+<li>マネージドルール、Bot Control、Rate-based rule、GeoIP/Regex など主要ルールタイプの補足が必要。</li>
+<li>Logging/Monitoring（Kinesis Data Firehose）、Firewall Manager との連携やデプロイ順序が不足。</li>
+</ul>
+<h3 id="2">🛠 2. 改訂版（修正・補足反映後の完成文）</h3>
+<ul>
+<li><strong>構成</strong>: WAFv2 は WebACL に Rule/RuleGroup を設定し、CloudFront/ALB/API Gateway/AppSync にアタッチ。優先度順に評価し、Allow/Block/Count/CAPTCHA/Challenge を適用。</li>
+<li><strong>ルール</strong>: マネージドルール（AWS Managed/Partner）、Rate-based rule、IP set/Geo match/Regex match、Bot Control や SQLi/XSS ルールで防御。</li>
+<li><strong>運用</strong>: サンプリングテストや Count モードで検証後にブロックへ移行。ログは Firehose で S3/CloudWatch/third-party へ配送。</li>
+<li><strong>統制</strong>: Firewall Manager でマルチアカウント一括適用。CloudFormation/CLI/CDK で IaC 管理し、バージョン管理とデプロイパイプラインに組み込む。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-WAF.supplement</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

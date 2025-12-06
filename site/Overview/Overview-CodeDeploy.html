@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-CodeDeploy - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-CodeDeploy</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="codedeploy">CodeDeploy</h1>
+<p>デプロイ先</p>
+<ul>
+<li>EC2/オンプレサーバ (要 CodeDeploy エージェント, Windows, Linux をサポート)</li>
+<li>ECS (Fargate)</li>
+<li>Lambda</li>
+</ul>
+<p>CodeDeploy アプリケーション</p>
+<ul>
+<li>設定の単位。</li>
+</ul>
+<p>リビジョン (EC2/オンプレのみ)</p>
+<ul>
+<li>S3, GitHub のいずれか。</li>
+<li>S3 の場合はデプロイ先 EC2 インスタンスロールで CodeDeploy エージェントに S3 へのアクセス権限の付与が必要。</li>
+<li>ECS はタスク定義の familiy+revision, Lambda はバージョンを更新する。</li>
+</ul>
+<p>デプロイグループ (EC2/オンプレのみ)</p>
+<ul>
+<li>タググループか EC2 ASG を指定。</li>
+</ul>
+<p>デプロイタイプ</p>
+<ul>
+<li>EC2: インプレースデプロイ, Blue/Green デプロイ<ul>
+<li>ASG の Blue/Green では ASG 全体の置き換えによるデプロイメントも選択可能。</li>
+<li>Blue/Green ではトラフィックのルーティングをコントロールする ELB の指定が必須。</li>
+</ul>
+</li>
+<li>オンプレ: インプレースのみ</li>
+<li>ECS, Lambda:  Blue/Green のみ<ul>
+<li>ECS: サービスにタスクセットと ELB ターゲットグループを作成して加重ターゲットグループ</li>
+<li>Lambda: 指定バージョン間で加重エイリアス</li>
+</ul>
+</li>
+</ul>
+<p>デプロイ設定</p>
+<ul>
+<li>EC2<ul>
+<li>AllAtOnce, HalfAtATime, OneAtATime, Custom (=min. health hosts)</li>
+</ul>
+</li>
+<li>Lambda:<ul>
+<li>AllAtOnce, CanaryNPercentEveryNMinutes, LinearNPercentEveryNMinutes</li>
+</ul>
+</li>
+<li>ECS:<ul>
+<li>AllAtOnce, CanaryNPercentEveryNMinutes, LinearNPercentEveryNMinutes</li>
+</ul>
+</li>
+</ul>
+<p>トリガー</p>
+<ul>
+<li>DevpoymentStart, DeploymentSuccess, DeploymentFailure などのイベントを SNS 通知。</li>
+</ul>
+<p>AppSpec ファイル (appspec.yml/.json)</p>
+<ul>
+<li>デプロイ処理の具体的な定義。リビジョンの root ディレクトリに配置。</li>
+<li>CodeDeploy エージェントによって実行される。</li>
+<li>ECS ではコンテナイメージが別途コンテナディレクトリに登録される必要があるので、AppSpec はコードと一緒に置かず S3 にファイル単体を置いても良い。</li>
+<li>files セクション<ul>
+<li>source, destination</li>
+</ul>
+</li>
+<li>resources セクション<ul>
+<li>Lambda: Name, Alias, CurrentVersion, TargetVersion</li>
+<li>ECS: TaskDefinition ARN (リビジョン番号含む), LoadBalancerInfo (ContainerName, ContainerPort)</li>
+</ul>
+</li>
+<li>hooks セクション<ul>
+<li>デプロイ前後に実行するスクリプトファイルを指定する (ECS, Lambda では Lambda 実行)</li>
+<li>EC2 - インプレース<ul>
+<li>ApplicationStop: 停止スクリプトを指定</li>
+<li>ApplicationStart: 起動スクリプトを指定</li>
+<li>ValidateService: 動作検証</li>
+<li><img alt="" src="_attachment/File_18.png" /></li>
+</ul>
+</li>
+<li>EC2 - Blue/Green<ul>
+<li>ALB があるので AllowTraffic 前後のフックがある。</li>
+<li>停止側のインスタンスには BlockTraffic 前後のフックしかない。</li>
+<li><img alt="" src="_attachment/image_636.png" /></li>
+<li>Blue/Green を採用し 50% のカスタムデプロイ設定を行い、BeforeAllowTraffic フックでデプロイ中に作成される一時ファイルを削除する例:<ul>
+<li>Launch an Application Load Balancer and use a blue/green deployment for releasing new application versions.</li>
+<li>Associate the Auto Scaling group and the Application Load Balancer target group with the deployment group.</li>
+<li>Create a custom deployment configuration for the deployment group in CodeDeploy with minimum healthy hosts defined as 50% and configure it to also terminate the original instances in the Auto Scaling group after deployment.</li>
+<li>Use the BeforeAllowTraffic hook within appsec.yml to purge the temporary files.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Lambda<ul>
+<li>インストール系のフックがない。</li>
+<li><img alt="" src="_attachment/image_637.png" /></li>
+</ul>
+</li>
+<li>ECS<ul>
+<li>AfterAllowTestTraffic フックがある。デプロイグループでテストリスナー(オプショナル)を指定しない場合は呼ばれない。</li>
+<li>テストリスナーは Green の新タスクグループに一次的に設定される ALB リスナー</li>
+<li><img alt="" src="_attachment/image_638.png" /></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>自動ロールバック</p>
+<ul>
+<li>デプロイ失敗かデプロイグループに設定したアラーム (例: CPU 使用率 80% 以上等) が発生した場合に以前のリビジョンにデプロイしなおす。</li>
+<li>問題例: ALB のアラームをデブロイグループに設定、遅延が高まれば自動ロールバック</li>
+<li><img alt="" src="_attachment/image_639.png" /></li>
+</ul>
+<p>問題例: ECS のデプロイメント</p>
+<ul>
+<li>The app is hosted on a cluster of Auto Scaling ECS instances and its deployments are handled by AWS CodeDeploy.</li>
+<li>ALB health checks are not sufficient to tell that new version deployments are successful, rather you have custom validation scripts that verify all APIs of the application.</li>
+<li>You want to make sure that there are no 5XX error replies on the new version before continuing production deployment and that you are notified via email if results failed.</li>
+<li>You also want to configure automatic rollback to the older version when the validation fails.</li>
+</ul>
+<p>解答: AfterAllowTestTraffic で Lambda でテストするが、ロールバックは Alarm によって発生させる</p>
+<ol>
+<li>Create your validation scripts on AWS Lambda and define the functions on the AppSpec lifecycle hook to validate the app using test traffic.</li>
+<li>Associate CloudWatch Alarms to your deployment group to have it trigger a rollback when the 5xx error alarm is active.</li>
+<li>Have AWS CloudWatch Alarms trigger an AWS SNS notification when the threshold for 5xx is reached on CloudWatch.</li>
+</ol>
+<p>問題例: アプリケーションのエラーログでロールバック</p>
+<ul>
+<li>アプリケーションログを CloudWatch Logs に送信する。</li>
+<li>ログ内のエラーメッセージをモニタリングするメトリクスフィルターを作成する。</li>
+<li>エラー数が許容できない場合はアラームを開始する。</li>
+</ul>
+<p>サービスロール</p>
+<ul>
+<li>デプロイグループに指定し、デプロイターゲットのサービス等へのアクセスを許可する。</li>
+<li>AWSCodeDeployRole ... ELB, ASG, タグ取得, ClaoudWatch Alarms 等</li>
+<li>AWSCodeDeployRoleForECS</li>
+<li>AWSCodeDeployRoleForLambda</li>
+<li>ECS, Lambda ではサービスロールで必要な権限を与えられるが、EC2ではインスタンスロールの考慮も必要。</li>
+</ul>
+<p>CodeDeploy エージェント</p>
+<ul>
+<li>S3 から pull するためインスタンスロールに s3:Get*, s3:List* パーミッションが必要。</li>
+<li>CodeDeploy エンドポイントに HTTPS/443 でアクセス<ul>
+<li>パブリックサブネットならインターネット経由、プライベートなら VPC エンドポイント経由。</li>
+<li>VPC エンドポイントは ECS や VPC Lambda でもプライベートサブネットなら必要。</li>
+</ul>
+</li>
+<li>インスタンス上のインストールログを CloudWatch Logs で見るには CloudWatch エージェントを別途インストール。</li>
+</ul>
+<p>オンプレインスタンスのセットアップ</p>
+<ol>
+<li>オンプレインスタンスが使用する、CodeDeploy アクセス許可を持つ IAM ロールを作成する。</li>
+<li>オンプレインスタンス上で sts assume-role で認証情報のセットを取得して保存する。</li>
+<li>CodeDeploy エージェントをオンプレインスタンスにインストールする。</li>
+<li><code>aws deploy register-on-premises-instance</code> でオンプレインスタンスを登録する。</li>
+<li>オンプレミスインスタンスにタグを設定する。(コンソールか CLI コマンド)</li>
+<li>タグに基づいてデプロイグループをセットアップする。</li>
+<li>デプロイグループを使用してアプリケーションをデプロイする。</li>
+</ol>
+<p>AppSpec 内で見える環境変数 (カスタム環境変数を渡す方法はない)</p>
+<ul>
+<li>APPLICATION_NAME</li>
+<li>DEPLOYMENT_ID</li>
+<li>DEPLOYMENT_GROUP_NAME</li>
+<li>DEPLOYMENT_GROUP_ID</li>
+<li>LIFECYCLE_EVENT</li>
+</ul>
+<p>Bundle from S3</p>
+<ul>
+<li>BUNDLE_BUCKET</li>
+<li>BUNDLE_KEY</li>
+<li>BUNDLE_VERSION</li>
+<li>BUNDLE_ETAG</li>
+</ul>
+<p>Bundle from GitHub</p>
+<ul>
+<li>BUNDLE_COMMIT</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-CodeDeploy</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

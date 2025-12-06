@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-Health.supplement - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-Health.supplement</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h3 id="1">🔍 1. 問題点・誤り・補足すべき箇所</h3>
+<ul>
+<li>Personal Health Dashboard と Health API の違い、EventBridge 連携など通知経路が未説明。</li>
+<li>Org 全体での集約には AWS Health Dashboard 組織ビューや委任管理者設定が必要である点が不足。</li>
+<li>インシデントの種類（障害、メンテ、アクション要求）とフィルタリング/自動対応の方法が欠落。</li>
+</ul>
+<h3 id="2">🛠 2. 改訂版（修正・補足反映後の完成文）</h3>
+<ul>
+<li><strong>スコープ</strong>: Personal Health Dashboard は自アカウント影響のみ。Organizations では委任管理者を指定し Health の組織ビューで全アカウントのイベントを集約。</li>
+<li><strong>通知</strong>: EventBridge ルールで障害/メンテ/アクション必要イベントを SNS、Incident Manager、OpsItem へ転送し自動対応を開始。</li>
+<li><strong>フィルタ</strong>: サービス名、リージョン、ステータスで絞り込み。履歴は 90 日保存。</li>
+<li><strong>ユースケース</strong>: メンテナンス計画の自動チケット化、重大障害時の運用 runbook 起動、影響サブセットへの段階的対応。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-Health.supplement</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

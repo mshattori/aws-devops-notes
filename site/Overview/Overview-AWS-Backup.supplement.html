@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-Backup.supplement - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-Backup.supplement</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h3 id="1">🔍 1. 問題点・誤り・補足すべき箇所</h3>
+<ul>
+<li><strong>対応リソースの網羅性</strong>: Backup Supported Services の代表例を一覧化し、リージョン差異に注意する必要がある。</li>
+<li><strong>復旧・コピー戦略の不足</strong>: クロスアカウント/クロスリージョンコピー、ライフサイクル(Cold Storage/Expire)が未記載。</li>
+<li><strong>監査とロックの活用</strong>: Audit Manager、Vault Lock の目的と制約を補足し、コンプライアンス対応を明示。</li>
+<li><strong>増分バックアップの例外</strong>: DynamoDB/Aurora/DocumentDB/Neptune 以外増分である点の理由と注意を強調。</li>
+</ul>
+<h3 id="2">🛠 2. 改訂版（修正・補足反映後の完成文）</h3>
+<ul>
+<li><strong>対応サービス例</strong>: EBS/AMI、RDS &amp; Aurora、DynamoDB、EFS、FSx、Storage Gateway、DocumentDB/Neptune など。対応有無はリージョンで確認。</li>
+<li><strong>バックアッププラン</strong>: スケジュールとライフサイクルを定義し、Warm→Cold→Expire を自動管理。タグベースでリソース自動紐付け。</li>
+<li><strong>コピー戦略</strong>: <strong>クロスアカウント/クロスリージョンコピー</strong> をサポートし、DR や多層防御を実現。</li>
+<li><strong>暗号化</strong>: KMS 統合。コピー先では別キーを指定可能。</li>
+<li><strong>監査・コンプライアンス</strong>: <strong>AWS Backup Audit Manager</strong> でポリシーチェックを自動化。<strong>Vault Lock (WORM)</strong> で削除や保持期間短縮を防止。</li>
+<li><strong>増分バックアップの例外</strong>: DynamoDB/Aurora/DocumentDB/Neptune はサービス固有スナップショット方式。その他は増分で転送・保存を最適化。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-Backup.supplement</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

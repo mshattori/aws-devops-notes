@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-Service-Catalog.supplement - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-Service-Catalog.supplement</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h3 id="1">🔍 1. 問題点・誤り・補足すべき箇所</h3>
+<ul>
+<li>ポートフォリオ/プロダクト/制約の関係が不明瞭で、権限境界や承認フローの設計視点が不足。</li>
+<li>マルチアカウント共有（ポートフォリオ共有）やタグ付け、Provisioned Product のライフサイクル操作が記載されていない。</li>
+<li>Terraform/CDK との連携（Service Catalog AppRegistry/Product provisioning）の最新機能を補足する必要がある。</li>
+</ul>
+<h3 id="2">🛠 2. 改訂版（修正・補足反映後の完成文）</h3>
+<ul>
+<li><strong>基本概念</strong>: Portfolio に CloudFormation プロダクトとバージョンを登録し、Launch/Template/StackSet 制約で使用ロールやデプロイ範囲を統制。タグ強制や承認ワークフローを設定可能。</li>
+<li><strong>共有</strong>: ポートフォリオを OU/アカウントに共有し、アクセスを IAM/SSO と連携。Provisioned Product は更新/終了/ロールバックを管理。</li>
+<li><strong>IaC 連携</strong>: Terraform/CDK/AppRegistry と組み合わせてアプリケーション定義を一元化。StackSet プロダクトでマルチアカウント展開を自動化。</li>
+<li><strong>ユースケース</strong>: ガードレール付きのセルフサービスカタログ、標準 VPC/監視/セキュリティ基盤の配布。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-Service-Catalog.supplement</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

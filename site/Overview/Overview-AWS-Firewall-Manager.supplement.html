@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-Firewall-Manager.supplement - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-Firewall-Manager.supplement</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h3 id="1">🔍 1. 問題点・誤り・補足すべき箇所</h3>
+<ul>
+<li>管理アカウント/委任管理者と Organizations 必須要件の記載がなく、前提を誤解する恐れがある。</li>
+<li>サポートするポリシー種別（AWS WAF、Shield Advanced、Security Group、Network Firewall、DNS Firewall）が列挙されておらず、適用対象の違いが不明。</li>
+<li>スコープ設定（OU/アカウント/リソースタグ）と自動修復・違反レポートの流れを補足する必要がある。</li>
+</ul>
+<h3 id="2">🛠 2. 改訂版（修正・補足反映後の完成文）</h3>
+<ul>
+<li><strong>前提</strong>: AWS Organizations が有効で、管理アカウントまたは委任管理者から Firewall Manager を設定。</li>
+<li><strong>ポリシー種別</strong>: WAF ルールセット、Shield Advanced 保護、セキュリティグループ基準、Network Firewall、Route 53 Resolver DNS Firewall を一元配布。</li>
+<li><strong>スコープ</strong>: OU/アカウント/リソースタグで対象を定義し、新規リソースにも自動適用。例外タグで除外可能。</li>
+<li><strong>運用</strong>: 違反検知で自動修復や通知（SNS/CloudWatch）を実施。ポリシーコンプライアンスをダッシュボードで可視化し、セキュリティ基準を継続的に統制。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-Firewall-Manager.supplement</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-Services-Scope-Classification - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-Services-Scope-Classification</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <p>Ref.  <a href="References/AWS%20-%20Security%20-%20Overview.html">AWS - Security - Overview</a>
+- 時間: 75問/180分 → 1問2分20秒
+- 10分: 4問+
+- 10問: 23分+
+- 1時間: 25問</p>
+<table>
+<thead>
+<tr>
+<th>分野</th>
+<th>タイトル</th>
+<th>重み</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第1分野</td>
+<td>SDLC のオートメーション</td>
+<td>22%</td>
+</tr>
+<tr>
+<td>第2分野</td>
+<td>設定管理と IaC</td>
+<td>17%</td>
+</tr>
+<tr>
+<td>第3分野</td>
+<td>耐障害性の高いクラウドソリューション</td>
+<td>15%</td>
+</tr>
+<tr>
+<td>第4分野</td>
+<td>モニタリングとロギング</td>
+<td>15%</td>
+</tr>
+<tr>
+<td>第5分野</td>
+<td>インシデントとイベントへの対応</td>
+<td>14%</td>
+</tr>
+<tr>
+<td>第6分野</td>
+<td>セキュリティとコンプライアンス</td>
+<td>17%</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="" src="_attachment/image_631.png" /></p>
+<h2 id="_1">モダンアプリケーションアーキテクチャ</h2>
+<p><img alt="" src="_attachment/image_632.png" />
+<img alt="" src="_attachment/image_633.png" />
+<img alt="" src="_attachment/image_634.png" /></p>
+<ul>
+<li>CloudMap コンテナのサービス間のルーティング</li>
+<li>App Mesh サービスメッシュによるコンテナの連携のマネージドサービス</li>
+</ul>
+<hr />
+<h1 id="aws">AWS サービスのスコープ分類</h1>
+<h2 id="1-vpcvpc-scoped-services">1. VPC内リソース（VPC-scoped services）</h2>
+<p>ネットワーク的に VPC 内に存在し、AZ（サブネット）に紐づき、専用の ENI を持つリソース。</p>
+<table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>EC2</strong></td>
+<td>サブネット単位で配置。ENI を持つ。</td>
+</tr>
+<tr>
+<td><strong>RDS</strong></td>
+<td>マルチAZも含めてサブネットに配置される。</td>
+</tr>
+<tr>
+<td><strong>ECS (EC2モード)</strong></td>
+<td>EC2 が VPC 内に配置される。</td>
+</tr>
+<tr>
+<td><strong>EKS ワーカー/Pod（ENI割当）</strong></td>
+<td>Pod もENIを持ち VPCに属する場合もある。</td>
+</tr>
+<tr>
+<td><strong>ElasticCache（Redis / Memcached）</strong></td>
+<td>サブネットに紐づく。</td>
+</tr>
+<tr>
+<td><strong>Redshift</strong></td>
+<td>クラスタは VPC 内に配置。</td>
+</tr>
+<tr>
+<td><strong>EFS</strong></td>
+<td>VPC 内のNFS共有ストレージ。EC2/ECS/EKSからマウント可能</td>
+</tr>
+<tr>
+<td><strong>OpenSearch</strong></td>
+<td>VPC内に配置。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-region-scoped-services">2. リージョン・スコープ （Region-scoped services）</h2>
+<p>物理的な配置の概念はなく、AWSのコントロールプレーンサービスとしてリージョン単位で提供される。VPCと独立している。</p>
+<table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>S3</strong></td>
+<td>バケットはリージョンに存在。</td>
+</tr>
+<tr>
+<td><strong>Lambda</strong></td>
+<td>AWS管理VPCで実行。</td>
+</tr>
+<tr>
+<td><strong>CloudWatch</strong></td>
+<td>リージョンごとにメトリクス保存。</td>
+</tr>
+<tr>
+<td><strong>CloudTrail</strong></td>
+<td>リージョン単位（＋Globalサービスイベント）。</td>
+</tr>
+<tr>
+<td><strong>EventBridge</strong></td>
+<td>イベントバスはリージョン単位。</td>
+</tr>
+<tr>
+<td><strong>KMS</strong></td>
+<td>CMK はリージョン固有。</td>
+</tr>
+<tr>
+<td><strong>Secrets Manager</strong></td>
+<td>シークレットはリージョン単位。</td>
+</tr>
+<tr>
+<td><strong>SSM Parameter Store</strong></td>
+<td>パラメータはリージョン単位。</td>
+</tr>
+<tr>
+<td><strong>SNS / SQS</strong></td>
+<td>キュー・トピックはリージョン単位。</td>
+</tr>
+<tr>
+<td><strong>Step Functions</strong></td>
+<td>ステートマシンはリージョン単位。</td>
+</tr>
+<tr>
+<td><strong>Glue</strong></td>
+<td>リージョン単位でデータカタログ管理。</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>ELB はリージョン・スコープだが、ターゲットは VPC 内リソース<ul>
+<li>マルチ AZ にまたがる構造</li>
+<li>VPC 非接続 Lambda もターゲットにできる</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">3. <strong>グローバルサービス（リージョンを超えるサービス）</strong></h2>
+<table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Route 53</strong></td>
+<td>DNSは完全にグローバル。</td>
+</tr>
+<tr>
+<td><strong>CloudFront</strong></td>
+<td>CDNグローバル。</td>
+</tr>
+<tr>
+<td><strong>IAM（実質グローバル）</strong></td>
+<td>“IAMはグローバルサービス”と明記される。</td>
+</tr>
+<tr>
+<td><strong>WAF（グローバル / リージョン両方）</strong></td>
+<td>CloudFront向けはグローバル。</td>
+</tr>
+<tr>
+<td><strong>AWS Global Accelerator</strong></td>
+<td>グローバルIPを提供。</td>
+</tr>
+<tr>
+<td><strong>Organizations</strong></td>
+<td>組織全体で管理。</td>
+</tr>
+<tr>
+<td><strong>Control Tower</strong></td>
+<td>マルチリージョン/複数アカウントを一元管理。</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>IAM は内部的なリージョンレプリケーションで実質グローバルサービス</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-Services-Scope-Classification</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

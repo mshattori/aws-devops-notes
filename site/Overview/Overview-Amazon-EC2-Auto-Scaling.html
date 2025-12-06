@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Amazon-EC2-Auto-Scaling - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Amazon-EC2-Auto-Scaling</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="amazon-ec2-auto-scaling">Amazon EC2 Auto Scaling</h1>
+<p>基本的には ELB と組み合わせてマルチ AZ (=複数サブネット) で利用する。</p>
+<p><img alt="" src="_attachment/image_680.png" /></p>
+<p>起動設定 (Launch configuration)</p>
+<ul>
+<li>基本的に EC2 起動設定と同じ: AMI ID、インスタンスタイプ、キーペア、SG、ボリューム、UserData によるスクリプト実行、タグなど</li>
+<li>サブネット(AZ) は Auto Scaling グループの設定が優先される。</li>
+</ul>
+<p>起動テンプレート (Launch template)</p>
+<ul>
+<li>既存テンプレートから継承して別バージョンのテンプレートが作れる。</li>
+<li>スポットインスタンスを起動できる (スポットフリートを起動テンプレートから作成)<ul>
+<li>オンデマンドとミックスで使える。</li>
+</ul>
+</li>
+</ul>
+<p>Launch configuration/template を変更するとバージョン番号がインクリメントする。</p>
+<p>同じセキュリティグループを使用すべきなので、ASG で SG が指定される。</p>
+<p>Auto Scaling グループ</p>
+<ul>
+<li>ELB 統合<ul>
+<li>Auto Scaling が ELB ターゲットグループに自動でインスタンスを追加・削除する。</li>
+</ul>
+</li>
+<li>マルチ AZ でインスタンス数が均等になるようにバランシングされる。</li>
+</ul>
+<p>Scheduled Action (予定されたアクション)</p>
+<ul>
+<li>サイズ (Max,Min,Desired) の変更をスケジュール指定 (Cron, リピート, Once)</li>
+</ul>
+<p>動的スケーリングポリシー</p>
+<ul>
+<li>Target tracking scaling<ul>
+<li><strong>CloudWatch メトリクスのターゲット値を維持</strong>するようスケールアウト/インする。</li>
+<li>CPU 使用率、ネットワーク出力、ネットワーク入力、ALB リクエスト数。</li>
+</ul>
+</li>
+<li>Step scaling<ul>
+<li><strong>CloudWatch アラーム</strong>にスケーリング調整値を設定してインスタンス数を増減する。</li>
+<li>例: 平均 CPU 使用率 50% 超過アラームと、80% 超過アラームそれぞれにインスタンス追加数を個別に設定。</li>
+</ul>
+</li>
+<li>クールダウン (デフォルト300秒)<ul>
+<li>スケーリング発生後に ASG 全体でスケーリングを抑制する期間 </li>
+<li>アラームが連続して発生してもスケーリングを実施しないようにするため</li>
+</ul>
+</li>
+<li>ウォームアップ<ul>
+<li>新しいインスタンスが CloudWatch メトリクスの平均 CPU に影響しないように除外する期間</li>
+<li>インスタンス内の OS のブートアップやアプリケーションの起動時間を考慮。</li>
+<li>クールダウンがウォームアップより長くないとメトリクス反映前に再度スケーリングが発生してしまう。</li>
+</ul>
+</li>
+<li>Disable scale-in<ul>
+<li>Target Tracking/Step Scaling の特定ポリシーだけインスタンスの削除 (スケールイン) を無効化。</li>
+<li>スケールアウトはしたいが、しばらくスケールインはさせたくないシナリオ（バッチ処理など）</li>
+</ul>
+</li>
+</ul>
+<p>ヘルスチェック</p>
+<ul>
+<li>Auto Healing<ul>
+<li>異常 (impared) 判定されたインスタンスを終了 (terminate) し新しいインスタンスを起動する。</li>
+</ul>
+</li>
+<li>EC2 のヘルスチェック (デフォルト)<ul>
+<li>システムステータスチェック: EC2 のインフラ由来の問題の検出</li>
+<li>インスタンスステータスチェック: ARP によるヘルスチェック</li>
+</ul>
+</li>
+<li>ELB によるヘルスチェック (オプション)</li>
+<li>カスタムヘルスチェック<ul>
+<li>独自のヘルスチェック機能から Unhealthy 状態を Auto Scaling に通知する。</li>
+</ul>
+</li>
+</ul>
+<p>終了ポリシー (Termination Policy)</p>
+<ul>
+<li>デフォルト終了ポリシーの挙動:<ol>
+<li>最もインスタンスの多い AZ を選択</li>
+<li>Scale-in Protection がセットされていないインスタンスを選択</li>
+<li>最も古い起動設定・テンプレートで起動されたものを選択</li>
+<li>次の課金時間に最も近いものを選択。</li>
+</ol>
+</li>
+</ul>
+<p>Suspended Process オプション</p>
+<ul>
+<li>Auto Scaling グループで特定のイベント処理を停止:</li>
+<li><img alt="" src="_attachment/image_681.png" /></li>
+</ul>
+<p>Detach アクション</p>
+<ul>
+<li>インスタンスを Auto Scaling グループと ELB ターゲットグループからデタッチする。</li>
+<li>代わりのインスタンスが起動される。</li>
+<li>インスタンスの<strong>フォレンジックなど</strong>の際に使う。</li>
+</ul>
+<p>Set to Standby アクション</p>
+<ul>
+<li>インスタンスを ELB ターゲットグループからデタッチする。</li>
+<li>他のインスタンスにトラフィックが振り分けられて負荷が上がる。</li>
+</ul>
+<p>Set Scale In Protection</p>
+<ul>
+<li>スケールイン時に対象インスタンスが削除対象にならないようにする。</li>
+<li>バッチ処理中のインスタンスやマスターノードなどに動的に設定する。</li>
+</ul>
+<p>ライフサイクルフック</p>
+<ul>
+<li>インスタンスの起動・終了時にインスタンス状態を Pending:Wait や Terminating:Wait に止めておく仕組み (デフォルト1時間)</li>
+<li>アプリケーション初期化処理 (UserData) の待機や、終了時にログ待避やスナップショットなどを実施</li>
+<li>イベント種類<ul>
+<li>EC2_INSTANCE_LAUNCHING (Pending: Wait → Proceed)</li>
+<li>EC2_INSTANCE_TERMINATING (Terminating: Wait → Proceed)</li>
+</ul>
+</li>
+<li>通知設定<ul>
+<li>SNS, SQS</li>
+<li>EventBridge ... SSM RunCommand などを実施</li>
+</ul>
+</li>
+<li>
+<p>CompleteLifecycleAction API</p>
+<ul>
+<li>フック完了時に CLI や Lambda から COMPLETE/ABANDON の結果を通知する</li>
+</ul>
+</li>
+<li>
+<p>問題例:</p>
+<ul>
+<li>Delay the termination of unhealthy Amazon EC2 instances by adding a lifecycle hook to your Auto Scaling group to move instances in the Terminating state to the Terminating:Wait state.</li>
+<li>Set up a CloudWatch Events rule for the EC2 Instance-terminate Lifecycle Action Auto Scaling Event with an associated AWS Systems Manager Automation document.</li>
+<li>Trigger the CloudWatch agent to push the application logs and then resume the instance termination once all the logs are sent to CloudWatch Logs.</li>
+</ul>
+</li>
+</ul>
+<p><strong>CloudFormation による Auto Scaling 作成</strong></p>
+<ul>
+<li>CreationPolicy &gt; ResourceSignal で希望数のインスタンスからシグナルあるまで ASG 作成成功を待機。</li>
+<li>起動設定の UserData で cfn-signal を実施。</li>
+<li>スタック更新時でもデフォルトでは既存インスタンスは置き換わらない</li>
+<li>UpdatePolicy を指定することでスタック更新時にインスタンスがリプレースされる:<ul>
+<li>AutoScalingRollingUpdate: ASG 内で新しいインスタンスを立ててローリングアップデート</li>
+<li>AutoScalingReplacingUpdate: ASG 全体を置き換える (Blue/Green)</li>
+</ul>
+</li>
+<li>IgnoreUnmodifiedGroupSizeProperties<ul>
+<li>スケジュールアクションで変更された ASG のサイズ (Max,Min,Desired) がスタック更新時に上書きされないようにするオプション</li>
+</ul>
+</li>
+</ul>
+<pre><code>    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: '1'
+        MaxBatchSize: '2'
+        PauseTime: PT1M
+        WaitOnResourceSignals: 'true'
+        # SuspendProcesses:
+        # - list of processes to suspend ...
+      AutoScalingScheduledAction:
+        IgnoreUnmodifiedGroupSizeProperties: 'true'
+</code></pre>
+<pre><code>  　UpdatePolicy:
+      AutoScalingReplacingUpdate:
+        WillReplace: 'true'
+</code></pre>
+<p><strong>CodeDeploy と Auto Scaling のインテグレーション</strong></p>
+<ul>
+<li>ASG の既存インスタンスとスケールアウトで新しく立ち上がるインスタンスに新しいリビジョンがデプロイされる。</li>
+<li>デプロイタイプとしてインプレースとBlue/Green が指定可能。</li>
+<li>Blue/Green では ASG そのものを置き換える方法も選択できる。</li>
+<li>デプロイ中にスケールアウトが発生した場合、まだデプロイが成功したとみなされていないため、以前のリビジョンが新しく立ち上がるインスタンスにデプロイされる。それを防ぐためにはデプロイ中に <code>SuspendedProcess</code> オプションでインスタンス起動につながる以下の Auto Scaling 処理を停止する:<ul>
+<li>AlarmNotification</li>
+<li>ScheduledActions</li>
+<li>ReplaceUnhealthy</li>
+<li>AZRebalance</li>
+</ul>
+</li>
+<li>common_functions.sh というスクリプトでやってくれるそう</li>
+</ul>
+<p>例: MinSize = MaxSize = 1 の ASG でインスタンスのリカバリを実現するユースケース</p>
+<ul>
+<li>クラスタの各インスタンスに固定で ENI をアサインするという要件があるため、1つの ASG にまとめられない。 </li>
+<li>Set up a CloudFormation child stack template which launches an Auto Scaling group consisting of just one EC2 instance then provide a list of ENIs, hostnames and the specific AZs as stack parameters.</li>
+<li>Set both the MinSize and MaxSize parameters of the Auto Scaling group to 1.</li>
+<li>Add a user data script that will attach an ENI to the instance once launched.</li>
+<li>Use CloudFormation nested stacks to provision a total of 10 nodes needed for the cluster, and deploy the stack using a master template.</li>
+</ul>
+<p>問題例: CloudFormation で AutoScalingRollingUpdate による ASG アップデートのトラブルシューティング</p>
+<ul>
+<li>何が Fail にしているのかを切り分けたい</li>
+</ul>
+<p>解答: Update を Fail になりにくくする設定を選ぶ</p>
+<ul>
+<li>In your <em>AutoScalingRollingUpdate</em> policy, set the <em>WaitOnResourceSignals</em> property to false.<ul>
+<li><em>WaitOnResourceSignals</em> が true　だと <em>PauseTime</em> がタイムアウトとなる。</li>
+<li>タイムアウトで Fail にならないようにする。アプリケーション起動などは失敗しているかもしれがないが、アップデート自体は Fail にならない。</li>
+<li>Take note that if <em>WaitOnResourceSignals</em> is set to true, <em>PauseTime</em> changes to a timeout value.</li>
+<li>AWS CloudFormation waits to receive a success signal until the maximum time specified by the PauseTime value.</li>
+<li>If a signal is not received, AWS CloudFormation cancels the update.</li>
+<li>Then, AWS CloudFormation rolls back the stack with the same settings, including the same <em>PauseTime</em> value.</li>
+</ul>
+</li>
+<li>In your <em>AutoScalingRollingUpdate</em> policy, set the value of the <em>MinSuccessfulInstancesPercent</em> property to prevent AWS CloudFormation from rolling back the entire stack if only a single instance fails to launch<ul>
+<li><em>MinSuccessfulInstancesPercent</em> が指定されていないと1台 Fail しただけでロールバックとなる。</li>
+<li>Take note that setting the <em>MinSuccessfulInstancesPercent</em> property prevents AWS CloudFormation from rolling back the entire stack if only a single instance fails to launch.</li>
+</ul>
+</li>
+<li>During a rolling update, suspend the following Auto Scaling processes: <em>HealthCheck</em>, <em>ReplaceUnhealthy</em>, <em>AZRebalance</em>, <em>AlarmNotification</em>, and <em>ScheduledActions</em><ul>
+<li>Take note that if an unexpected scaling action changes the state of the Auto Scaling group during a rolling update, the update can fail. The failure can result from an inconsistent view of the group by AWS CloudFormation.</li>
+<li>It is quite important to know that if you're using your Auto Scaling group with ELB, you should not suspend the following processes: <em>Launch</em>, <em>Terminate</em>, and <em>AddToLoadBalancer</em>. These processes are required to make rolling updates.</li>
+</ul>
+</li>
+</ul>
+<p>誤答</p>
+<ul>
+<li>Switch from <em>AutoScalingRollingUpdate</em> to <em>AutoScalingReplacingUpdate</em> policy by modifying the <em>UpdatePolicy</em> of the AWS::AutoScaling::AutoscalingGroup resource in the CloudFormation template. Set the <em>WillReplace</em> property to true<ul>
+<li>incorrect because although the AutoScalingReplacingUpdate policy provides an immediate rollback of the stack without any possibility of failure, this solution is not warranted since the scenario asks for the options that will help troubleshoot the issue.</li>
+</ul>
+</li>
+<li>Suspend the following Auto Scaling processes that are related with your ELB: <em>Launch</em>, Terminate, and <em>AddToLoadBalancer</em><ul>
+<li>incorrect because these processes are required by the ELB to make rolling updates.</li>
+</ul>
+</li>
+<li>Set the <em>WaitOnResourceSignals</em> property to true in your <em>AutoScalingRollingUpdate</em> policy<ul>
+<li>The <em>WaitOnResourceSignals</em> property should be set to false instead of true, to determine what prevents the Auto Scaling group from being updated correctly during a stack update.</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Amazon-EC2-Auto-Scaling</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

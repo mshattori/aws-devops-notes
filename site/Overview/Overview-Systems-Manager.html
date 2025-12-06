@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Systems-Manager - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Systems-Manager</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="systems-manager">Systems Manager</h1>
+<h3 id="ssm">SSM エージェント</h3>
+<ul>
+<li>インスタンスに SSM エージェントをインストールして SSM コンソールから見えるマネージドインスタンスとなる。</li>
+<li>SSM エンドポイントにアウトバウンドでポーリングするのでインターネットアクセスか VPC エンドポイントが必要。</li>
+<li>オンプレインスタンス<ul>
+<li>ロールに紐づけたアクティベーション ID/Code を発行して SSM Agent に指定する。</li>
+<li>オンプレインスタンスには SSM コンソールからタグづけできる。</li>
+<li>コンソール上で「mi-」(managed-instance) プレフィックスで表示される。</li>
+</ul>
+</li>
+</ul>
+<h3 id="_1">リソースグループ</h3>
+<ul>
+<li>AWS リソースのグループ化。(タグベースと CloudFormation スタックベース、同一リージョンのみ)</li>
+<li>Run Command など一括で実行できるようになる。<ul>
+<li>リソースグループにまとめた EC2/オンプレインスタンスにパッチマネージャーを適用する、等。</li>
+</ul>
+</li>
+</ul>
+<h3 id="run-commandautomation">Run Command/Automation</h3>
+<p><strong>Run Command</strong></p>
+<ul>
+<li>指定したインスタンス群でコマンドドキュメントを実行。</li>
+<li>コンソール出力は S3 や CloudWatch Logs にアウトプットするよう指定可能。</li>
+<li>CodeBuild の CI でインスタンスにコマンド実行する際、buildspec で ssh せずに Run Command を使うべきという問題例:</li>
+</ul>
+<blockquote>
+<p>CodeBuild プロジェクトに必要な権限を持つ IAM ロールを設定し、buildspec.yaml から AWS 認証情報を削除する。scp や ssh のコマンドは、AWS Systems Manager の Run Command を使用して実行する。</p>
+</blockquote>
+<p><strong>Automation</strong> (Runbook の実行)</p>
+<ul>
+<li>インスタンスや AWS リソースに Runbook で定義した処理を実行する。</li>
+<li>Runbook の例:<ul>
+<li><strong>AWS-UpdateLinuxAmi</strong>:  ベース AMI をインスタンス起動してアップデート実行後に新しい AMI を作成するまでの一連のステップを行う。</li>
+<li><strong>AWSSupport-ExecuteEC2Rescue</strong>: ログ収集やメモリダンプなどのトラブルシューティングを行う EC2Rescure を実行する。</li>
+</ul>
+</li>
+<li>SSM Automation は Codepipeline アクションと統合していないため、Invoke アクションの Lambda などを経由して呼び出す。</li>
+</ul>
+<h3 id="ssm_1">SSM メンテナンスウィンドウ</h3>
+<ul>
+<li>スケジュールを指定して Run Command や Automation などのアクションを実行。</li>
+<li><img alt="" src="_attachment/image_670.png" /></li>
+</ul>
+<h3 id="ssm_2">SSM パッチマネージャー</h3>
+<ul>
+<li>マネージドインスタンスに対するパッチ適用の自動化</li>
+<li>Scan のみ / Scan &amp; Install の2方式</li>
+<li>パッチ準拠状況のレポート（コンプライアンス状態の可視化）</li>
+<li>オンプレ/ハイブリッド環境にも対応（SSM Agent &amp; Hybrid Activation）</li>
+<li>State Manager / Run Command と連携</li>
+</ul>
+<p><strong>Patch Baseline</strong></p>
+<ul>
+<li>パッチ適用ルール設定</li>
+<li>分類（Security / Critical など）</li>
+<li>例外パッチ指定（Allow / Reject）</li>
+<li>適用延期日数指定</li>
+<li>OS種類ごとに作成する</li>
+<li>スケジュール実行にはメンテナンスウィンドウに Run Command タスクの AWS-RunPatchBaseline を登録する。</li>
+</ul>
+<p><strong>Patch Group</strong></p>
+<ul>
+<li>Patch Group タグにより対象インスタンスを分類</li>
+<li>Patch Baseline と Patch Group を関連付け</li>
+<li>異なる Patch Group タグに同じベースラインを指定することもできる。同じベースラインを別のリソースグループにメンテナスウインドウをずらして実行する、等。</li>
+</ul>
+<h3 id="ssm_3">SSM コンプライアンスダッシュボード</h3>
+<ul>
+<li>パッチマネージャーのスキャン結果等、リソースのコンプライアンス状態を表示するダッシュボード。</li>
+</ul>
+<h3 id="ssm_4">SSM インベントリ</h3>
+<ul>
+<li>インスタンス内の OS・アプリケーションのインベントリ情報の収集・可視化。</li>
+<li><img alt="" src="_attachment/image_672.png" /></li>
+</ul>
+<p>問題例</p>
+<ul>
+<li>Windows インスタンス群が一度にリブートしないようグループに分けてパッチを当てたい。</li>
+</ul>
+<p>解答</p>
+<ul>
+<li>Set up two Patch Groups with unique tags that you will assign to all of your Amazon EC2 Windows Instances.</li>
+<li>Associate the predefined AWS-DefaultPatchBaseline baseline on both patch groups.</li>
+<li>Set up two non-overlapping maintenance windows and associate each with a different patch group.</li>
+<li>Register targets with specific maintenance windows using Patch Group tags.</li>
+<li>Assign the AWS-RunPatchBaseline document as a task within each maintenance window which has a different processing start time</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Systems-Manager</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

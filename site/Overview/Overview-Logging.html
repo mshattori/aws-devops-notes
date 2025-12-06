@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Logging - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Logging</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="_1">ロギング</h1>
+<table>
+<thead>
+<tr>
+<th>種類</th>
+<th>保管・送信先</th>
+<th>備考</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CloudWatch Logs</td>
+<td>ログストリーム,<br>S3(手動エクスポート)</td>
+<td>スケジュール実行の Lambda による Export API 実行や、サブスクリプションフィルター+Firehose で S3 への保存の自動化が可能。</td>
+</tr>
+<tr>
+<td>CloudTrail</td>
+<td>S3 (証跡),<br>CloudWatch Logs (オプショナル)</td>
+<td></td>
+</tr>
+<tr>
+<td>VPC Flow Logs</td>
+<td>S3, CloudWatch Logs</td>
+<td>VPC 内のトラフィックログ。取得は ENI で行われる</td>
+</tr>
+<tr>
+<td>DNS ログ</td>
+<td>S3, CloudWatch Logs, Kinesis Data Firehose</td>
+<td>Route 53, VPC Route53 Resolver の DNS クエリログ。<br>Route 53 は CloudWatch Logs のみ。</td>
+</tr>
+<tr>
+<td>S3 サーバアクセスログ</td>
+<td>S3</td>
+<td></td>
+</tr>
+<tr>
+<td>ELB アクセスログ</td>
+<td>S3</td>
+<td></td>
+</tr>
+<tr>
+<td>API Gateway アクセスログ</td>
+<td>CloudWatch Logs</td>
+<td></td>
+</tr>
+<tr>
+<td>Web ACL トラフィックログ</td>
+<td>Kinesis Data Firehose,<br>S3, CloudWatch Logs</td>
+<td></td>
+</tr>
+<tr>
+<td>CloudFront アクセスログ</td>
+<td>S3</td>
+<td><br></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>S3, ELB, CloudFront アクセスログは S3 のみ</li>
+</ul>
+<p>アプリケーションログ</p>
+<ul>
+<li>EC2 インスタンス/ECS: CloudWatch Agent から CloudWatch Logs へ</li>
+<li>Beanstalk</li>
+</ul>
+<h2 id="cloudtrail">CloudTrail</h2>
+<p>CloudTrail で API 操作, サインイン試行をロギング。(デフォルト有効 90日間のイベント保持)</p>
+<p>証跡</p>
+<ul>
+<li>ログを S3 バケットに保管。オプションで CloudWatch Logs に送信。<ul>
+<li>管理イベント、データイベント、Insights イベントのチェックボックスがある</li>
+</ul>
+</li>
+<li>ログは SSE-KMS とダイジェストファイルで保護される。</li>
+<li>デフォルトでマルチリージョンのログを保存する証跡となる。</li>
+<li>中央アカウントのバケットへマルチアカウントのログ統合。<ul>
+<li>クロスアカウントで証跡を 1つの S3 バケットに配信できる。</li>
+<li>Organizations の組織証跡なら個別に設定しなくても一括でできる。</li>
+</ul>
+</li>
+</ul>
+<p>連携: CloudWatch Events で CloudTrail をイベントソースとしたルールを使用。</p>
+<p>CloudTrail Insights</p>
+<ul>
+<li>リソースを変更する API 操作の異常検知。</li>
+</ul>
+<h2 id="cloudwatch-logs">CloudWatch Logs</h2>
+<p>Lambda やインスタンスのログ収集。</p>
+<p>CloudWatch エージェントでサーバのログ収集。</p>
+<p>CloudTrail, VPC フローログ, DNS ログ, Web ACL トラフィックログも収集できる。</p>
+<p>保持期間: 1日～10年、無制限で指定可能。</p>
+<p>ログ保管コストを下げるため、S3 へ手動エクスポート or サブスクリプションフィルタ+Firehose</p>
+<p>サブスクリプションフィルタ</p>
+<ul>
+<li>Kinesis Data Streams/Firehose, Lambda によるリアルタイム処理。</li>
+<li>ロググループに転送先とフィルタ文字列を設定する (全てのログの転送も可能)</li>
+<li>クロスアカウントの送信先 (Destination) も設定できる。</li>
+<li>ログアグリゲーションの例:<ul>
+<li>中央アカウントで CloudWatch Logs の Destination を作成。(put-destination) この Destination のターゲットを S3 に投入する Kinesis Firehose とする。</li>
+<li>リモートアカウントに PutSubscriptionFilter を許可するリソースベースポリシーを Destination に付与する。(put-destination-policy)</li>
+<li>各アカウントでは中央アカウントの Destination をターゲットにサブスクリプションフィルターを作成する。(put-subscription-filter)</li>
+</ul>
+</li>
+<li>問題例:<ul>
+<li>中央アカウントでは Kinesis Data Streams から Lambda で ES にデータ投入。<ul>
+<li>ちなみに Firehose を使えば ES に直接投入できるが Lambda で何か前処理している？</li>
+<li>ここで Data Streams を立てずに直接 Lambda だけにするとスループット問題が発生しうる。</li>
+</ul>
+</li>
+<li>各アカウントは VPC フローログを CloudWatch Logs で受け、さらにサブスクリプションフィルターで中央アカウントの Kinesis Data Streams  に送信。</li>
+<li><img alt="" src="_attachment/image_664.png" /></li>
+</ul>
+</li>
+</ul>
+<p>メトリクスフィルタ</p>
+<ul>
+<li>ログからメトリクスを発生させて CloudWatch アラーム連携。</li>
+</ul>
+<p>CloudWatch Logs Insights</p>
+<ul>
+<li>ダッシュボードでログのクエリと可視化。</li>
+</ul>
+<h2 id="kinesis">ログの処理: Kinesis</h2>
+<p>Kinesis でログのリアルタイム処理、および、S3, Redshift, Amazon ES 等に保管して分析。</p>
+<p>プロデューサー</p>
+<ul>
+<li>Kinesis エージェント: サーバのログファイルを Kinesis に自動送信</li>
+<li>CloudWatch Logs サブスクリプションフィルタ</li>
+<li>Kinesis Producer Library (KPL) によるカスタム実装</li>
+<li>Log4J, NiFi などのサードパーティー</li>
+</ul>
+<p>Data Stream</p>
+<ul>
+<li>EC2・Lambda でシャードのデータ処理・送信を行うコンシューマを実装。</li>
+<li>実装には KCL: Kinesis  Consumer Library (Java) などを使う。</li>
+<li>リアルタイム (200ms 程度のレイテンシー)</li>
+<li>データ保持: デフォルト 24 時間、最大 1 年</li>
+</ul>
+<p>Data Firehose</p>
+<ul>
+<li>コンシューマ不要で S3, Redshift, ES, Splunk に送信。</li>
+<li>バッファリング設定に基づきバッファリング・連結。S3 のスループットで足りない場合等。</li>
+<li>バッチで非同期に呼ばれる Lambda 関数でデータ変換も可能。</li>
+<li>ほぼリアルタイム (Min 60-sec latency)</li>
+</ul>
+<p>Data Analytics</p>
+<ul>
+<li>SQL によるリアルタイムのストリーム処理を Data Stream/Firehose に挿入。</li>
+</ul>
+<h2 id="athena-es">ログ分析: Athena, ES</h2>
+<p>Athena</p>
+<ul>
+<li>S3 に保管されたログを SQL で分析。</li>
+<li>AWS Glue が S3 バケットをクローリングしデータカタログを作成。</li>
+<li>インメモリ BI ツール QuickSight 連携でダッシュボード表示も。</li>
+<li>暗号化された S3 ログも分析可能。</li>
+</ul>
+<p>Amazon ES</p>
+<ul>
+<li>保管されたログを Kibana で全文検索・ダッシュボード表示。</li>
+</ul>
+<p>問題例:</p>
+<ul>
+<li>A DevOps Engineer is designing a service that aggregates clickstream data in real-time.</li>
+<li>The service should identify and create sessions from real-time clickstream events with a feature to do an ad hoc analysis.</li>
+</ul>
+<p>解答</p>
+<p>Kinesis Data Stream -&gt; Data Analytics -&gt; Lambda -&gt; Data Firehose -&gt; S3 -&gt; Glue Crawler -&gt; Athena</p>
+<ul>
+<li>Collect the real-time clickstream data using Amazon Kinesis Data Stream then build and analyze the sessions using Kinesis Data Analytics.</li>
+<li>The aggregated analytics will trigger the real-time events on Lambda and then send them to Kinesis Data Firehose which in turn, sends data to an S3 bucket.</li>
+<li>The clickstream data is ingested to a table by an AWS Glue crawler that will be used by Amazon Athena for running queries and ad hoc analysis.</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Logging</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

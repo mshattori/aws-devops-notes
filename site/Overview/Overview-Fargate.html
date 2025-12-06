@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Fargate - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Fargate</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="fargate">Fargate</h1>
+<ul>
+<li>ボリュームは TaskDefinition の cpu/memory で指定。</li>
+</ul>
+<p>Fargate のストレージ</p>
+<ul>
+<li>レイヤストレージ ... コンテナ毎に独立。</li>
+<li>ボリュームストレージ ... コンテナ間で共有。タスク定義でマウントを指定する。</li>
+<li>どちらも揮発性でタスク停止で消去される。</li>
+</ul>
+<p>awsvpc ネットワークモード</p>
+<ul>
+<li>タスク毎に ENI が割り当てられ、VPC に接続される。</li>
+<li>タスク毎にセキュリティグループを指定できる。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Fargate</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

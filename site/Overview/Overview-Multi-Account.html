@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Multi-Account - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Multi-Account</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="multi-account">Multi Account</h1>
+<h2 id="aws-organization">AWS Organization</h2>
+<p>Ref. <a href="References/AWS%20-%20Security%20-%20IAM,%20STS,%20Organization.html">AWS - Security - IAM, STS, Organization</a></p>
+<ul>
+<li>複数アカウントを階層的なポリシーで管理。</li>
+<li>一括請求と SCP (Service Control Policy) によるアクセス許可ガードレール。</li>
+<li>各アカウントの<strong>ルートユーザの権限を制限できる</strong>点が特に重要。</li>
+<li>マスターアカウント: Organization を作成したアカウント。管理アカウントとなる。</li>
+<li>OU にメンバーアカウントを所属させる。(Root OU に直接含めることもできる)</li>
+<li>上位 OU から SCP のポリシーが継承される。</li>
+<li>CloudTrail 組織証跡</li>
+</ul>
+<p>例: 本番アカウントに対して「開発者が直接デプロイできないようにする」とき</p>
+<ul>
+<li>本番 OU に SCP で CloudFormation/EC2 の Create/Update を Deny</li>
+<li>ただしパイプラインが使用するロールのみを Allow</li>
+</ul>
+<h2 id="control-tower">Control Tower</h2>
+<p>Ref. <a href="References/AWS%20-%20Security%20-%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS - Security - CloudFormation, Service Catalog, Control Tower</a></p>
+<p>マルチアカウント管理の問題を解決する Landing Zone を適用するサービス。</p>
+<p>アカウントの各種設定、監査ログ集約、ガードレールなどのデプロイを自動化。</p>
+<p>SCP (予防的ガードレール) と Config Rules (発見的ガードレール)。</p>
+<p>Landing Zone</p>
+<ul>
+<li>ベストプラクティスに基づいて構成したアカウントをガバナンスを効かせてスケーラブルに自動展開する仕組み。</li>
+<li>マスター、ログアーカイブ、監査アカウントを使用する。</li>
+<li><img alt="" src="_attachment/image_691.png" /></li>
+<li>アカウントの発行・管理<ul>
+<li>Organizations を使用してマルチアカウント環境を作成</li>
+</ul>
+</li>
+<li>サインオンの構成<ul>
+<li>AWS SSO を使用して ID 管理、フェデレーテッドアクセスを提供</li>
+</ul>
+</li>
+<li>監査用ログ集約<ul>
+<li>CloudTrail ログや S3 に保存される AWS Config のログを集中管理</li>
+<li>CloudWatch によるアラート</li>
+</ul>
+</li>
+<li>ガードレール<ul>
+<li>Organization, AWS Config で実装。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Multi-Account</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

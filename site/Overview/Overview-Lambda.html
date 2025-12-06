@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-Lambda - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-Lambda</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="lambda">Lambda</h1>
+<p>忘れがちなユースケース</p>
+<ul>
+<li>ALB のターゲット: API Gateway 使わなくても HTTP インターフェース付与できる</li>
+<li>CloudWatch Logs サブスクリプションフィルター</li>
+<li>DynamoDB ストリーム</li>
+</ul>
+<p>タイムアウト</p>
+<ul>
+<li>デフォルト 3 秒。最大 15 分 (900 秒)</li>
+</ul>
+<p>実行ロール</p>
+<p>同時実行数 (上限緩和申請可能)</p>
+<ul>
+<li>1000 (リージョンごと)</li>
+<li>予約同時実行数: Reserved concurrency<ul>
+<li>全体の同時実行数から特定の関数に予約する。</li>
+</ul>
+</li>
+<li>プロビジョニング済み同時実行数: Provisioned concurrency<ul>
+<li>スケールアップ時のレイテンシーを下げるためあらかじめコンテナがプロビジョンされる。</li>
+<li>AWS Auto Scaling でプロビジョニングされた同時実行数をスケーリングすることもできる。</li>
+</ul>
+</li>
+</ul>
+<p>バージョン</p>
+<ul>
+<li>関数の公開時に「バージョン」を発行する。</li>
+<li>バージョンはイミュータブル。$LATEST でコード・設定を変更して新たなバージョンを発行。</li>
+</ul>
+<p>エイリアス</p>
+<ul>
+<li>特定バージョンへのポインタ。ロールバックも可能。</li>
+</ul>
+<p>加重エイリアス</p>
+<ul>
+<li>２つのバージョンに比率指定でエイリアスを紐づけられる (Blue/Green)</li>
+<li>routing-config</li>
+</ul>
+<p>環境変数</p>
+<ul>
+<li>すべての環境変数の合計サイズ(キーと値を合わせて)は 4KB まで。</li>
+<li>DB のキー等の受け渡しは Secrets Manager 推奨。</li>
+</ul>
+<p>環境変数の暗号化</p>
+<ul>
+<li>保管時はデフォルトで AWS managed CMK で暗号化。関数が呼び出されると復号される。</li>
+<li>伝送中の暗号化のためのヘルパー:<ul>
+<li>管理コンソールで登録時にブラウザ側 KMS Encrypt で環境変数を暗号化。</li>
+</ul>
+</li>
+</ul>
+<p>呼び出しタイプ</p>
+<ul>
+<li>同期</li>
+<li>非同期 (イベント)</li>
+<li>ストリームベース (Pull モデル): DynamoDB Streams, Kinesis Data Streams, SQS<ul>
+<li>内部的な Lambda 関数が自動にできてポーリング。</li>
+<li>Lambda 実行ロールにイベントソースを読み込む権限が必要。</li>
+</ul>
+</li>
+</ul>
+<p>Lambda Layers</p>
+<ul>
+<li>ライブラリ的な ZIP ファイル。カスタムランタイムの本体も Layer に含められる。</li>
+<li>1 つの関数で使用できる Layers は 5 つまで。</li>
+<li>関数と全 Layers の合計サイズは、パッケージの解凍後サイズ制限の 250 MB まで。</li>
+<li>レイヤーも関数同様にバージョンを持つ。</li>
+</ul>
+<p>VPC lambda</p>
+<ul>
+<li>関数から VPC 内の ENI にアタッチ。SG とサブネットを指定。</li>
+<li>パブリック IP は割り当てられない (=IGW でパブリック IP への NAT が登録されない)</li>
+<li>インターネットアクセスには NAT GW 必要。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-Lambda</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

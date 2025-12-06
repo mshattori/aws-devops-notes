@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-SNS - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-SNS</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="sns">SNS</h1>
+<p>パブリッシャ</p>
+<ul>
+<li>Code シリーズの通知ルール</li>
+<li>CodePipeline 承認アクション</li>
+<li>S3 イベント:  SNS, SQS, Lambda。</li>
+<li>CloudWatch アラーム: SNS, Auto Scaling, EC2 アクション。</li>
+</ul>
+<p>サブスクライバ</p>
+<ul>
+<li>Lambda, SQS, HTTP(S)</li>
+<li>Email, SMS/モバイルプッシュ, Chatbot</li>
+</ul>
+<p>Fanout パターン</p>
+<ul>
+<li>SNS → SQS 連携による並列処理</li>
+</ul>
+<p><img alt="" src="_attachment/image_663.png" /></p>
+<ul>
+<li>複数の SQS キューを SNS トピックにサブスクライブさせることで１つのメッセージを並列処理。</li>
+<li><strong>Lambda を直接サブスクライバにせず間に SQS を入れるのは非同期化のため。Lambda 処理の先がダウンしてもキューにデータが残っているので復旧後に処理できるため。</strong></li>
+</ul>
+<p>Amazon SES: Simple Email Service</p>
+<p>メール配信</p>
+<ul>
+<li>REST API (HTTP)</li>
+<li>SMTP エンドポイント</li>
+</ul>
+<p>メールの保管・処理</p>
+<ul>
+<li>S3 バケットに保存。</li>
+<li>特定キーワードを含む場合に SNS のトピックにパブリッシュ。</li>
+<li>Lambda 呼び出し。</li>
+</ul>
+<h2 id="cognito">Cognito</h2>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>User Identity</th>
+<th>Credential</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ID プール</td>
+<td>Cognito ID</td>
+<td>STS 一時クリデンシャル</td>
+</tr>
+<tr>
+<td>ユーザプール</td>
+<td>ユーザディレクトリのユーザID</td>
+<td>API トークン (JWT)</td>
+</tr>
+</tbody>
+</table>
+<p>Ref. SAML/OIDC</p>
+<p>認証(=SSO)と認可のプロトコル。どちらもブラウザリダイレクトと公開鍵によるトークンの認証をベースにしている。</p>
+<ul>
+<li>
+<p>SAML（Security Assertion Markup Language）</p>
+<ul>
+<li>主にエンタープライズ向け</li>
+<li>IdP と SP で信頼関係を事前に構築</li>
+<li>XMLベースのフォーマットを使って認証情報をやり取り</li>
+</ul>
+</li>
+<li>
+<p>OIDC (OpenID Connect)</p>
+<ul>
+<li>OAuth 2.0ベース、JSONベースのトークンを使う</li>
+<li>RP から IdP にリダイレクトして認証依頼。</li>
+<li>RP に利用許可する属性を IdP でのサインイン時に表示される同意画面でユーザが許諾。</li>
+<li>認証後に IdP が JWT を発行、RP は IdP の公開鍵で JWT のシグネチャを検証する。</li>
+</ul>
+</li>
+</ul>
+<h3 id="cognito-id">Cognito ID プール</h3>
+<ul>
+<li>外部 IdP で認証されたアプリに一時クリデンシャルで AWS サービスの利用を許可する。</li>
+<li>ID プールは渡された外部 IdP のトークンを検証し一時クリデンシャルを発行する。(AWS が RP の役割)<ul>
+<li>STS ID フェデレーションの置き換え。</li>
+</ul>
+</li>
+<li>OIDC側のユーザをAWSの特定のIAMロールにマッピングするためのルールを設定<ul>
+<li>トークンのクレーム（subやaudなど）に基づいて、どのユーザーグループや条件がどのIAMロールを引き受けるかを定義</li>
+</ul>
+</li>
+<li>未認証 ID (ゲスト) のサポート: ルールにあてはまらないユーザに対すロールを設定</li>
+</ul>
+<h3 id="cognito_1">Cognito ユーザープール</h3>
+<p>認証とユーザデータベースの管理。JWT を発行する OIDC IdP のマネージドサービス。</p>
+<ul>
+<li>Webアプリ、モバイルアプリを認証して API キーを発行する。</li>
+<li>API Gateway, ALB, AppSync へのアクセスに認証を追加できる。</li>
+<li>ソーシャルサインインや SAML(=ADFS), OIDC の IdP など複数の認証方法が併用できる。<ul>
+<li>外部のOIDCプロバイダーでユーザが認証された後、その認証情報をユーザープール側に取り込むことができる</li>
+</ul>
+</li>
+<li>アプリ内でログイン画面を実装するか、ユーザプールのログイン画面 (Hosted UI) を表示できる。</li>
+<li>ユーザープールのトークンで ID プールから一時クリデンシャルを取得することもできる。</li>
+<li>認証に MFA も利用できる。</li>
+<li>アダプティブ認証: リスクレベルに応じて MFA を要求したりブロック・メール通知できる。</li>
+</ul>
+<h2 id="sts">STS</h2>
+<p>GetSessionToken</p>
+<ul>
+<li>MFA-protected な API 呼び出しに使う一時的クリデンシャルを取得する。</li>
+<li>すでに認証済のユーザから STS に MFA 認証を依頼し、一時クリデンシャルを取得</li>
+</ul>
+<p>GetFederationToken</p>
+<ul>
+<li>カスタム ID ブローカーに設定された IAM ユーザの一時クリデンシャルを取得する。</li>
+<li>Deprecated: Cognito ID プールを利用する。</li>
+</ul>
+<p>AssumeRoleWithSAML</p>
+<ul>
+<li>SAML 2.0 対応の IdP からの認証情報でロールを引き受け。</li>
+</ul>
+<p>AssumeRoleWithWebIdentity</p>
+<ul>
+<li>Open ID Connect (OIDC) 互換 IdP からの認証情報でロールを引き受け。</li>
+</ul>
+<h2 id="aws-sso">AWS SSO</h2>
+<p>SAML 2.0 IdP のマネージドサービス。</p>
+<p>SAML 2.0 をサポートする 各種 SaaS の SP にシングルサインオン。</p>
+<ul>
+<li>Office 365, G-suite, Slack, Box, Salesforce</li>
+</ul>
+<p>ID ディレクトリ</p>
+<ol>
+<li>AWS SSO 組み込みディレクトリ</li>
+<li>AWS Directory Service 統合</li>
+<li>オンプレ AD 統合:<ul>
+<li>AWS Managed Microsoft AD でオンプレ AD ドメインと信頼関係を構成</li>
+<li>AWS Directory Service <strong>AD Connector</strong> によるログイン転送</li>
+</ul>
+</li>
+</ol>
+<h2 id="aws-directory-service">AWS Directory Service</h2>
+<p>Simple AD</p>
+<ul>
+<li>Samba v4 の Active Directory Compatible Server のマネージドサービス。</li>
+<li>ドメインの信頼関係の設定はできない。あくまで AWS 上でユーザを管理。</li>
+</ul>
+<p>AWS Managed Microsoft AD</p>
+<ul>
+<li>Windows Server 上の AD によるフル機能 AD のマネージドサービス。</li>
+<li>オンプレ AD ドメインとの信頼関係の構成: オンプレのドメインアカウントで Windows インスタンスにログインできる</li>
+</ul>
+<p>AWS Directory Service AD Connector</p>
+<ul>
+<li>AWS 環境からオンプレのドメインコントローラに通信をリダイレクトするプロキシサービス。</li>
+</ul>
+<h2 id="ad">AD 連携</h2>
+<p>Ref. ADFS (Active Directory Federation Services)</p>
+<ul>
+<li>SAML/OIDC 対応 IdP として AD ユーザを外部サービスで使うためのフェデレーション</li>
+<li>ADユーザにロールを引き受けさせるのに使用する</li>
+</ul>
+<p>AWS 管理コンソールへの SSO</p>
+<ul>
+<li>ADFS と AWS サインインエンドポイントで SAML 認証により管理コンソールへ SSO。<ul>
+<li>エンドポイントが背後で AssumeRoleWithSAML でクリデンシャルを取得。</li>
+</ul>
+</li>
+<li>AWS 管理コンソールの IAM 設定で ID プロバイダとして ADFS を追加する。<ul>
+<li>この際 AssumeRoleWithSAML を許可するロールを関連づける。</li>
+</ul>
+</li>
+<li>ユーザが組織内の ADFS サインオンページをブラウズすることでフローが開始する。</li>
+</ul>
+<p>Cognito ユーザープールと ADFS の SAML 連携</p>
+<p>API Gateway や ALB にドメインアカウントで認証が可能。</p>
+<ol>
+<li>SAML IdP で Cognito ユーザープールを Relying Party として設定。</li>
+<li>Cognito ユーザープールに SAML IdP と属性マッピングを登録。</li>
+<li>Hosted UI から ADFS にリダイレクトして認証。</li>
+</ol>
+<p>AWS Managed Microsoft AD</p>
+<ul>
+<li>オンプレ AD ドメインとの信頼関係を構成</li>
+<li>オンプレのドメインアカウントで Windows インスタンスにログイン</li>
+</ul>
+<p>AWS Directory Service AD Connector</p>
+<ul>
+<li>VPC の Windows インスタンスに AD Connector をドメインコントローラとして登録。</li>
+<li>オンプレの AD へ中継する。</li>
+</ul>
+<p>AWS SSO で各種 SaaS やサービスにドメインアカウントでサインオン</p>
+<ul>
+<li>SSO の ID ディレクトリから AD Connector でログイン転送する</li>
+<li>SSO の ID ディレクトリとして AWS Managed Microsoft AD を使用、オンプレ AD ドメインと信頼関係を構成</li>
+</ul>
+<hr />
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-SNS</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

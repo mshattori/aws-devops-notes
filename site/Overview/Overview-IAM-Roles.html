@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-IAM-Roles - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-IAM-Roles</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="iam">IAM ロール関連</h1>
+<ul>
+<li>
+<p>CodeBuild - サービスロール:</p>
+<ul>
+<li>CodeBuildサービスが各種AWSサービス（例：CodeCommitからのソース取得、S3へのアーティファクト保存、ECRへのプッシュ）にアクセスするために必要。</li>
+<li>認証情報は環境変数を介してビルドサーバーのコンテナ環境に引き継ぎ。</li>
+</ul>
+</li>
+<li>
+<p>CodeDeploy - サービスロール:</p>
+<ul>
+<li>デプロイグループに指定し、デプロイターゲットのサービス等へのアクセスを許可。</li>
+<li>AWSCodeDeployRole, AWSCodeDeployRoleForECS, AWSCodeDeployRoleForLambda など。</li>
+</ul>
+</li>
+<li>
+<p>CodeDeploy - インスタンスロール:</p>
+<ul>
+<li>CodeDeployエージェントがS3からリビジョンをpullするための、EC2インスタンスロールへの s3:Get<em>, s3:List</em> パーミッションの付与が必要。</li>
+<li>CloudWatchエージェントでインストールログを CloudWatch Logs に送る場合もパーミッションが必要。</li>
+</ul>
+</li>
+<li>
+<p>CodeDeploy - オンプレミスインスタンス用のIAMロール:</p>
+<ul>
+<li>オンプレミスインスタンスが使用する、CodeDeployアクセス許可を持つIAMロールの作成。</li>
+<li>オンプレミスインスタンス上で sts assume-role を使用した一時的な認証情報の取得。</li>
+</ul>
+</li>
+<li>
+<p>CodePipeline - クロスアカウントロール:</p>
+<ul>
+<li>開発アカウントのパイプラインから本番アカウントへデプロイを実行できるよう、クロスアカウントロールを作成し、パイ
+    プラインのサービスロールに設定。</li>
+<li>ロールの信頼ポリシーでリモートアカウントからの AssumeRole を許可。</li>
+</ul>
+</li>
+<li>
+<p>Elastic Beanstalk - IAMロール:</p>
+<ul>
+<li>環境構築時に自動的にプロビジョニングされるリソースの一つ。</li>
+</ul>
+</li>
+<li>
+<p>ECS - タスク実行ロール (executionRoleArn):</p>
+<ul>
+<li>コンテナランタイムが使用するロールで、コンテナイメージのプル、CloudWatch Logsへのログ書き込み、Secrets
+    Manager/Systems Managerへのアクセス許可などに必要。</li>
+</ul>
+</li>
+<li>
+<p>ECS - タスクロール (taskRoleArn):</p>
+<ul>
+<li>コンテナ内のアプリケーションに割り当てるロール。</li>
+<li>"ecs-tasks.amazonaws.com" に AssumeRole を許可する信頼ポリシーを持つ必要あり。</li>
+</ul>
+</li>
+<li>
+<p>ECS - コンテナインスタンスロール:</p>
+<ul>
+<li>ECSクラスターのEC2インスタンスのインスタンスロール。</li>
+<li>ECS API系だけでなく、ECRの ecr::GetAuthorizationToken 権限も指定。</li>
+</ul>
+</li>
+<li>
+<p>Lambda - 実行ロール:</p>
+<ul>
+<li>Lambda関数がイベントソース（例: DynamoDB Streams）を読み込む権限など、AWSサービスへアクセスするために必要。</li>
+</ul>
+</li>
+<li>
+<p>CloudFormation - IAMリソース作成時のCapability:</p>
+<ul>
+<li>IAMリソース（ロールなど）を作成するテンプレートには CAPABILITY_IAM または CAPABILITY_NAMED_IAM の指定が必要。</li>
+</ul>
+</li>
+<li>
+<p>CloudFormation スタックセット - IAMロール:</p>
+<ul>
+<li>全アカウントに共通のIAMロールを配布するなどの用途で利用。</li>
+</ul>
+</li>
+<li>
+<p>Service Catalog - 起動制約 (Launch Constraint):</p>
+<ul>
+<li>エンドユーザーが製品（CloudFormationテンプレート）を起動する際に使用するロールの指定。</li>
+</ul>
+</li>
+<li>
+<p>Cognito ID プール - IAMロールのマッピング:</p>
+<ul>
+<li>外部IdPのユーザートークンのクレームに基づき、特定のIAMロールにマッピングするためのルールを設定。</li>
+<li>ルールに合致しない未認証ID（ゲスト）用のロールも設定可能。</li>
+</ul>
+</li>
+<li>
+<p>STS (Security Token Service):</p>
+<ul>
+<li>AssumeRoleWithSAML: SAML 2.0対応IdPからの認証情報でロールを引き受け。</li>
+<li>AssumeRoleWithWebIdentity: OIDC互換IdPからの認証情報でロールを引き受け。</li>
+</ul>
+</li>
+<li>
+<p>AWS SSO と AD連携:</p>
+<ul>
+<li>ADFS（Active Directory Federation Services）をIdPとして使い、ADユーザーがロールを引き受けるために使用。</li>
+<li>AWS管理コンソールへのSSOでは、AssumeRoleWithSAML を許可するロールを関連付け。</li>
+</ul>
+</li>
+<li>
+<p>IAM Access Analyzer:</p>
+<ul>
+<li>リソースベースのポリシーを分析し、外部プリンシパルと共有されているIAMロールなどを検出。</li>
+</ul>
+</li>
+<li>
+<p>Organizations - SCP (Service Control Policy):</p>
+<ul>
+<li>メンバーアカウントのルートユーザーの権限を制限可能。</li>
+<li>例として、本番OUにデプロイ操作をDenyしつつ、パイプラインが使用するロールのみを許可する、といったガードレールの
+    適用。</li>
+</ul>
+</li>
+</ul>
+<hr />
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-IAM-Roles</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-SAM-Serverless-Application-Model.supplement - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-SAM-Serverless-Application-Model.supplement</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h3 id="1">🔍 1. 問題点・誤り・補足すべき箇所</h3>
+<ul>
+<li>SAM テンプレートと CloudFormation の関係、変換プロセス（Transform）が未説明。</li>
+<li>sam build/package/deploy/pipeline など CLI ワークフローやローカルテスト(SAM CLI + Local Lambda/API)の補足が必要。</li>
+<li>デプロイ時の権限（CodeDeploy/CloudFormation ロール）、Stage 切替や自動ロールバックなど実運用ポイントが不足。</li>
+</ul>
+<h3 id="2">🛠 2. 改訂版（修正・補足反映後の完成文）</h3>
+<ul>
+<li><strong>変換</strong>: SAM テンプレートは Transform: AWS::Serverless-2016-10-31 で CloudFormation に展開される。サーバレスリソースを簡潔に定義。</li>
+<li><strong>CLI ワークフロー</strong>: <code>sam build</code> で依存を解決し、<code>sam deploy --guided</code> でスタック作成。<code>sam local start-api/invoke</code> でコンテナ実行によるローカルテスト。</li>
+<li><strong>デプロイ戦略</strong>: CodeDeploy 連携で Lambda の Canary/Linear トラフィックスイッチと自動ロールバックを指定。必要な IAM ロールを CloudFormation Execution Role/CodeDeploy Role として設定。</li>
+<li><strong>パラメータ/環境</strong>: <code>sam deploy --config-env</code> でステージ別設定、S3 アーティファクトバケットを共有。Observability 用に Application Insights/Tracing/Logs 出力を有効化。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-SAM-Serverless-Application-Model.supplement</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

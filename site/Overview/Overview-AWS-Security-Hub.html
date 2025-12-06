@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-Security-Hub - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-Security-Hub</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="aws-security-hub">AWS Security Hub</h1>
+<p>各種セキュリティサービスと統合し、組織アカウント横断で検出結果を収集・ダッシュボード表示。(XDR?)</p>
+<p><img alt="" src="_attachment/image_676.png" /></p>
+<ul>
+<li>Firewall Manager により WAF, Shield Advanced, セキュリティグループの検出も統合される。</li>
+<li>AWS Config のコンフォーマンスパックのコンプライアンスチェックも継続的に実施。<ul>
+<li>AWS ベストプラクティスや CIS, PCI-DSS 等</li>
+</ul>
+</li>
+<li>セキュリティイベントを CloudWatch Events 経由で Lambda 等と連携し、レスポンス自動化。</li>
+</ul>
+<p><img alt="" src="_attachment/image_677.png" /></p>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-Security-Hub</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-Shield - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-Shield</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="aws-shield">AWS Shield</h1>
+<p>概要</p>
+<ul>
+<li>DDoS 対策。</li>
+<li><a href="https://d1.awsstatic.com/webinars/jp/pdf/services/20170718_AWS-BlackBelt-Shield.pdf">https://d1.awsstatic.com/webinars/jp/pdf/services/20170718_AWS-BlackBelt-Shield.pdf</a></li>
+</ul>
+<p>Standard</p>
+<ul>
+<li>AWS サービスにデフォルト組み込みの L3/4 防御。</li>
+<li>エッジロケーションでのパケットフィルタリング、トラフィックシェーピングなどによる DDoS 攻撃緩和。</li>
+</ul>
+<p>Advanced</p>
+<ul>
+<li>EC2(ENI), ELB, CloudFront, Route 53 と統合された高度な検出。<ul>
+<li>WAF と異なり API Gateway は対象外。Web に限らないので ALB に限られない。</li>
+</ul>
+</li>
+<li>AWS WAF が無料。</li>
+</ul>
+<p>問題例: Which among the options below can the Engineer implement as part of the company's DDoS attack surface reduction strategy to minimize the blast radius in their cloud infrastructure? (Select TWO.)</p>
+<p>解答</p>
+<ul>
+<li>Use AWS Shield Advanced to enable enhanced DDoS attack detection and monitoring for application-layer traffic of the company's AWS resources. Ensure that every security group in the VPC only allows certain ports and traffic from authorized servers or services. Protect your origin servers by putting it behind a CloudFront distribution.</li>
+<li>Set up AWS WAF rules that identify and block common DDoS request patterns to effectively mitigate a DDoS attack on the company's cloud infrastructure. Ensure that the Network Access Control Lists (ACLs) only allow the required ports and network addresses in the VPC.</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-Shield</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

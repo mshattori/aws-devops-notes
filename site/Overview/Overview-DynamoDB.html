@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-DynamoDB - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-DynamoDB</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="dynamodb">DynamoDB</h1>
+<p>Ref.<a href="References/AWS%20DVA%20-%20S3,%20DynamoDB,%20ElastiCache,%20and%20other%20storage%20services.html">AWS DVA - S3, DynamoDB, ElastiCache, and other storage services</a></p>
+<p>DynamoDB は台帳 (テーブル) を各プライマリーキーごとにページ (パーティション) にまとめて管理するようなイメージ
+- プライマリキーで特定されるページに、ソートーキーで特定されるレコードが表に記録される感じ。</p>
+<p>パーティションキー(ハッシュ属性)</p>
+<ul>
+<li>テーブル内でユニーク。</li>
+</ul>
+<p>ソートキー(範囲属性)</p>
+<ul>
+<li>複合プライマリキー=パーティションキー + ソートキー</li>
+<li>同じパーティションキーに対してレコードを一意に識別するソートキー。</li>
+<li>ソートキーにより項目がパーティション内でソートされ、範囲検索やタイムスタンプなら時系列検索が可能。</li>
+<li>パーティションキーの値が同じ項目は同じパーティションに保存される。</li>
+</ul>
+<p><img alt="" src="_attachment/image_662.png" /></p>
+<p>セカンダリインデックス</p>
+<ul>
+<li>プライマリキー以外の属性(代替キー)でクエリしたい場合に作る検索用テーブル。</li>
+<li>作成時にはベーステーブルからインデックスにコピー (射影: Projection) する属性も指定する。</li>
+</ul>
+<p>ローカルセカンダリインデックス (LSI)</p>
+<ul>
+<li>ソートキーが複数必要な場合に利用する。追加のソートキーに対してパーティション内に作成されるインデックス。</li>
+<li>テーブル作成時のみ作成でき、あとから追加・削除できない。</li>
+</ul>
+<p>グローバルセカンダリインデックス: GSI</p>
+<ul>
+<li>異なるプライマリキーで検索したい場合に使用するインデックス。</li>
+<li>異なるプライマリキーで作った別テーブルにレプリケーションする仕組み。</li>
+<li>後から作成・削除することも可能。</li>
+<li>読み込みは結果整合性のみ</li>
+</ul>
+<p>問題例</p>
+<ul>
+<li>The table has an attribute of <em>DocumentName</em> that acts as the partition key and another attribute called <em>Category</em> as its sort key.</li>
+<li>A DevOps Engineer was instructed to develop a feature that queries the <em>DocumentName</em> attribute yet uses a different sort key other than the existing one.</li>
+<li>To fetch the latest data, strong read consistency must be used in the database tier.</li>
+</ul>
+<p>解答</p>
+<ul>
+<li>Set up a new DynamoDB table with a Local Secondary Index that uses the DocumentName attribute with a different sort key. Migrate the data from the existing table to the new table.</li>
+</ul>
+<p>誤答</p>
+<ul>
+<li>Add a Global Secondary Index that uses the DocumentName attribute and a different sort key<ul>
+<li>is incorrect. Although it is possible to query data without using a scan command, it is still not enough because GSI does not support strong read consistency which is required in the scenario.</li>
+</ul>
+</li>
+</ul>
+<p>プロビジョンド型キャパシティモード</p>
+<ul>
+<li>テーブルに 1秒あたりの RCU/WCU を設定する。</li>
+<li>RCU: 4KB単位: 結果整合性 2回/強い整合性 1回</li>
+<li>WCU: 1KB単位: 結果整合性</li>
+<li>実際の読み書きの有無に関わらず、設定したキャパシティにより課金が発生。</li>
+<li>AWS Auto Scaling でスケーリング可能。</li>
+<li>高負荷で一定量ならオンデマンドより安い</li>
+</ul>
+<p>オンデマンド型キャパシティーモード</p>
+<ul>
+<li>キャパシティを設定せず、読み書きに応じて自動スケール。発生したリクエストによる従量課金。</li>
+<li>低トラフィックならプロビジョンドより安い</li>
+</ul>
+<p>DynamoDB ストリーム</p>
+<ul>
+<li>テーブルに行われた過去 24時間の追加・更新・削除の履歴を保持したシャード。</li>
+<li>ほぼリアルタイム。WCU の２倍のスループットなのでスループットの問題はない。</li>
+<li>データはシリアライズされ、特定パーティションキーへの変更は順序通りに取得可能。</li>
+<li>Lambda 連携<ul>
+<li>ストリーム型 (イベントソースマッピング)</li>
+<li>DynamoDB ストリームの1つのシャードに 3つ以上のリーダーが同時に読み取るとスロットリングが発生する。3つ以上の Lambda を連携させる場合は1つの Lambda から SNS で分岐する。</li>
+<li>DynamoDB ストリームを Lambda 連携で OpenSearch に投入し DynamoDB テーブルのデータを全文検索するユースケースがあった。</li>
+</ul>
+</li>
+<li>KCL (Kinesis Client Library) を利用したアプリ開発<ul>
+<li>KCL に DynamoDB Streams Kinesis Adapter を噛ませることで、DynamoDB ストリームに対して KCL を使用できる。</li>
+<li>Lambda のスロットリングエラーに対し、KCL を利用したアプリケーション経由で Kinesis Data Analytics につないで分析処理を行う構成に変更するという問題があった。</li>
+</ul>
+</li>
+</ul>
+<p>バックアップ</p>
+<ul>
+<li>オンデマンドバックアップ<ul>
+<li>テーブル全体のスナップショットを作成してアーカイブ。</li>
+</ul>
+</li>
+<li>ポイントインタイムリカバリー<ul>
+<li>直前 35日間の任意の時点にダウンタイムなしに復元可能。増分バックアップ。</li>
+<li>ポイントインタイムリカバリーの「有効化」で有効にする。(デフォルト無効)</li>
+</ul>
+</li>
+</ul>
+<p>グローバルテーブル</p>
+<ul>
+<li>DynamoDB ストリームを利用したマルチリージョン・マルチマスターのレプリケーション。</li>
+<li>レプリカテーブル<ul>
+<li>リージョン毎にレプリケーションを受けるレプリカテーブルを作成する必要がある。</li>
+<li>同一アカウントのみ。</li>
+</ul>
+</li>
+<li>ディザスタリカバリ / 近いリージョンのレプリカにアクセスすることでレイテンシー削減。</li>
+</ul>
+<p>DAX: DynamoDB Accelerator</p>
+<ul>
+<li>VPC 内に配置される DynamoDB のインメモリキャッシュ。</li>
+<li>EC2, Beanstalk, ECS 等からの read アクセスのスループット向上。</li>
+<li>マイクロミリ秒のレイテンシ。通常の一桁ミリ秒のレイテンシが問題になる場合。</li>
+<li>DynamoDB API 互換。コード改修少なく移行。</li>
+</ul>
+<p>TTL 機能</p>
+<ul>
+<li>テーブル内の項目を自動削除する TTL を設定できる。</li>
+<li>TTL を指定する属性名をテーブルに設定して、項目にその属性を含める。</li>
+</ul>
+<p>問題例: アーカイブして 60日を過ぎたデータを削除するには</p>
+<ul>
+<li>テーブルで TTL を有効にする。60 日後のタイムスタンプを保持する属性を TTL 属性にする。</li>
+<li>テーブルの DynamoDB Streams を有効にし、Lambda 関数でレコードを Kinesis Data Firehose 配信ストリームに配信する。</li>
+<li>Kinesis Data Firehose 配信ストリームを作成して S3 バケットにデータをロードする。バケットにライフサイクルポリシーを設定しゼロ (0) 日後にデータを S3 Glacier Deep Archive にアーカイブする。</li>
+</ul>
+<p>Query API</p>
+<ul>
+<li>テーブル/インデックスからキーを指定してデータを取得する。</li>
+<li>KeyConditionExpression: 取得する項目のキーを指定する条件式。</li>
+<li>ProjectionExpression: 取得する属性をカンマで区切りで指定。指定しない場合は全属性が返される。</li>
+<li>FilterExpression: クエリでローカルに取得されたデータをキー属性以外でさらにフィルタする条件式。</li>
+<li>テーブル側でキーで検索し、ローカル側 (オンメモリ) で属性でフィルタする。</li>
+</ul>
+<p>Scan API</p>
+<ul>
+<li>テーブル/インデックスの全項目を取得して FilterExpression でローカルでフィルタ。非効率。</li>
+<li>インデックスのない属性の特定の値の項目を取得するにはこの方法が必要になる。</li>
+</ul>
+<p>BatchGetItem/BatchWriteItem</p>
+<ul>
+<li>複数テーブルの複数項目の読み込み・書き込み処理のバッチ実行。</li>
+<li>スループット向上。個々にコールすると RCU/WCU 使って無駄。</li>
+<li>スレッド作らなくても並列処理してくれる。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-DynamoDB</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

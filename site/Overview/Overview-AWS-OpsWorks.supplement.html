@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-AWS-OpsWorks.supplement - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-AWS-OpsWorks.supplement</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h3 id="1">🔍 1. 問題点・誤り・補足すべき箇所</h3>
+<ul>
+<li>OpsWorks Stacks と OpsWorks for Chef Automate/Puppet Enterprise の違いが明記されていない。</li>
+<li>CM/自動化ツールとしてのライフサイクルイベント（setup/configure/deploy/shutdown）や Stack/Layer/Instance 概念の補足が不足。</li>
+<li>マネージド Chef/Puppet サーバの責任分界と、既存 Chef レシピ/クックブック活用ポイントを追加した方が理解が進む。</li>
+</ul>
+<h3 id="2">🛠 2. 改訂版（修正・補足反映後の完成文）</h3>
+<ul>
+<li><strong>サービス種別</strong>: OpsWorks Stacks（レイヤー構成＋Chef 12）と、マネージド <strong>Chef Automate/Puppet Enterprise</strong> サーバの2 系統。</li>
+<li><strong>Stacks/Layer/Instances</strong>: Stack 内に Layer を定義し、各 Layer に EC2/オンプレ/Auto Scaling インスタンスを紐付け。ライフサイクルイベント（setup→configure→deploy→undeploy→shutdown）でレシピを実行。</li>
+<li><strong>Chef/Puppet 管理</strong>: マネージドコントロールプレーンでサーバ維持やバックアップは AWS 管理。クックブック/モジュールは S3/Git から取り込み、バージョン管理とテストを CI/CD と連携。</li>
+<li><strong>ユースケース</strong>: 既存 Chef/Puppet 資産をクラウドへ持ち込みたい環境や、レガシーサーバ構成管理を段階的に IaC へ移行する際に利用。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-AWS-OpsWorks.supplement</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

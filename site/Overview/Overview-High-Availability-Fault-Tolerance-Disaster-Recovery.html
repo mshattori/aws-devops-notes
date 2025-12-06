@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overview-High-Availability-Fault-Tolerance-Disaster-Recovery - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Overview-High-Availability-Fault-Tolerance-Disaster-Recovery</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="high-availability-fault-tolerance-disaster-recovery">High Availability, Fault Tolerance, Disaster Recovery</h1>
+<p>Ref.
+<a href="References/AWS%20-%20Auto%20Scaling,%20Multi%20AZ/Region/Account.html">AWS - Auto Scaling, Multi AZ/Region/Account</a>
+<a href="References/AWS%20SAA%20-%20VPC,%20ELB,%20Auto%20Scaling,%20Route%2053,%20CloudFront,%20Direct%20Connect.html">AWS SAA - VPC, ELB, Auto Scaling, Route 53, CloudFront, Direct Connect</a>
+<a href="References/AWS%20-%20Security%20-%20EC2,%20ELB,%20VPC.html">AWS - Security - EC2, ELB, VPC</a>
+<img alt="" src="_attachment/image_679.png" /></p>
+<h2 id="vpc">VPC</h2>
+<p>リージョン内の複数 AZ にまたがって展開できる仮想ネットワーク</p>
+<ul>
+<li>AZに1つ以上のサブネットを配置</li>
+<li>サブネットに EC2, RDS などのインスタンスを配置</li>
+<li>個々の VPC に IP アドレス範囲 (CIDR) を持つ</li>
+</ul>
+<p>サブネット</p>
+<ul>
+<li>サブネットに AZ を紐づけることで、AZ 内にサブネットを置く。</li>
+<li>1つの AZ に複数置ける。 </li>
+</ul>
+<p>ルートテーブル</p>
+<ul>
+<li>各種ゲートウェイ (IGW, NAT GW, VGW) へのルートを登録する。</li>
+<li>ルートテーブルはサブネットに対して設定される。サブネット毎に個別にルートテーブルを指定。</li>
+</ul>
+<p>IGW (Internet Gateway)</p>
+<ul>
+<li>プライベート/パブリックIP 1対1の Static NAT でインターネットに出て行くゲートウェイ</li>
+<li>パブリックサブネット: ルートテーブルでデフォルト GW に IGW が登録されているサブネット。</li>
+</ul>
+<p>VGW (Virtual Private Gateway)</p>
+<ul>
+<li>VPC からインターネット VPN または専用線 (Direct Connect) でオンプレ拠点と接続するGW。</li>
+</ul>
+<p>NAT Gateway</p>
+<ul>
+<li>プライベートサブネットから NAPT でインターネットに出て行くためのゲートウェイ。</li>
+<li>パブリックサブネットに置かれる。ElP を使用する。</li>
+<li>セキュリティグループを設定出来ない。背後のインスタンスの SG か NACL でコントロール。</li>
+<li>論理的にサブネットに関連づけられる仮想ゲートウェイで ENI を持たないため SG 設定できない。</li>
+</ul>
+<p>NAT インスタンス</p>
+<ul>
+<li>Amazon Linux をベースに NAT を構成した AMI (amzn-ami-vpc-nat) のインスタンス。 </li>
+<li>ログインできるため、ポート転送の設定や踏み台サーバとしての利用が可能。(NAT GW はできない)</li>
+<li>セキュリティグループを関連づけてトラフィックをコントロールできる。</li>
+<li>ユーザがソフトウェアアップデートやスケーリングを管理。</li>
+</ul>
+<p>セキュリティグループ</p>
+<ul>
+<li>ENI にアタッチされるホワイトリストベースの仮想 FW ルール。(評価順序はない)</li>
+<li>ステートフルなので送受信で個別にルールを指定する必要はない。</li>
+<li>プロトコル、ポート、インバウンド/アウトバウンド (Ingress/Egress)</li>
+<li>デフォルトはアウトバウンド全許可のルールのみ (インバウンドは空=全拒否)</li>
+<li>Peer に IP だけでなく別のセキュリティグループも指定できる。</li>
+<li>許可するためのルールなので、ブラックリスト指定はできない。</li>
+</ul>
+<p>Network ACL (NACL)</p>
+<ul>
+<li>サブネットにつく仮想 FW ルール。サブネット単位で制御するような場合に使う。</li>
+<li>ステートレスなのでインバウンド・アウトバウンドのパケットで個別設定する。<ul>
+<li>クライアントへのレスポンスには一時ポート(Ephemeral ports) の 1024-65535 とかのポートレンジでルールが必要となる。</li>
+</ul>
+</li>
+<li>デフォルトの NACL は Allow ルールのみで素通しになっている。(評価順序がある)</li>
+<li>SG と異なり、Allow/Deny の指定ができるのでブブラックリス指定が可能。</li>
+</ul>
+<p>VPC エンドポイント</p>
+<ul>
+<li>VPC からインターネットを経由せずリージョン内でエンドポイントを持つ AWS サービスにアクセスできる。</li>
+</ul>
+<p>ゲートウェイエンドポイント</p>
+<ul>
+<li>大規模分散ストレージの S3 と DynamoDB のみ</li>
+<li>サービスのゲートウェイをルートテーブルに指定する</li>
+</ul>
+<p>インターフェイスエンドポイント (PrivateLink)</p>
+<ul>
+<li>ENI としてサブネット内のプライベート IP アドレスを持つエンドポイントが現れる。<ul>
+<li>サービスのエンドポイントと ENI が PrivateLink でリンクされる。</li>
+</ul>
+</li>
+<li>VPC の DNS にサービスのデフォルトのホスト名が登録される<ul>
+<li>&lt;サービス名&gt;.&lt;リージョン&gt;.amazonaws.com の A レコード</li>
+</ul>
+</li>
+<li>ENI に関連付けたセキュリティグループでアクセス制御が可能</li>
+</ul>
+<p>エンドポイントポリシー</p>
+<ul>
+<li>VPC エンドポイントにアタッチされるポリシー。VPC から接続先 AWS サービスへのアクセス権を設定。</li>
+<li>ゲートウェイエンドポイント・インターフェイスエンドポイント両方にある。</li>
+</ul>
+<p>VPC ピア接続 (VPC ピアリング)</p>
+<ul>
+<li>2つの VPC ルーター同士を接続する。</li>
+<li>VPC ルートテーブルにお互いのプライベートアドレスへのルーティングを設定。<ul>
+<li>サブネットの CIDR ブロックがかぶらないように設計する必要がある。</li>
+</ul>
+</li>
+<li>クロスリージョン・クロスアカウントの VPC も接続可能。</li>
+<li>推移的なピア接続は不可</li>
+</ul>
+<p>問題例: VPC 内の EC2 から S3 へのアップロードが失敗する ← VPC エンドポイントポリシーが原因</p>
+<p>問題例: アウトバウンドの API 呼び出しエラーを確認するには？</p>
+<ul>
+<li>Log in to the AWS Management Console and look for <strong>REJECT</strong> records in the VPC flow logs which originated from the Auto Scaling group.</li>
+<li>Verify that the egress security group rules of the Auto Scaling Group allow the outgoing traffic to the external API.</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Overview-High-Availability-Fault-Tolerance-Disaster-Recovery</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

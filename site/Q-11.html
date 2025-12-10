@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-11 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-11</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="11">問題11 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>政府機関はオンプレミスネットワーク上に、<strong>VMware ベースの自動サーバービルドシステム</strong>を持っている。</li>
+<li>このシステムはアプリケーションのサーバーイメージを作成できる仮想化ソフトウェアを利用している。</li>
+<li>DevOps エンジニアは、オンプレミスのサーバーパイプラインで作成したサーバーイメージを <strong>Amazon EC2 上のビルドと挙動にできるだけ近づけてテストできる仕組み</strong>を用意するよう依頼されている。</li>
+<li>これにより、アプリケーションの機能性、非互換性の有無、新しく AWS で使う <strong>Amazon Linux 2</strong> OS 上での前提条件を検証したい。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>新しい <strong>Amazon Linux 2</strong> を前提に、本番で利用する EC2 環境と同等のビルド・挙動をオンプレミスで再現してテストするには、どの解決策を実装すべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>最新の <code>AmazonLinux2.iso</code> をダウンロードし、オンプレミスネットワークにインポートする。  </li>
+<li>仮想基盤を使わず、この ISO を元に新しいオンプレミスサーバーを直接起動し、アプリケーションをデプロイしてテストを行う。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li><strong>AWS Outposts</strong> を使ってハイブリッドクラウド環境を構成する。  </li>
+<li>Outposts サーバーに Linux 2 オペレーティングシステムをインストールし、オンプレミスネットワークに接続する。  </li>
+<li>Outposts 環境上の Linux 2 サーバーにアプリケーションをデプロイしてテストを行う。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>AWS 上で最新の Linux OS を使用した <strong>EC2 インスタンス</strong> を起動する。  </li>
+<li><strong>AWS VM Import/Export</strong> サービスを使って EC2 イメージをエクスポートし、Amazon S3 バケット内の VMware 用 ISO 形式として保存する。  </li>
+<li>その ISO をオンプレミスサーバーにインポートして新しい仮想マシンとして起動し、アプリケーションをデプロイしてテストを開始する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>任意の Linux ディストリビューション（<strong>CentOS / Ubuntu / Fedora</strong> など）で新しいオンプレミスサーバーを構築する。  </li>
+<li>これらは技術的に同じであるとみなし、アプリケーションをデプロイしてテストを行う。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">正解と注釈</h2>
+<ul>
+<li>
+<p><strong>正解</strong>  </p>
+<ul>
+<li><strong>選択肢3：EC2 イメージを VM Import/Export でオンプレミスに持ち込む方法。</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>実際に AWS 上の <strong>Amazon Linux 2 EC2 インスタンス</strong> からイメージを作成し、そのイメージをそのまま VMware へエクスポートするため、OS・パッケージ・設定が本番環境とほぼ完全に一致する。</li>
+<li>既存の <strong>VMware ベースの自動ビルドパイプライン</strong>に統合できるため、オンプレミスと EC2 で同じビルドプロセスと挙動を検証できる。</li>
+<li>新しい Amazon Linux 2 上での互換性問題や前提条件を、実際に本番で使用するイメージを用いて確認できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>物理サーバーに直接インストールする構成であり、VMware ベースの既存パイプラインと整合しない。  </li>
+<li>EC2 の AMI とは別物のインストールとなるため、本番 EC2 環境との完全な一致が保証されない。</li>
+</ul>
+</li>
+<li><strong>選択肢2</strong>  <ul>
+<li><strong>AWS Outposts</strong> の導入はハードウェアコストや運用負荷が大きく、「EC2 と同じ OS イメージでオンプレミス検証を行いたい」という要件に対してオーバースペック。  </li>
+<li>既存の VMware ベースの仕組みを活かせていない。</li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>CentOS / Ubuntu / Fedora は Amazon Linux 2 と「技術的に同じ」ではなく、パッケージ・ライブラリ・設定の違いにより挙動差が生じる可能性が高い。  </li>
+<li>本番環境（Amazon Linux 2）での問題を十分に検出できない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-11</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

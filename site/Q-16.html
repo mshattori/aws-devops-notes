@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-16 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-16</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="16">問題16 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある会社のフラッグシップアプリケーションは、<strong>Auto Scaling グループの EC2 インスタンス</strong> 上で稼働している。</li>
+<li>最近、本番インスタンスに対して誰かが手動で <strong>SSH ログイン</strong> したことが原因で、インシデントが発生した。</li>
+<li>同様の問題を防ぐため、DevOps エンジニアは「本番で SSH ログインされた EC2 インスタンスを <strong>自動で終了</strong> する仕組み」を実装するよう求められた。</li>
+<li>すべての EC2 インスタンスには、すでに <strong>Amazon CloudWatch Logs エージェント</strong> がインストールされている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすために、最も自動化されているソリューションはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>SSH ログインイベントが発生したときにトリガーされる CloudWatch アラームを設定する。  </li>
+<li>アラームが <strong>SQS キュー</strong> に通知を送信するように構成する。  </li>
+<li>SQS メッセージを消費して対象 EC2 インスタンスを終了する <strong>EC2 ワーカーインスタンス群</strong> を起動する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（正解）</strong>  </p>
+<ul>
+<li>CloudWatch Logs サブスクリプションフィルターを設定し、<strong>AWS Lambda 関数</strong> をサブスクライバーとして設定する。  </li>
+<li>SSH ログインイベントを検知したら、その EC2 インスタンスに <code>FOR_DELETION</code> タグを追加するように Lambda 関数を構成する。  </li>
+<li>別の Lambda 関数を作成し、<strong>Amazon EventBridge ルール</strong> を用いて毎日実行させる。  </li>
+<li>この関数が、<code>FOR_DELETION</code> タグが付いたすべての EC2 インスタンスを終了する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>CloudWatch Logs サブスクリプションを設定し、<strong>AWS Step Functions</strong> と統合して <code>FOR_DELETION</code> タグを付与するステートマシンを実行する。  </li>
+<li>さらに 2 つ目の Lambda 関数を毎日 12:00 PM に実行する EventBridge ルールを作成し、タグ付きインスタンスを終了する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>SSH ログインイベントでトリガーされる CloudWatch アラームを設定し、SNS トピックに通知を送信する。  </li>
+<li>サポートチームと運用チームに SNS トピックを購読させ、通知を受け取ったら手動で対象 EC2 インスタンスを終了するよう指示する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">正解と注釈</h2>
+<ul>
+<li>
+<p><strong>正解</strong>  </p>
+<ul>
+<li><strong>選択肢2：CloudWatch Logs サブスクリプション + Lambda + EventBridge によるタグ付け＆自動終了。</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>SSH ログインイベントは OS ログに出力されるため、<strong>CloudWatch Logs サブスクリプションフィルター</strong>で自動検知できる。</li>
+<li>検知時に Lambda 関数で対象インスタンスに <code>FOR_DELETION</code> タグを付与することで、「どのインスタンスが SSH ログインされたか」をメタデータとして明示的に残せる。</li>
+<li>別の Lambda を <strong>EventBridge でスケジュール実行</strong>することで、定期的にタグ付きインスタンスを一括終了でき、完全に自動化されたクリーンアップフローとなる。</li>
+<li>すべて <strong>サーバーレス（Lambda + EventBridge）</strong> で構成されるため、追加の EC2 ワーカーや管理オーバーヘッドが不要。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>SSH 検知後の処理を行うために、常時動作させる EC2 ワーカー群が必要になり、コストと運用負荷が高い。  </li>
+<li>インスタンス終了処理もキュー処理として実装する必要があり、設計が複雑になる。</li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>Step Functions を挟むことで構成が過剰に複雑になる。  </li>
+<li>単にタグ付けと終了を行うだけなら、Lambda 2 本で十分であり、「最も自動化され、シンプルな」解法ではない。</li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>最終的なインスタンス終了を人手に依存しており、「自動で終了する」という要件を満たさない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-16</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

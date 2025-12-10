@@ -15,11 +15,14 @@
     <main>
         
 <article>
-    <p>Ref.  <a href="References/AWS%20-%20Security%20-%20Overview.html">AWS - Security - Overview</a>
-- 時間: 75問/180分 → 1問2分20秒
-- 10分: 4問+
-- 10問: 23分+
-- 1時間: 25問</p>
+    <p>Ref.  <a href="References/AWS%20-%20Security%20-%20Overview.html">AWS - Security - Overview</a></p>
+<ul>
+<li>時間: 75問/180分 → 1問2分20秒</li>
+<li>10分: 4問+</li>
+<li>10問: 23分+</li>
+<li>1時間: 25問</li>
+</ul>
+<p>合格ライン: 750/1000点 以上</p>
 <table>
 <thead>
 <tr>
@@ -129,6 +132,10 @@
 <tr>
 <td><strong>S3</strong></td>
 <td>バケットはリージョンに存在。</td>
+</tr>
+<tr>
+<td><strong>DynamoDB</strong></td>
+<td>リージョン単位でデータ保持。VPC エンドポイント経由で利用可能。</td>
 </tr>
 <tr>
 <td><strong>Lambda</strong></td>
@@ -259,125 +266,125 @@
 <h1 id="iam">IAM ロール関連</h1>
 <ul>
 <li>
-<p>CodeBuild - サービスロール:</p>
+<p>CodeBuild - サービスロール</p>
 <ul>
 <li>CodeBuildサービスが各種AWSサービス（例：CodeCommitからのソース取得、S3へのアーティファクト保存、ECRへのプッシュ）にアクセスするために必要。</li>
 <li>認証情報は環境変数を介してビルドサーバーのコンテナ環境に引き継ぎ。</li>
 </ul>
 </li>
 <li>
-<p>CodeDeploy - サービスロール:</p>
+<p>CodeDeploy - サービスロール</p>
 <ul>
 <li>デプロイグループに指定し、デプロイターゲットのサービス等へのアクセスを許可。</li>
 <li>AWSCodeDeployRole, AWSCodeDeployRoleForECS, AWSCodeDeployRoleForLambda など。</li>
 </ul>
 </li>
 <li>
-<p>CodeDeploy - インスタンスロール:</p>
+<p>CodeDeploy - インスタンスロール</p>
 <ul>
-<li>CodeDeployエージェントがS3からリビジョンをpullするための、EC2インスタンスロールへの s3:Get<em>, s3:List</em> パーミッションの付与が必要。</li>
+<li>CodeDeployエージェントがS3からリビジョンをpullするための、EC2インスタンスロールへの <code>s3:Get*</code>, <code>s3:List*</code> パーミッションの付与が必要。</li>
 <li>CloudWatchエージェントでインストールログを CloudWatch Logs に送る場合もパーミッションが必要。</li>
 </ul>
 </li>
 <li>
-<p>CodeDeploy - オンプレミスインスタンス用のIAMロール:</p>
+<p>CodeDeploy - オンプレミスインスタンス用ロール</p>
 <ul>
 <li>オンプレミスインスタンスが使用する、CodeDeployアクセス許可を持つIAMロールの作成。</li>
-<li>オンプレミスインスタンス上で sts assume-role を使用した一時的な認証情報の取得。</li>
+<li>オンプレミスインスタンス上で sts assume-role を使用した一時認証情報の取得。</li>
 </ul>
 </li>
 <li>
-<p>CodePipeline - クロスアカウントロール:</p>
+<p>CodePipeline - クロスアカウントロール</p>
 <ul>
-<li>開発アカウントのパイプラインから本番アカウントへデプロイを実行できるよう、クロスアカウントロールを作成し、パイ
-    プラインのサービスロールに設定。</li>
+<li>開発アカウントのパイプラインから本番アカウントへデプロイを実行できるよう、クロスアカウントロールを作成し、パイプラインのサービスロールに設定。</li>
 <li>ロールの信頼ポリシーでリモートアカウントからの AssumeRole を許可。</li>
 </ul>
 </li>
 <li>
-<p>Elastic Beanstalk - IAMロール:</p>
+<p>ECS - コンテナインスタンスロール</p>
 <ul>
-<li>環境構築時に自動的にプロビジョニングされるリソースの一つ。</li>
+<li>ECSクラスターのEC2インスタンスのインスタンスロール。</li>
+<li>ECS Agentが使用するロール。</li>
+<li>ECS クラスター参加、タスク状態レポートなどの ECS API だけでなく、ECRの <code>ecr::GetAuthorizationToken</code> 権限も指定。</li>
+<li>旧来の EC2 Launch Type では CloudWatch Logs 書き込み権限もここでつけていたが、今は awslogs でタスク実行ロールに付与すると覚る。</li>
 </ul>
 </li>
 <li>
-<p>ECS - タスク実行ロール (executionRoleArn):</p>
+<p>ECS - タスク実行ロール (executionRoleArn)</p>
 <ul>
-<li>コンテナランタイムが使用するロールで、コンテナイメージのプル、CloudWatch Logsへのログ書き込み、Secrets
-    Manager/Systems Managerへのアクセス許可などに必要。</li>
+<li>コンテナランタイムが使用するロール。</li>
+<li>コンテナイメージのプル、CloudWatch Logsへのログ書き込み (awslogs)、Secrets Manager/Systems Managerへのアクセス許可などに必要。</li>
 </ul>
 </li>
 <li>
-<p>ECS - タスクロール (taskRoleArn):</p>
+<p>ECS - タスクロール (taskRoleArn)</p>
 <ul>
 <li>コンテナ内のアプリケーションに割り当てるロール。</li>
 <li>"ecs-tasks.amazonaws.com" に AssumeRole を許可する信頼ポリシーを持つ必要あり。</li>
 </ul>
 </li>
 <li>
-<p>ECS - コンテナインスタンスロール:</p>
+<p>Elastic Beanstalk - IAMロール</p>
 <ul>
-<li>ECSクラスターのEC2インスタンスのインスタンスロール。</li>
-<li>ECS API系だけでなく、ECRの ecr::GetAuthorizationToken 権限も指定。</li>
+<li>環境構築時に自動的にプロビジョニングされるリソースの一つ。</li>
 </ul>
 </li>
 <li>
-<p>Lambda - 実行ロール:</p>
+<p>Lambda - 実行ロール</p>
 <ul>
 <li>Lambda関数がイベントソース（例: DynamoDB Streams）を読み込む権限など、AWSサービスへアクセスするために必要。</li>
 </ul>
 </li>
 <li>
-<p>CloudFormation - IAMリソース作成時のCapability:</p>
+<p>CloudFormation - IAMリソース作成時のCapability</p>
 <ul>
 <li>IAMリソース（ロールなど）を作成するテンプレートには CAPABILITY_IAM または CAPABILITY_NAMED_IAM の指定が必要。</li>
 </ul>
 </li>
 <li>
-<p>CloudFormation スタックセット - IAMロール:</p>
+<p>CloudFormation スタックセット</p>
 <ul>
 <li>全アカウントに共通のIAMロールを配布するなどの用途で利用。</li>
 </ul>
 </li>
 <li>
-<p>Service Catalog - 起動制約 (Launch Constraint):</p>
+<p>Service Catalog - 起動制約 (Launch Constraint)</p>
 <ul>
 <li>エンドユーザーが製品（CloudFormationテンプレート）を起動する際に使用するロールの指定。</li>
 </ul>
 </li>
 <li>
-<p>Cognito ID プール - IAMロールのマッピング:</p>
+<p>Cognito ID プール - IAMロールのマッピング</p>
 <ul>
 <li>外部IdPのユーザートークンのクレームに基づき、特定のIAMロールにマッピングするためのルールを設定。</li>
 <li>ルールに合致しない未認証ID（ゲスト）用のロールも設定可能。</li>
 </ul>
 </li>
 <li>
-<p>STS (Security Token Service):</p>
+<p>STS (Security Token Service)</p>
 <ul>
 <li>AssumeRoleWithSAML: SAML 2.0対応IdPからの認証情報でロールを引き受け。</li>
 <li>AssumeRoleWithWebIdentity: OIDC互換IdPからの認証情報でロールを引き受け。</li>
 </ul>
 </li>
 <li>
-<p>AWS SSO と AD連携:</p>
+<p>AD連携による管理コンソールSSO</p>
 <ul>
-<li>ADFS（Active Directory Federation Services）をIdPとして使い、ADユーザーがロールを引き受けるために使用。</li>
-<li>AWS管理コンソールへのSSOでは、AssumeRoleWithSAML を許可するロールを関連付け。</li>
+<li>ADFS（Active Directory Federation Services）をIdPとして認証し、ADユーザーがロールを引き受ける。</li>
+<li>AssumeRoleWithSAML を許可するロールを関連付ける。</li>
 </ul>
 </li>
 <li>
-<p>IAM Access Analyzer:</p>
+<p>IAM Access Analyzer</p>
 <ul>
 <li>リソースベースのポリシーを分析し、外部プリンシパルと共有されているIAMロールなどを検出。</li>
 </ul>
 </li>
 <li>
-<p>Organizations - SCP (Service Control Policy):</p>
+<p>Organizations - SCP (Service Control Policy)</p>
 <ul>
 <li>メンバーアカウントのルートユーザーの権限を制限可能。</li>
-<li>例として、本番OUにデプロイ操作をDenyしつつ、パイプラインが使用するロールのみを許可する、といったガードレールの
-    適用。</li>
+<li>例: 本番OUにデプロイ操作をDenyしつつ、パイプラインが使用するロールのみ例外でデプロイ操作を許可する、といったガードレールの適用。</li>
 </ul>
 </li>
 </ul>
@@ -576,7 +583,7 @@
 <p>デプロイ設定</p>
 <ul>
 <li>EC2<ul>
-<li>AllAtOnce, HalfAtATime, OneAtATime, Custom (=min. health hosts)</li>
+<li>AllAtOnce, HalfAtATime, OneAtATime, <strong>Custom (=min. health hosts)</strong></li>
 </ul>
 </li>
 <li>Lambda:<ul>
@@ -619,7 +626,7 @@
 <li>ALB があるので AllowTraffic 前後のフックがある。</li>
 <li>停止側のインスタンスには BlockTraffic 前後のフックしかない。</li>
 <li><img alt="" src="_attachment/image_636.png" /></li>
-<li>Blue/Green を採用し 50% のカスタムデプロイ設定を行い、BeforeAllowTraffic フックでデプロイ中に作成される一時ファイルを削除する例:<ul>
+<li>Blue/Green を採用し 50% のカスタムデプロイ設定を行い、BeforeAllowTraffic フックでデプロイ中に作成される一時ファイルを削除する例。カスタムと BeforeAllowTraffic がキモ:<ul>
 <li>Launch an Application Load Balancer and use a blue/green deployment for releasing new application versions.</li>
 <li>Associate the Auto Scaling group and the Application Load Balancer target group with the deployment group.</li>
 <li>Create a custom deployment configuration for the deployment group in CodeDeploy with minimum healthy hosts defined as 50% and configure it to also terminate the original instances in the Auto Scaling group after deployment.</li>
@@ -2165,17 +2172,17 @@ Resources:
 <ul>
 <li>Open ID Connect (OIDC) 互換 IdP からの認証情報でロールを引き受け。</li>
 </ul>
-<h2 id="aws-sso">AWS SSO</h2>
-<p>SAML 2.0 IdP のマネージドサービス。</p>
-<p>SAML 2.0 をサポートする 各種 SaaS の SP にシングルサインオン。</p>
+<h2 id="aws-iam-identity-center-aws-sso">AWS IAM Identity Center （旧 AWS SSO）</h2>
 <ul>
-<li>Office 365, G-suite, Slack, Box, Salesforce</li>
+<li>複数AWSアカウントへの SSOアクセスを一元管理</li>
+<li>Permission Set を利用して権限を割り当て（IAMロールの個別管理不要）</li>
+<li>Amazon Organizations と統合し、メンバーアカウントへ中央集約的に権限配布</li>
 </ul>
 <p>ID ディレクトリ</p>
 <ol>
-<li>AWS SSO 組み込みディレクトリ</li>
+<li>Identity Center 内部ディレクトリ</li>
 <li>AWS Directory Service 統合</li>
-<li>オンプレ AD 統合:<ul>
+<li>オンプレ AD 連携<ul>
 <li>AWS Managed Microsoft AD でオンプレ AD ドメインと信頼関係を構成</li>
 <li>AWS Directory Service <strong>AD Connector</strong> によるログイン転送</li>
 </ul>
@@ -2533,7 +2540,8 @@ Resources:
 - <a href="References/AWS%20-%20Security%20-%20Governance,%20Incident%20Response.html">AWS - Security - Governance, Incident Response</a>
 - <a href="References/AWS%20-%20Security%20-%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS - Security - CloudFormation, Service Catalog, Control Tower</a></p>
 <h1 id="aws-config">AWS Config</h1>
-<p>AWS リソース構成のスナップショットと変更履歴をS3に保存</p>
+<p>AWS リソース構成のスナップショットと変更履歴をS3に保存
+- AWS Config Recording を有効にする。</p>
 <p>CloudWatch Events 連携</p>
 <ul>
 <li>リソース変更時や Config ルールの Noncompliant 発生時に SSM Automation 以外を行いたい場合。</li>
@@ -2957,6 +2965,13 @@ Resources:
 <li>ログインできるため、ポート転送の設定や踏み台サーバとしての利用が可能。(NAT GW はできない)</li>
 <li>セキュリティグループを関連づけてトラフィックをコントロールできる。</li>
 <li>ユーザがソフトウェアアップデートやスケーリングを管理。</li>
+</ul>
+<p>Egress-Only Internet Gateway</p>
+<ul>
+<li>IPv6 のアウトバウンド専用通信には NAT GW でなく Egress-Only IGW を使用。</li>
+<li>IPv6 は IPv4 のように NAT でプライベート IP を隠蔽するという概念が基本的にない。代わりに、「VPC → インターネット通信は許可し、インターネット → VPC 通信は遮断する」 ステートフルなフィルタリングを提供する Egress-Only IGW を使う。</li>
+<li>IPv6 専用で IPv4 には非対応。</li>
+<li>IPv6 のデフォルトルート表記は ::/0。</li>
 </ul>
 <p>セキュリティグループ</p>
 <ul>
@@ -3919,7 +3934,8 @@ Resources:
 <h1 id="hybrid">Hybrid</h1>
 <h2 id="aws-vm-importexport">AWS VM Import/Export</h2>
 <ul>
-<li>VM イメージ (VHD, OVA) と EC2 インスタンス間のインポート・エクスポート。</li>
+<li>VM イメージ (VHD, OVA) と EC2 インスタンス間で双方向にインポート・エクスポート。</li>
+<li>Amazon Linux 2 をオンプレでテストするための VM イメージを取得するのに利用する模擬試験問題があったが、現在は ISO が配布されているのでユースケースとしては怪しい。</li>
 </ul>
 <h2 id="aws-application-discovery-service-ads">AWS Application Discovery Service (ADS)</h2>
 <ul>

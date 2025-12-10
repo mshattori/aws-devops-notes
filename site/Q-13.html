@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-13 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-13</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="13">問題13 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ソフトウェア開発会社は、オンプレミスデータセンターと AWS を <strong>AWS Site-to-Site VPN</strong> で接続したハイブリッドクラウド環境を持っている。</li>
+<li>開発部門は、<strong>OWASP 標準</strong>に準拠した独自のソースコード解析ツールを利用している。</li>
+<li>このツールはデータセンター内の専用サーバー上で稼働し、進行中プロジェクトのコード品質と脆弱性をチェックする。</li>
+<li>会社はこのツールをパイプラインの一部として利用し、コードをコンパイルして <strong>CodeDeploy</strong> 用のデプロイ可能パッケージにする前にチェックを実行したい。</li>
+<li>コードチェックには約 <strong>1 時間</strong>かかる。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>DevOps エンジニアとして、上記要件を満たす <strong>最も適切なソリューション</strong>を選択せよ。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li><strong>AWS CodePipeline</strong> でパイプラインを作成する。  </li>
+<li>GitHub からコードリポジトリをクローンし、オンプレミスのソースコード解析ツールを実行するシェルスクリプトを作成する。  </li>
+<li>ソースステージの後でこのシェルスクリプトを実行するアクションをパイプラインに追加し、結果を CodePipeline に返すように構成する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（正解）</strong>  </p>
+<ul>
+<li><strong>AWS CodePipeline</strong> でパイプラインを作成する。  </li>
+<li>カスタムアクションタイプを設定し、オンプレミスで動作する <strong>ジョブワーカー</strong> を作成する。  </li>
+<li>ソースステージの後にこのカスタムアクションを呼び出すようにパイプラインを設定する。  </li>
+<li>ジョブワーカーが CodePipeline をポーリングし、カスタムアクションのジョブが来たらオンプレミスのソースコード解析ツールを実行し、そのステータス結果を CodePipeline に返す。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>CodePipeline でパイプラインを作成し、オンプレミスのソースコード解析ツールの Web サービスをインターネット越しに公開する。  </li>
+<li>API コールを使ってツールを実行するアクションを設定し、ソースステージの後でスクリプトを実行する。  </li>
+<li>処理完了後、結果をパブリックな S3 バケットに保存し、そのバケットの内容を CodePipeline にポーリングさせる。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>CodePipeline でパイプラインを作成し、カスタム <strong>Lambda 関数</strong> を呼び出すアクションをソースステージの後に設定する。  </li>
+<li>Lambda 関数でソースコード解析ツールを実行し、結果を CodePipeline に返す。  </li>
+<li>関数は処理完了まで待機し、出力を指定した S3 バケットに保存するよう構成する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">正解と注釈</h2>
+<ul>
+<li>
+<p><strong>正解</strong>  </p>
+<ul>
+<li><strong>選択肢2：CodePipeline のカスタムアクション + オンプレミスジョブワーカー方式。</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>CodePipeline の <strong>カスタムアクションタイプ + ジョブワーカー</strong> パターンは、オンプレミスツールと安全に連携するために設計された公式な統合方法である。</li>
+<li>ジョブワーカーは VPN 経由で CodePipeline をポーリングし、ジョブを取得してオンプレミスサーバー上のツールを実行できるため、ツールをインターネットに公開する必要がない。</li>
+<li>コード解析に約 1 時間かかっても、カスタムアクションは長時間実行ジョブに対応できるため、タイムアウトや Lambda の制限に悩まされない。</li>
+<li>実行結果はステータスとして CodePipeline に返され、後続のビルド／デプロイステージにシンプルに連携できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>単純なシェルスクリプト実行では、オンプレミス環境とのセキュアな接続・認証・結果の確実な受け渡しを標準的な方法で扱えない。  </li>
+<li>CodePipeline の長時間実行アクションとの親和性も低い。</li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>オンプレミスのツールをインターネットに公開する必要があり、セキュリティリスクが高い。  </li>
+<li>S3 バケットをポーリングする構成は冗長であり、CodePipeline が提供するネイティブな統合を活かしていない。</li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>Lambda 関数は最大実行時間などの制約があり、<strong>約 1 時間</strong>かかる処理には向かない。  </li>
+<li>オンプレミスの長時間処理を Lambda から直接呼び出す構成は複雑で、タイムアウトやリトライ制御も難しい。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-13</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-48 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-48</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="48">問題48 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>大手通信会社が、<strong>CloudFormation テンプレート</strong>を使って本番・ステージング・開発環境へエンタープライズアプリケーションをデプロイしている。</li>
+<li>現在は環境ごとに CloudFormation テンプレートの <strong>パラメータや固定値を手動で書き換え</strong> ており、環境ごとに微妙に異なるテンプレートが存在してしまっている。</li>
+<li>DevOps エンジニアは、<strong>AWS CodePipeline</strong> を用いて自動デプロイを構成し、CloudFormation テンプレートを <strong>複数パイプラインで再利用可能</strong> にしたいと考えている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>CloudFormation テンプレートを再利用しつつ、複数環境に対する自動デプロイを実現するには、どの解決策を取るべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li>各環境向けに複数ステージを持つ <strong>AWS CodePipeline のパイプライン</strong> を構築し、<strong>入力パラメータ</strong> を使用するように構成する。  </li>
+<li>CloudFormation では <strong>Mappings</strong> を利用して、アプリケーションスタックがどの環境（prod / stg / dev など）で起動されているかに応じて適切な設定を選択する。  </li>
+<li>CodePipeline の CloudFormation アクションでは、環境ごとに異なる <strong>パラメータオーバーライド</strong> を指定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>CloudFormation テンプレート内に <strong>Lambda バックエンドのカスタムリソース</strong> を追加し、CodePipeline のパイプラインステータスを監視して起動された環境を検出する。  </li>
+<li><code>cfn-init</code> ヘルパースクリプトを使って、検出した環境に応じて EC2 インスタンスの起動テンプレートを動的に変更する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>各環境に合わせて CloudFormation テンプレートを手動で修正し、<strong>入力パラメータ</strong> セクションをそのたびに更新する。  </li>
+<li>スタックが更新されるたびに、<code>LaunchConfiguration</code> と <code>UserData</code> セクションが動的に変更されるような仕組みをテンプレート内に追加する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>各環境ごとに別々の <strong>CodePipeline パイプライン</strong> を作成する。  </li>
+<li>パイプライン内の CloudFormation ステージを、Lambda 関数経由で起動し、環境に応じて EC2 インスタンスの <code>UserData</code> を動的に変更する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">正解の選択肢と注釈（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CodePipeline</strong> multi-stage, multi-environment</li>
+<li><strong>CloudFormation Parameters / Mappings</strong></li>
+<li><strong>Parameter Overrides</strong> in CloudFormation action</li>
+</ul>
+</li>
+<li>
+<p><strong>要件との対応</strong></p>
+<ul>
+<li><strong>テンプレート再利用性</strong>  <ul>
+<li>すべての環境で同一の CloudFormation テンプレートを利用し、環境差分は <strong>Parameters と Mappings</strong> で表現するため、テンプレートの重複やドリフトを防げる。</li>
+</ul>
+</li>
+<li><strong>自動デプロイ</strong>  <ul>
+<li>CodePipeline 上で、ソース → ビルド → テスト → 各環境へのデプロイという複数ステージを構成できる。  </li>
+<li>各環境ステージで CloudFormation アクションに対し <strong>パラメータオーバーライド</strong> を与えることで、同一テンプレートを環境別に適用可能。</li>
+</ul>
+</li>
+<li><strong>運用のシンプルさ</strong>  <ul>
+<li>Lambda を組み合わせた複雑なカスタムリソースや手動テンプレート変更を避け、CloudFormation が標準で提供するパラメータ機能だけで要件を満たしている。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2</strong>  <ul>
+<li>CloudFormation のカスタムリソースと CodePipeline ステータスを連携させる構成は複雑で、デプロイフローのトラブルシュートも難しくなる。  </li>
+<li>単純な環境差分のために Lambda ベースのカスタムロジックを追加するのはオーバーエンジニアリング。</li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>テンプレートを環境ごとに手動編集するため、<strong>再利用性が低く、ヒューマンエラーのリスクが高い</strong>。  </li>
+<li>IaC のメリットを損なうやり方。</li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>環境ごとに完全に別のパイプラインを管理することになり、パイプラインの数が増えると運用コストが大きくなる。  </li>
+<li>Lambda で <code>UserData</code> を動的変更する構成も不要に複雑。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-48</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

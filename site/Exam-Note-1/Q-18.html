@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-18 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-18</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="18">問題18 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある会社では、AWS アカウント内に多数の <strong>Amazon EC2 インスタンス</strong> を保有し、そこに企業向け Web アプリケーションをホストしている。</li>
+<li>会社はクラウドベースのメッセージングプラットフォームとして <strong>Slack</strong> を使用しており、更新情報やシステムアラートの通知に利用している。</li>
+<li>新しい要件として、<strong>すべての AWS スケジュール済みメンテナンス通知</strong>（AWS が主導する EC2 などへの変更）を、会社の Slack チャンネルに自動で送信する仕組みを構築する必要がある。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすために、<strong>最も簡単（EASIEST）な方法</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li><strong>AWS Personal Health Dashboard</strong> と <strong>Amazon CloudWatch Events（EventBridge）</strong> を組み合わせて、AWS がリソースに対して行うアクティビティをトラッキングする。  </li>
+<li>CloudWatch Events ルールを作成し、そのイベントから <strong>AWS Lambda 関数</strong> を起動して、会社の Slack チャンネルへ通知を送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li><strong>Amazon EC2 Events</strong> と CloudWatch を組み合わせて、AWS がリソースに対して行うアクティビティを監視する。  </li>
+<li>CloudWatch アラームを作成し、そのアラームから Lambda 関数を起動して Slack チャンネルへ通知する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li><strong>AWS Config</strong> と <strong>AWS Trusted Advisor</strong> を組み合わせて、AWS が開始した変更をトラッキングする。  </li>
+<li>AWS Config ルールを作成し、違反イベントをトリガーとして Lambda 関数を起動し、Slack チャンネルへ通知する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li><strong>AWS Support API</strong> と <strong>AWS CloudTrail</strong> を組み合わせて、リソースに対する AWS のアクティビティをモニタリングする。  </li>
+<li>CloudTrail 用の新しいトレイルを作成し、CloudWatch アラームから Lambda 関数を起動して Slack チャンネルへ通知する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">正解と注釈</h2>
+<ul>
+<li>
+<p><strong>正解</strong>  </p>
+<ul>
+<li><strong>選択肢1：Personal Health Dashboard + CloudWatch Events（EventBridge）+ Lambda + Slack。</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><strong>AWS Personal Health Dashboard</strong> は、AWS 側が実施するメンテナンスや障害など、アカウント固有の <strong>AWS イニシエートイベント</strong> を提供するサービスであり、「AWS がスケジュールしたメンテナンス通知」を取得するのに最適。</li>
+<li>Personal Health Dashboard のイベントは <strong>CloudWatch Events / EventBridge</strong> に発行できるため、イベントルールでフィルタリングし、対象となる AWS メンテナンスイベントのみを捕捉できる。</li>
+<li>EventBridge から <strong>Lambda 関数</strong> を起動し、Slack Webhook などを使ってチャンネルへメッセージを送信する構成はシンプルかつ標準的であり、「最も簡単（EASIEST）」という条件に合致する。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2</strong>  <ul>
+<li>EC2 Events と CloudWatch アラームは主に <strong>リソースメトリクスや状態変化</strong> を監視する用途であり、「AWS 主導のスケジュールメンテナンス通知」には特化していない。</li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>AWS Config はリソース設定の変更検出が主目的であり、Trusted Advisor はベストプラクティス違反やコスト最適化提案を行うサービスで、メンテナンス通知の取得には適していない。</li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>Support API や CloudTrail は、サポートケースや API コールの監査ログ取得が主な用途であり、「AWS 側が予定しているメンテナンス通知」を直接的に取得するのには回りくどい。  </li>
+<li>Personal Health Dashboard + EventBridge を使う場合と比べると、構成も複雑になる。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-18</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

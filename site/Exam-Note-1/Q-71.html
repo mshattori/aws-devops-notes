@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-71 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-71</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="71">問題71 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>DevOps エンジニアは、オンプレミスアプリケーションを <strong>AWS Application Migration Service (AWS MGN)</strong> を使って Amazon EC2 へ移行している。</li>
+<li>アプリケーションには Windows と Linux が混在しており、両者で共有ストレージが必要となる。</li>
+<li>共有ストレージには次の要件がある。<ul>
+<li>Windows では <strong>SMB (Server Message Block)</strong> プロトコル、Linux では <strong>NFS (Network File System)</strong> プロトコルをサポートすること。</li>
+<li>プライマリリージョンから DR（ディザスタリカバリ）リージョンへの <strong>クロスリージョンレプリケーション</strong> をサポートすること。</li>
+<li>パイロットライト戦略を用いた <strong>低レイテンシかつ効率的な DR</strong> を実現すること。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすストレージソリューションはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>プライマリリージョンの共有ストレージとして <strong>Amazon EFS</strong> を使用し、NFS をサポートする。  </li>
+<li>SMB をサポートするために <strong>Amazon FSx for Windows File Server</strong> を併用し、<br />
+  プライマリと DR 間のデータ同期は <strong>AWS DataSync</strong> を使って手動で行う。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>共有ストレージとして Amazon S3 を使用し、クロスリージョンレプリケーションを有効化する。  </li>
+<li>EC2 インスタンスから SMB / NFS プロトコルで S3 をマウントして利用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>プライマリリージョンで <strong>Amazon FSx for Lustre</strong> を使用し、DR リージョンの FSx for Lustre へ <strong>AWS Backup</strong> を利用してデータをレプリケートする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li>プライマリリージョンに <strong>Amazon FSx for NetApp ONTAP</strong> をデプロイし、DR リージョンにも FSx for ONTAP インスタンスを構成する。  </li>
+<li><strong>NetApp SnapMirror</strong> を使用して、プライマリと DR の FSx ONTAP 間でクロスリージョンレプリケーションを行う。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4">正解の選択肢と注釈（選択肢4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>Amazon FSx for NetApp ONTAP</strong></li>
+<li><strong>SMB / NFS 両対応</strong></li>
+<li><strong>SnapMirror によるクロスリージョンレプリケーション</strong></li>
+<li><strong>Pilot light DR</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>要件との対応</strong></p>
+<ul>
+<li><strong>SMB と NFS の両プロトコルサポート</strong>  <ul>
+<li>FSx for ONTAP は単一のサービスで SMB・NFS の両方をネイティブサポートするため、Windows / Linux の混在環境に最適。</li>
+</ul>
+</li>
+<li><strong>クロスリージョンレプリケーション</strong>  <ul>
+<li>SnapMirror を使うことで、プライマリから DR リージョンへの <strong>効率的で増分的なレプリケーション</strong> が可能。  </li>
+<li>DR 側はパイロットライトとして最低限の構成で維持し、フェイルオーバー時に必要に応じてスケールできる。</li>
+</ul>
+</li>
+<li><strong>低レイテンシと DR 効率</strong>  <ul>
+<li>本番アクセスはプライマリ FSx ONTAP で処理し、DR は待機系として軽量に保つことで、パフォーマンスとコストのバランスを取れる。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（EFS + FSx Windows + DataSync）</strong>  <ul>
+<li>SMB と NFS を別々のサービスで提供するため、構成・運用が複雑になる。  </li>
+<li>DataSync によるレプリケーションは <strong>手動ジョブや追加設定</strong> が必要で、パイロットライト DR に求められる自動的・継続的な同期としては最適ではない。</li>
+</ul>
+</li>
+<li><strong>選択肢2（S3）</strong>  <ul>
+<li>S3 はオブジェクトストレージであり、直接 SMB / NFS でマウントすることはできない（追加ソフトウェアが必要）。  </li>
+<li>要件の「SMB / NFS プロトコルをネイティブにサポート」とは合致しない。</li>
+</ul>
+</li>
+<li><strong>選択肢3（FSx for Lustre）</strong>  <ul>
+<li>Lustre は主に HPC 向けファイルシステムであり、SMB をサポートしない。  </li>
+<li>DR 用に AWS Backup を使う構成も、パイロットライト戦略に対する公式なベストプラクティスとは言いがたい。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">自分が選んだ不正解の回答について（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>問題点</strong></p>
+<ul>
+<li>EFS（NFS）と FSx for Windows File Server（SMB）を組み合わせる構成は、<strong>管理対象が 2 つに増え、ポリシーやバックアップの一貫性確保が難しい</strong>。  </li>
+<li>DataSync を使ったレプリケーションはバッチ・ジョブ的であり、SnapMirror のような継続的・ネイティブなレプリケーションと比べて運用負荷が高い。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>「SMB / NFS 両対応 + エンタープライズ DR（SnapMirror）」というキーワードが揃ったら、<strong>FSx for NetApp ONTAP</strong> を最優先で思い出す。  </li>
+<li>AWS 上のファイルストレージサービス（EFS / FSx Windows / FSx Lustre / FSx ONTAP）の特徴と代表的ユースケースを整理しておく。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-71</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

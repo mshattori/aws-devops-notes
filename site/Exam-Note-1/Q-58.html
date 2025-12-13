@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-58 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-58</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="58">問題58 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある組織の内部アプリケーションは、<strong>AWS Storage Gateway（File Gateway モード）</strong> を通じて重要なアセットにアクセスしている。</li>
+<li>Storage Gateway の背後には、複数のシステムで共有されている <strong>Amazon S3 バケット</strong> がある。</li>
+<li>朝になると、前夜にサードパーティによって処理された一部のアセットが見つからないというエラーが発生する。<br />
+  調査の結果、<strong>S3 バケットにはオブジェクトが存在するが、Storage Gateway からは見えていない</strong> ことが分かった。</li>
+<li>DevOps エンジニアは、毎朝アセットが確実に利用可能であるように、欠落を防ぐソリューションを実装する必要がある。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>Storage Gateway からアセットが欠落しないようにし、翌朝には確実に利用可能となるようにするには、どの解決策を選ぶべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>S3 Same-Region Replication を有効化し、S3 バケットに加えられた変更を Storage Gateway にコピーする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>Storage Gateway の構成を <strong>Volume Gateway モード</strong> に変更し、<code>RefreshCache</code> API を呼び出す。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>サードパーティに対し、<strong>AWS Transfer for SFTP</strong> を利用して処理済みアセットを S3 バケットへアップロードするよう依頼する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li>Storage Gateway に対して <code>RefreshCache</code> コマンドを実行する <strong>AWS Lambda 関数</strong> を作成する。  </li>
+<li><strong>Amazon EventBridge</strong> のスケジュールイベントを設定し、毎晩この Lambda を起動してキャッシュを更新する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4">正解の選択肢と注釈（選択肢4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>File Gateway キャッシュ</strong></li>
+<li><strong><code>RefreshCache</code> API</strong></li>
+<li><strong>EventBridge スケジュール（ナイトリー）</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>要件との対応</strong></p>
+<ul>
+<li>File Gateway は S3 バケットの内容をローカルキャッシュに保持しており、<strong>バックエンドの S3 が更新されてもキャッシュが即時には更新されない</strong>。  </li>
+<li><code>RefreshCache</code> を定期的に呼び出すことで、前夜に追加・更新されたオブジェクトが File Gateway 上に確実に反映される。  </li>
+<li>Lambda + EventBridge の組み合わせはフルマネージドであり、追加インフラなしに <strong>毎晩の自動キャッシュ更新</strong> を実現できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>Same-Region Replication は <strong>S3 バケット間</strong> の複製であり、Storage Gateway のキャッシュ更新とは関係がない。  </li>
+<li>そもそもオブジェクトは既に S3 に存在しているので、レプリケーションを増やしても問題解決につながらない。</li>
+</ul>
+</li>
+<li><strong>選択肢2</strong>  <ul>
+<li>File Gateway から Volume Gateway にモード変更する必要はなく、要件は <strong>キャッシュの更新</strong> のみ。  </li>
+<li>Volume Gateway への切り替えはアーキテクチャの大きな変更であり、不要な複雑さとリスクを生む。</li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>サードパーティのアップロード手段を変えても、Storage Gateway のキャッシュが自動更新されない限り、同じ問題が発生する可能性がある。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="2">自分が選んだ不正解の回答について（選択肢2）</h2>
+<ul>
+<li>
+<p><strong>問題点</strong></p>
+<ul>
+<li>問題の本質は「File Gateway のキャッシュ更新タイミング」であり、<strong>ゲートウェイモードの変更は不要</strong>。  </li>
+<li>Volume Gateway はブロックストレージ（iSCSI）向けであり、このユースケースでは要件を満たすために大きな構成変更を伴うだけでメリットがない。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>Storage Gateway の各モード（File / Volume / Tape）の用途を整理しておく。  </li>
+<li>File Gateway で S3 をバックエンドに使う場合、<strong><code>RefreshCache</code> によるキャッシュ同期</strong> が重要な運用ポイントである。  </li>
+<li>問題文に「すでに S3 には存在しているが、ゲートウェイから見えない」という表現があれば、「キャッシュ更新」を連想する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-58</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

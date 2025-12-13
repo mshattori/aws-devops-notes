@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-42 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-42</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="42">問題42 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>あるビジネスは <strong>Go 言語ベースのオンプレミスアプリケーション</strong> を AWS へマイグレーションしようとしている。</li>
+<li>企業は移行を機に、AWS が提供する新しい機能を積極的に活用したいと考えている。</li>
+<li>開発チームは、現在の本番環境（Blue）と新環境（Green）の <strong>2 つの同一環境を並行稼働</strong> させ、A/B テストで新機能や変更を検証できるようにしたい。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすために、DevOps エンジニアが実装すべき <strong>最も適切なソリューション</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>アプリケーションを <strong>Amazon Lightsail</strong> 上にホストし、アプリケーションを ZIP 形式で <strong>Amazon S3 バケット</strong> にアップロードする。  </li>
+<li>バケットを使ってアプリケーションの新バージョンを実装し、Lightsail のデプロイメントオプションで管理する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>アプリケーションを <strong>Amazon EC2 インスタンス</strong> 上にホストし、その AMI を作成する。  </li>
+<li>その AMI をもとに Launch Template と Auto Scaling グループを構成し、Application Load Balancer をプロビジョニングしてトラフィックを分散する。  </li>
+<li>アプリケーションの変更時には新しい AMI を作成し、EC2 インスタンスリフレッシュをトリガーする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>アプリケーションを <strong>AWS Elastic Beanstalk</strong> 上にホストする。  </li>
+<li>アプリケーションを ZIP 形式で <strong>Amazon S3 バケット</strong> にアップロードし、そのバケットを利用して新バージョンをデプロイする。  </li>
+<li>Elastic Beanstalk の <strong>デプロイメントオプション（Blue/Green / Rolling / Immutable など）</strong> を利用してデプロイを管理する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>アプリケーションコードを <strong>AWS CodeArtifact</strong> でホストし、<strong>AWS CodeDeploy</strong> を使って EC2 フリートにデプロイする。  </li>
+<li>トラフィック分散には Application Load Balancer を用い、アプリケーション変更時は CodeArtifact に新バージョンをアップロードして新しい CodeDeploy デプロイメントを作成する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>AWS Elastic Beanstalk</strong></li>
+<li><strong>Blue/Green Deployment</strong></li>
+<li><strong>S3 によるアプリケーションバージョン管理</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>Elastic Beanstalk は <strong>Blue/Green デプロイ</strong> やローリングデプロイオプションを標準で提供しており、<strong>2 つの同一環境（本番とテスト）を並行稼働</strong> させる構成が簡単に実現できる。  </li>
+<li>アプリケーションパッケージを S3 に保存しておくことで、バージョンロールバックや A/B テスト時の環境切り替えが容易になる。  </li>
+<li>基盤となる EC2 / Auto Scaling / Load Balancer の管理を Beanstalk が抽象化してくれるため、DevOps チームはアプリケーションに集中できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（Lightsail）</strong>  <ul>
+<li>Lightsail は簡易ホスティングに適したサービスであり、<strong>本格的な Blue/Green デプロイや A/B テスト機能</strong> は提供していない。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（EC2 + Auto Scaling 手動構成）</strong>  <ul>
+<li>Blue/Green やロールバックの仕組みをすべて自前で実装する必要があり、<strong>運用負荷が高い</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（CodeArtifact + CodeDeploy）</strong>  <ul>
+<li>コンポーネントが多く、マイグレーション初期段階としてはやや複雑。Blue/Green 自体は実装可能だが、Elastic Beanstalk を使う場合に比べて <strong>セットアップと運用のオーバーヘッド</strong> が大きい。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-42</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

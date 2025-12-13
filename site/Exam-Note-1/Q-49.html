@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-49 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-49</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="49">問題49 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>国際的な投資銀行が <strong>AWS Organizations</strong> を使って、複数の AWS アカウントを各リージョンで管理している。</li>
+<li>厳格な金融規制へ準拠するため、同社は <strong>すべてのアカウントの Amazon EBS ボリュームが暗号化されていること</strong> を保証しなければならない。</li>
+<li>DevOps エンジニアは、以下を実現する <strong>自動化されたソリューション</strong> を求められている。<ul>
+<li>会社全体の <strong>暗号化されていない EBS ボリュームの詳細レポート</strong> を取得すること。</li>
+<li>暗号化されていない EBS ボリュームを利用する <strong>新しい EC2 インスタンスが作成された場合に通知</strong> を受け取ること。</li>
+</ul>
+</li>
+<li>要件には、<strong>運用オーバーヘッドを最小化（LEAST operational overhead）</strong> することが含まれる。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を最小限の運用負荷で満たすには、どのソリューションを実装すべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>すべての CloudTrail イベントを <strong>集中管理用アカウントの S3 バケット</strong> に配信する。  </li>
+<li>S3 イベント通知をトリガーとして Lambda 関数を実行し、CloudTrail ログをパースして暗号化されていない EBS ボリュームを検出する。  </li>
+<li>同じ Lambda 関数を使って SNS に結果を送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（正解）</strong>  </p>
+<ul>
+<li>すべてのターゲットアカウントに対し、<strong>AWS Config ルール</strong> とそれに対応する <strong>AWS Lambda 関数</strong> を設定する。  </li>
+<li>AWS Config の <strong>アグリゲータ機能</strong> を使って、複数アカウント・複数リージョンの結果を集約する。  </li>
+<li>集約レポートを Amazon S3 バケットにエクスポートし、SNS を使って通知を配信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>暗号化された EBS ボリュームをチェックする <strong>Config マネージドルール</strong> を含む CloudFormation テンプレートを作成する。  </li>
+<li>そのテンプレートを CloudFormation <strong>StackSets</strong> を利用して全アカウント・全リージョンにデプロイする。  </li>
+<li>Config ルールの評価結果を S3 バケットに集約し、非準拠の EBS ボリュームが検出されたときに SNS で運用チームへ通知する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li><strong>AWS Systems Manager Configuration Compliance</strong> を使って、全アカウント・全リージョンの EBS ボリュームを監視する。  </li>
+<li>準拠レポートを S3 バケットへエクスポートし、そのレポートを SNS 経由で通知する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="2">正解の選択肢と注釈（選択肢2）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>AWS Config managed rule</strong> for EBS encryption</li>
+<li><strong>Config aggregator</strong> for multi-account / multi-region</li>
+<li><strong>SNS notification + S3 report</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>要件との対応</strong></p>
+<ul>
+<li><strong>全アカウント・全リージョンの一元管理</strong>  <ul>
+<li>AWS Config のアグリゲータは、Organizations 配下の複数アカウント・複数リージョンから Config データを自動的に集約できる。  </li>
+<li>各アカウントに配置した Config ルールの評価結果を中央アカウントで参照できるため、運用オーバーヘッドが小さい。</li>
+</ul>
+</li>
+<li><strong>暗号化されていないボリュームの検出</strong>  <ul>
+<li>EBS 暗号化用の <strong>マネージドルール</strong> を使うことで、カスタムロジックを実装せずに準拠／非準拠を継続的にチェックできる。</li>
+</ul>
+</li>
+<li><strong>通知とレポート</strong>  <ul>
+<li>集約結果を S3 にエクスポートし、SNS 通知を行う仕組みは AWS Config によって標準的にサポートされており、追加開発が最小限で済む。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（CloudTrail ログ解析）</strong>  <ul>
+<li>すべての CloudTrail イベントをパースする必要があり、<strong>ログ量が膨大</strong>で Lambda の実装も複雑になる。  </li>
+<li>「現在存在する暗号化されていないボリュームの一覧」を継続的に把握する用途には向かない。</li>
+</ul>
+</li>
+<li><strong>選択肢3（CloudFormation + Config + StackSets）</strong>  <ul>
+<li>Config 自体は適切だが、StackSets でテンプレートを管理し続ける必要があり、<strong>運用オーバーヘッドが大きい</strong>。  </li>
+<li>Organizations + Config アグリゲータを前提とすれば、よりシンプルに同等以上のことができる。</li>
+</ul>
+</li>
+<li><strong>選択肢4（SSM Configuration Compliance）</strong>  <ul>
+<li>主に <strong>パッチ適用状況やソフトウェア構成</strong> の準拠を評価する仕組みであり、EBS ボリューム暗号化のようなリソースレベルのコンプライアンスには Config がより適している。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">自分が選んだ不正解の回答について（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>問題点</strong></p>
+<ul>
+<li>CloudFormation StackSets で全アカウント・全リージョンにテンプレートを展開・維持する必要があり、<strong>テンプレート更新や失敗時のリカバリ管理</strong> が発生する。  </li>
+<li>AWS Organizations と AWS Config アグリゲータを組み合わせれば、StackSets を使わずに同様のカバレッジを得られるため、「LEAST operational overhead」という観点では最適解ではない。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>マルチアカウント／マルチリージョンのコンプライアンスチェックには、まず <strong>AWS Config + Aggregator</strong> を検討する。  </li>
+<li>CloudTrail 解析や StackSets ベースの配布は、要件がより特殊なときの二段目の選択肢と考える。  </li>
+<li>「運用オーバーヘッド最小」というキーワードがある場合は、<strong>マネージドサービスの組み合わせでどこまで自動化できるか</strong> を優先的に見る。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-49</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

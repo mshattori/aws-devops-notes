@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-59 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-59</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="59">問題59 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>スタートアップ企業には複数のアプリケーションチームがあり、それぞれが自社のビジネス用 <strong>API サービス</strong> を開発している。</li>
+<li>各アプリケーションチームは別々の <strong>AWS アカウント</strong> を持ち、各 VPC は初期構築時に <code>192.168.0.0/24</code> などの CIDR ブロックで作成されている。</li>
+<li>サービスは Amazon EC2 上にデプロイされ、<strong>インターネット向けの Application Load Balancer</strong> を経由して公開されている。</li>
+<li>セキュリティ監査の結果、サービス間の通信を <strong>パブリックインターネットではなくプライベートネットワーク上の HTTPS</strong> に変更するよう勧告された。</li>
+<li>将来的にさらに多くの VPC が追加される可能性もあるため、長期的にスケールするネットワークアーキテクチャが求められている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たし、将来的な VPC 追加にも対応できる長期的なソリューションとして、ソリューションアーキテクトは何を推奨すべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>各アカウントの VPC 間で <strong>VPC ピアリング</strong> を設定し、ピアリングごとにルートテーブルを更新する。  </li>
+<li>各 VPC に <strong>Network Load Balancer (NLB)</strong> をデプロイし、その DNS 名をサービス統合に利用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（正解）</strong>  </p>
+<ul>
+<li>重複している IP アドレスレンジを整理し、VPC の CIDR を再設計して <strong>オーバーラップを解消</strong> する。  </li>
+<li>新しいネットワークアカウントに <strong>Transit Gateway</strong> を作成し、Organizations 配下の各アカウントの VPC をアタッチする。  </li>
+<li><strong>AWS Resource Access Manager (RAM)</strong> を使用して Transit Gateway を組織内で共有する。  </li>
+<li>各 VPC のルートテーブルで Transit Gateway を宛先として新しいルートを設定し、サービス間通信を Transit Gateway 経由のプライベートトラフィックにする。  </li>
+<li>各 VPC に NLB を配置し、サービス間の通信に NLB の DNS 名を利用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>各 VPC に NLB を配置し、<strong>Interface VPC Endpoint</strong>（PrivateLink）を作成してサービスを公開する。  </li>
+<li>PrivateLink のエンドポイント DNS 名を利用してサービス間通信を行う。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>新しい共通 VPC を 1 つ作成し、AWS RAM で共有サブネットとして他アカウントに提供する。  </li>
+<li>各アプリケーションをその共有 VPC 内の EC2 インスタンスとしてホストし、NLB の DNS 名でサービス統合を行う。</li>
+</ul>
+</li>
+</ul>
+<h2 id="2">正解の選択肢と注釈（選択肢2）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>Transit Gateway</strong></li>
+<li><strong>マルチアカウント / マルチ VPC スケール</strong></li>
+<li><strong>オーバーラップしない CIDR 設計</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>要件との対応</strong></p>
+<ul>
+<li><strong>将来の VPC 追加を見据えたスケーラビリティ</strong>  <ul>
+<li>VPC ピアリングは「フルメッシュ」で接続数が急増し、VPC が増えると管理不能になるが、Transit Gateway ならハブ＆スポークでスケールできる。</li>
+</ul>
+</li>
+<li><strong>IP アドレスのオーバーラップ解消</strong>  <ul>
+<li>将来的な拡張とルーティングのシンプル化のため、まず CIDR の重複を解消しておく必要がある。  </li>
+<li>Transit Gateway はオーバーラップ CIDR をサポートしないため、この再設計は必須。</li>
+</ul>
+</li>
+<li><strong>プライベートネットワーク上のサービス間 HTTPS</strong>  <ul>
+<li>すべてのサービスが Transit Gateway 経由でプライベートに接続されるため、インターネット経由の通信を避けられる。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（VPC ピアリングフルメッシュ）</strong>  <ul>
+<li>VPC 数が増えると、ピアリング接続数とルート数が <strong>二乗的に増加</strong> し、長期的に管理が困難。  </li>
+<li>オーバーラップ CIDR 問題も解決していない。</li>
+</ul>
+</li>
+<li><strong>選択肢3（PrivateLink 多用）</strong>  <ul>
+<li>PrivateLink は一方向のサービス公開には適しているが、多数の VPC 間で双方向なサービス統合を行うには設定が複雑でコストも高くなる。</li>
+</ul>
+</li>
+<li><strong>選択肢4（共有 VPC への集約）</strong>  <ul>
+<li>既存の各アカウントに散らばるアプリケーションをすべて移動する必要があり、移行コストとリスクが高い。  </li>
+<li>ネットワークの分離・責任分担というマルチアカウントの利点も薄まる。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-59</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

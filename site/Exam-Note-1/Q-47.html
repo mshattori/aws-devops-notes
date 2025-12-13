@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-47 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-47</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="47">問題47 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>あるテクノロジー企業が、AWS 関連のトピックを扱う <strong>オンラインフォーラム</strong> を構築しようとしている。</li>
+<li>アプリケーションは <strong>AWS Fargate</strong> 上でコンテナとして稼働し、データストアとして <strong>Amazon DynamoDB</strong> を使用する。</li>
+<li>DevOps エンジニアは、DynamoDB テーブルのスキーマ（インデックス、パーティションキー、ソートキー、プロジェクトされる属性など）を設計する必要がある。</li>
+<li>スキーマは、<strong>既存の最小プロビジョンドキャパシティ内で効率的な検索</strong> を行えるようにする必要がある。</li>
+<li><code>Thread</code> テーブルには、ユーザーのコメントを JSON 形式で保持する <code>Thread</code> 属性が含まれている。</li>
+<li>オンラインフォーラムには次の検索要件がある。<ul>
+<li>特定のフォーラム（<code>ForumName</code>）の中で、<code>Subject</code> が特定の文字（例: <code>a</code> や <code>b</code>）で始まるスレッドを検索できること。</li>
+<li>指定した期間内の <code>LastPostDateTime</code> で絞り込んで取得できること。</li>
+<li><strong>直近四半期に投稿されたスレッド</strong> を返せること。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記の要件を満たす DynamoDB スキーマ構成として、どの選択肢が最も適切か。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li><code>Subject</code> 属性を <strong>パーティションキー（プライマリキー）</strong> とし、<code>ForumName</code> をソートキーとして設定する。  </li>
+<li><code>LastPostDateTime</code> をソートキーとする <strong>ローカルセカンダリインデックス（LSI）</strong> を作成し、<code>Thread</code> をプロジェクション属性とする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li><code>ForumName</code> 属性をパーティションキーとし、<code>Thread</code> をソートキーとして設定する。  </li>
+<li><code>LastPostDateTime</code> をソートキーとする LSI を作成し、<code>ForumName</code> と <code>Subject</code> をプロジェクション属性に含める。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li><code>ForumName</code> 属性を <strong>パーティションキー</strong>、<code>Subject</code> を <strong>ソートキー</strong> として設定する。  </li>
+<li><code>LastPostDateTime</code> をソートキーとする LSI を作成し、<code>Thread</code> をプロジェクション属性として含める。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li><code>Subject</code> 属性をパーティションキー、<code>ForumName</code> をソートキーとする。  </li>
+<li><code>Thread</code> をソートキー、<code>LastPostDateTime</code> をプロジェクション属性とする <strong>グローバルセカンダリインデックス（GSI）</strong> を作成する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の選択肢と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>Partition key: <code>ForumName</code></strong></li>
+<li><strong>Sort key: <code>Subject</code></strong></li>
+<li><strong>Local Secondary Index (LSI)</strong> with <code>LastPostDateTime</code></li>
+<li><strong>Prefix search on sort key</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>要件との対応</strong></p>
+<ul>
+<li><strong>フォーラム単位の検索</strong>  <ul>
+<li>検索要件は「特定の <code>ForumName</code> 内で <code>Subject</code> による検索」を求めているため、パーティションキーに <code>ForumName</code> を採用するのが最適。  </li>
+<li>これにより、同じフォーラム内のスレッドが同一パーティションに集約され、クエリが効率的になる。</li>
+</ul>
+</li>
+<li><strong>件名のプレフィックス検索</strong>  <ul>
+<li><code>Subject</code> をソートキーにすることで、<code>begins_with(Subject, 'a')</code> のような <strong>プレフィックス条件</strong> を使った範囲クエリが可能になる。</li>
+</ul>
+</li>
+<li><strong>期間指定（LastPostDateTime）での絞り込み</strong>  <ul>
+<li><code>LastPostDateTime</code> をソートキーとする LSI を追加することで、「特定フォーラム内で、直近四半期のスレッド」といった時間ベースのクエリを効率的に実行できる。</li>
+</ul>
+</li>
+<li><strong>Thread 内容の取得</strong>  <ul>
+<li>プロジェクション属性として <code>Thread</code> を含めることで、インデックスだけで必要なデータを取得できるケースが増え、読み取りコストを削減できる。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>パーティションキーを <code>Subject</code> にすると、「同じフォーラム内での検索」という要件に反して、<strong>件名ごとにパーティションが分散</strong>されてしまう。  </li>
+<li><code>ForumName</code> の粒度でアクセスパターンをまとめられず、ホットパーティションやスキャンの増加につながる。</li>
+</ul>
+</li>
+<li><strong>選択肢2</strong>  <ul>
+<li>ソートキーが <code>Thread</code> だと、<code>Subject</code> のプレフィックス検索をソートキーで行えず、要件の検索パターンと合致しない。</li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>GSI で <code>Thread</code> をソートキーにしても、<code>ForumName</code> + <code>Subject</code> + 時間範囲の複合的なクエリには向かない。  </li>
+<li>さらに、主テーブルのキー設計自体が要件に適合していない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">自分が選んだ不正解の回答について（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>問題点</strong></p>
+<ul>
+<li><code>Subject</code> をパーティションキーにしてしまうと、<strong>フォーラム単位の隔離</strong> ができず、<code>ForumName</code> での効率的なクエリができない。</li>
+<li>特定フォーラム内で <code>Subject</code> を絞り込む場合、本来は <code>ForumName</code> でパーティションを限定した上でソートキーに対して範囲条件をかけるべきだが、この設計ではそれができない。</li>
+<li>LSI で <code>LastPostDateTime</code> を持っていても、元のパーティション設計が不適切なため、<strong>アクセスパターン全体の効率が悪化</strong>する。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>DynamoDB では、まず <strong>主要なクエリパターンからパーティションキー／ソートキーを逆算する</strong>。  </li>
+<li>「フォーラム内のスレッド」という論理的なグルーピングがある場合は、その単位をパーティションキーにするのが基本。  </li>
+<li>範囲検索（時間・プレフィックス）は <strong>ソートキーやセカンダリインデックスの設計</strong> で支える。  </li>
+<li>先に「どの属性でパーティションを切るべきか」を明確にしてから、LSI/GSI を検討する。  </li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-47</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

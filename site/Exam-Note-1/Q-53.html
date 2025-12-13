@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-53 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-53</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="53">問題53 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業は、プレゼンテーション層に <strong>MERN スタック</strong>、Web 層に <strong>NGINX</strong> を使用する複数のアプリケーションを持っている。</li>
+<li>アプリケーションデプロイには <strong>AWS CodeDeploy</strong> を利用している。</li>
+<li>現在、テスト環境用のデプロイメントグループが 1 つあり、将来的に STAGING / PROD 用のデプロイメントグループを追加する予定。</li>
+<li>ログレベルは現在 NGINX の設定で管理しているが、チームはこれを変更し、<strong>デプロイメントグループごとに異なるログレベル</strong> を設定できるようにしたい。</li>
+<li>ただし、デプロイメントグループごとにアプリケーションのリビジョン（スクリプトなど）を分けることなく、<strong>管理オーバーヘッドを最小化</strong> したい。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>最小限の管理オーバーヘッドで、各デプロイメントグループごとにログレベルを切り替えられる解決策はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li>CodeDeploy で提供される環境変数 <strong><code>DEPLOYMENT_GROUP_NAME</code></strong> を利用するカスタムシェルスクリプトを作成し、対象 EC2 インスタンスがどのデプロイメントグループに属しているかを識別する。  </li>
+<li><code>appspec.yml</code> の <strong><code>BeforeInstall</code> ライフサイクルフック</strong> としてこのスクリプトを実行し、結果に基づいてインスタンスのログレベルを設定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>環境変数 <strong><code>DEPLOYMENT_GROUP_ID</code></strong> を使用して所属デプロイメントグループを特定するカスタムシェルスクリプトを作成する。  </li>
+<li><code>appspec.yml</code> の <strong><code>ApplicationStart</code> ライフサイクルフック</strong> としてこのスクリプトを呼び出し、ログレベルを設定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>それぞれの環境（TEST / STAGING / PROD）ごとに CodeDeploy の環境変数を設定し、その値を読み取ってログレベルを決定するシェルスクリプトを作成する。  </li>
+<li>スクリプトは <code>ValidateService</code> ライフサイクルフックで実行する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>AWS Resource Groups Tag Editor を使って、各 EC2 インスタンスにデプロイメントグループ名を示すタグを付与する。  </li>
+<li>シェルスクリプト内で <code>aws ec2 describe-tags</code> を実行してタグ値を取得し、デプロイメントグループを判別してログレベルを設定する。  </li>
+<li>スクリプトは <code>ValidateService</code> ライフサイクルフックで実行する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">正解の選択肢と注釈（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CodeDeploy 環境変数 <code>DEPLOYMENT_GROUP_NAME</code></strong></li>
+<li><strong>BeforeInstall ライフサイクルフック</strong></li>
+<li>単一のスクリプトで複数デプロイメントグループ対応</li>
+</ul>
+</li>
+<li>
+<p><strong>要件との対応</strong></p>
+<ul>
+<li><strong>最低限の管理オーバーヘッド</strong>  <ul>
+<li>1 つのスクリプトと 1 つのアプリケーションリビジョンで、<code>DEPLOYMENT_GROUP_NAME</code> の値に応じてログレベルを分岐できるため、デプロイメントグループごとにスクリプトを分ける必要がない。</li>
+</ul>
+</li>
+<li><strong>適切な実行タイミング</strong>  <ul>
+<li><code>BeforeInstall</code> フックで実行することで、アプリケーションや NGINX の設定がインストールされる前にログ設定を行える。  </li>
+<li>これにより、以降のインストール処理が正しいログレベルで行われる。</li>
+</ul>
+</li>
+<li><strong>CodeDeploy 組み込み機能の活用</strong>  <ul>
+<li>追加のタグ管理や外部サービスを使わず、CodeDeploy が標準で提供する環境変数だけで要件を満たしている。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2</strong>  <ul>
+<li><code>DEPLOYMENT_GROUP_ID</code> は内部識別子であり、可読性が低く、環境ごとの差異を明確に扱いにくい。  </li>
+<li><code>ApplicationStart</code> フックはアプリケーション起動時に実行されるため、<strong>起動後に設定変更が入る</strong> 可能性があり、最適なタイミングとは言えない。</li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>各環境ごとに追加の環境変数管理が必要になり、デプロイメントグループが増えるほど設定の一貫性確保が難しくなる。  </li>
+<li><code>ValidateService</code> フックは検証用であり、設定変更には遅いタイミング。</li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>すべてのインスタンスにタグを付与・維持する運用が必要になり、<strong>タグの整合性管理</strong> がオーバーヘッドとなる。  </li>
+<li><code>aws ec2 describe-tags</code> を毎回呼び出すのも不要な外部 API 呼び出しであり、単純な要件に対して過剰。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="2">自分が選んだ不正解の回答について（選択肢2）</h2>
+<ul>
+<li>
+<p><strong>問題点</strong></p>
+<ul>
+<li><code>DEPLOYMENT_GROUP_ID</code> を使うメリットがほぼなく、アプリ側から見た可読性・管理性が悪い。  </li>
+<li><code>ApplicationStart</code> フックでの変更は、アプリケーションの起動タイミングと競合する可能性があり、ログ設定の一貫性が保証しづらい。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>CodeDeploy の <strong>組み込み環境変数（特に <code>DEPLOYMENT_GROUP_NAME</code>）</strong> は、環境差分を 1 つのリビジョンで吸収するための強力な手段。  </li>
+<li>ライフサイクルフックを使うときは、「設定変更をいつまでに終わらせておくべきか」という観点で、<code>BeforeInstall</code> / <code>AfterInstall</code> / <code>ApplicationStart</code> / <code>ValidateService</code> などのタイミングを意識する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-53</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -767,8 +767,11 @@
 </li>
 <li>パラレルアクション(=アクショングループ)とシーケンシャルアクション</li>
 <li><strong>runOrder:</strong> シーケンスの順番。パラレルアクションは同じ runOrder になる。<ul>
-<li>問題例: 複数の Lambda のデプロイを並行させることでパイプラインの処理時間を早める</li>
-<li><img alt="" src="_attachment/image_642.png" /></li>
+<li>問題例: 複数の Lambda のデプロイを並行させることでパイプラインの処理時間を早める<ul>
+<li>シナリオ: CodePipeline + CodeBuild を利用しており、異なる Lambda 関数を順番にビルド・テスト・パッケージング・デプロイしている。パイプラインが完了するまでの時間が長く、高速化が求められている。</li>
+<li>回答: 各 Lambda 関数をするアクションに対して、CodePipeline で 同じ runOrder 値 を指定する。</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -883,7 +886,7 @@
 <li>トラフィックを振り分けるため、トラフィックルーティングの仕組みが必要。</li>
 <li>システムのダウングレードなし。</li>
 <li>ロールバックが容易。</li>
-<li>CodeDeploy, Beanstalk(Immutable)</li>
+<li>CodeDeploy</li>
 <li>EC2 Auto Scaling: AutoScalingReplacingUpdate</li>
 </ul>
 <h2 id="bluegreen">Blue/Green デプロイの実現方法</h2>
@@ -989,14 +992,15 @@
 <li>バッチサイズ分の新しいインスタンスにデプロイして環境に追加した後でローリングを実行。</li>
 <li>追加バッチのインスタンスは最終的には消去される。</li>
 </ul>
-<p>Immutable (=Blue/Green)</p>
+<p>Immutable (=疑似Blue/Green)</p>
 <ul>
-<li>テンポラリな ASG を作成して新バージョンを展開したインスタンスのフルセットを起動。</li>
+<li>テンポラリな ASG を作成して新バージョンを展開したインスタンス群のフルセットを起動してテスト。</li>
 <li>新しいインスタンスでヘルスチェックが Fail した場合は終了し、元のインスタンスがそのまま残る。</li>
 <li>Fail 時のロールバックが迅速。</li>
-<li>Success した場合は Green のインスタンスをプロダクションの ASG に移動する。</li>
-<li>Blue のインスタンスは削除されるのでイミュータブル。</li>
+<li>Success したら Green のインスタンス群をプロダクションの ASG に移動する。</li>
+<li>移動後に Blue のインスタンス群は削除されるのでイミュータブル。</li>
 <li>一時的にインスタンスコストが倍。</li>
+<li>ASG 自体を入れ替えるわけではなく、厳密には Blue/Green ではない。</li>
 </ul>
 <p>手動 Blue/Green デプロイ</p>
 <ul>
@@ -1278,7 +1282,10 @@ Resources:
 </ul>
 <p>アプリケーションバージョン</p>
 <ul>
-<li>eb deploy するたびにアプリケーションバージョンができる</li>
+<li>eb deploy で新たなアプリケーションバージョンを作成<ul>
+<li>ローカルコードを ZIP 化 → S3 にアップロード</li>
+</ul>
+</li>
 <li>ライフサイクル: バージョンの保持期限を個数又は日数で管理する</li>
 </ul>
 <p>環境タイプ</p>
@@ -1927,7 +1934,10 @@ Resources:
 <ul>
 <li>複合プライマリキー=パーティションキー + ソートキー</li>
 <li>同じパーティションキーに対してレコードを一意に識別するソートキー。</li>
-<li>ソートキーにより項目がパーティション内でソートされ、範囲検索やタイムスタンプなら時系列検索が可能。</li>
+<li>ソートキーにより項目がパーティション内でソートされ、範囲検索やタイムスタンプなら時系列検索が可能。<ul>
+<li>範囲検索は演算子による大小比較や begins_with(attr, substr) が使える</li>
+</ul>
+</li>
 <li>パーティションキーの値が同じ項目は同じパーティションに保存される。</li>
 </ul>
 <p><img alt="" src="_attachment/image_662.png" /></p>
@@ -1991,7 +2001,7 @@ Resources:
 </ul>
 </li>
 <li>KCL (Kinesis Client Library) を利用したアプリ開発<ul>
-<li>KCL に DynamoDB Streams Kinesis Adapter を噛ませることで、DynamoDB ストリームに対して KCL を使用できる。</li>
+<li>KCL に DynamoDB Streams <strong>Kinesis Adapter</strong> を噛ませることで、DynamoDB ストリームに対して KCL を使用できる。</li>
 <li>Lambda のスロットリングエラーに対し、KCL を利用したアプリケーション経由で Kinesis Data Analytics につないで分析処理を行う構成に変更するという問題があった。</li>
 </ul>
 </li>
@@ -2386,9 +2396,9 @@ Resources:
 <p>CloudTrail, VPC フローログ, DNS ログ, Web ACL トラフィックログも収集できる。</p>
 <p>保持期間: 1日～10年、無制限で指定可能。</p>
 <p>ログ保管コストを下げるため、S3 へ手動エクスポート or サブスクリプションフィルタ+Firehose</p>
-<p>サブスクリプションフィルタ</p>
+<p><strong>サブスクリプションフィルタ</strong></p>
 <ul>
-<li>Kinesis Data Streams/Firehose, Lambda によるリアルタイム処理。</li>
+<li><strong>Lambda, Kinesis (Data Streams/Firehose) によるリアルタイム処理</strong></li>
 <li>ロググループに転送先とフィルタ文字列を設定する (全てのログの転送も可能)</li>
 <li>クロスアカウントの送信先 (Destination) も設定できる。</li>
 <li>ログアグリゲーションの例:<ul>
@@ -2408,9 +2418,9 @@ Resources:
 </ul>
 </li>
 </ul>
-<p>メトリクスフィルタ</p>
+<p><strong>メトリクスフィルタ</strong></p>
 <ul>
-<li>ログからメトリクスを発生させて CloudWatch アラーム連携。</li>
+<li>ログを検索してカスタムメトリクスを作成し、CloudWatch アラーム連携。</li>
 </ul>
 <p>CloudWatch Logs Insights</p>
 <ul>
@@ -2880,8 +2890,8 @@ Resources:
 <p>AWS Personal Health Dashboard</p>
 <ul>
 <li>アカウント固有の Health イベントのアラートやガイダンスを提供。</li>
-<li>お客様の AWS 環境に関する明確な通知が事前に表示されます。</li>
-<li>CloudWatch Events で AWS Personal Health Dashboard (AWS Health) イベントと連携できる。</li>
+<li>AWS アカウントに関するメンテナンスや障害を通知される。</li>
+<li>EventBridge で AWS Personal Health Dashboard イベントと連携できる。</li>
 </ul>
 <p>AWS Health API</p>
 <ul>
@@ -3453,6 +3463,14 @@ Resources:
 <li>EFS Standard: リージョン内の3つ以上のAZにレプリケーションされる。全 AZ にマウントターゲット。</li>
 <li>EFS One Zone: 単一 AZ だけで保管。安価。指定 AZ のみにマウントターゲット。</li>
 </ul>
+<p><strong>Amazon FSx</strong></p>
+<p>汎用 NFS マネージドサービスである EFS に対して、ファイルシステム特化型のサービス</p>
+<ul>
+<li>FSx ONTAP = SMB (Windows) と NFS (Linux) のネイティブプロトコルサポート</li>
+<li>FSx Windows FS = Windows (SMB) ファイルサーバ / AD連携</li>
+<li>FSx Lustre = HPC(高性能計算), 機械学習, ビッグデータ解析向け超高速ファイルシステム</li>
+<li>FSx OpenZFS = ZFSベースの高速ファイルシステム (スナップショット/クローン/圧縮が超高速) </li>
+</ul>
 <p><strong>ElastiCache for Redis</strong>: リードレプリカ, フェイルオーバー, マルチ AZ サポート (Memcached は不可)</p>
 <p><strong>EBS は AZ スコープリソース</strong></p>
 <ul>
@@ -3519,11 +3537,12 @@ Resources:
 <p>可用性向上 → マルチAZ 構成に設定</p>
 <ul>
 <li>マルチ AZ 配置のマスター/スタンバイ構成となる</li>
+<li>同期レプリケーションでマスタ障害時は<strong>自動フェイルオーバー</strong></li>
 </ul>
 <p>負荷分散 → リードレプリカ</p>
 <ul>
-<li>リードレプリカがあればリードレプリカもマスターに昇格できる</li>
-<li>リードレプリカは<strong>クロスリージョンのレプリケーションが可能</strong>。DR に利用できる。</li>
+<li>リードレプリカは<strong>マスターに昇格</strong>できる。自動フェイルオーバーするスタンバイと異なり、手動昇格が必要。</li>
+<li>リードレプリカは<strong>クロスリージョンの非同期レプリケーションが可能</strong>。DR に利用できる。</li>
 <li><img alt="" src="_attachment/image_684.png" /></li>
 </ul>
 <p>スナップショット</p>
@@ -3585,10 +3604,27 @@ Resources:
 </li>
 </ul>
 </li>
-<li>問題例: マルチ AZ 配置の DB バージョン更新にあたり、先にリードレプリカの CFn スタックを立てておくことでダウンタイムを減少させる。</li>
-<li><img alt="" src="_attachment/image_686.png" /></li>
-<li><img alt="" src="_attachment/image_687.png" /></li>
 </ul>
+<p>問題例: DB バージョン更新にあたり、リードレプリカを昇格させることでダウンタイムなくす (CFn スタックによる Blue/Green)</p>
+<ul>
+<li>
+<p>シナリオ</p>
+<ul>
+<li>マルチ AZ 構成の RDS にデータ保存する多層 Web アプリケーションを CFn でデプロイ</li>
+<li>RDS インスタンスを最新の MySQL メジャーバージョンへアップグレードする</li>
+<li>アップグレード時のダウンタイムを極力短くすることが最重要</li>
+</ul>
+</li>
+<li>
+<p>回答</p>
+<ul>
+<li>CFn テンプレートの AWS::RDS::DBInstance リソースで EngineVersion プロパティを最新の MySQL バージョンへ更新</li>
+<li>プライマリ DB インスタンスと同じプロパティを持つ新しい Read Replica を起動する第 2 のアプリケーションスタックを作成</li>
+<li>最後に UpdateStack を実行してアップグレードを完了</li>
+</ul>
+</li>
+</ul>
+<p>※ Read Replica が昇格されることが明示されていなく、UpdateStack で何が更新されるのか分からない悪問だが、キモはレプリケーション後に昇格することでダウンタイムを極小化すること</p>
 <p>RDS イベント通知</p>
 <ul>
 <li>DB の設定変更、障害、フェイルオーバーなどの各種イベントを SNS で通知。</li>

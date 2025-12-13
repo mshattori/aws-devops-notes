@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-60 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-60</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="60">問題60 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業がオンライン顧客ポータルを AWS に移行しようとしている。</li>
+<li>アプリケーションは <strong>AWS Elastic Beanstalk</strong> 上でホストし、データベースには <strong>Amazon RDS for MySQL（Multi-AZ 構成）</strong> を使用する計画。</li>
+<li>DevOps エンジニアには次の要件が与えられている。<ul>
+<li>新バージョンのデプロイ中も、アプリケーションは <strong>常にフルキャパシティ</strong> を維持すること。</li>
+<li>デプロイが部分的に失敗した場合でも、簡単にロールバックできること。</li>
+<li>デプロイによるアプリケーション性能への影響を最小化し、<strong>コスト効果の高い</strong> デプロイ構成にすること。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記の要件を満たすために、DevOps エンジニアはどのようなデプロイセットアップを選択すべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>Elastic Beanstalk と外部 RDS MySQL（Multi-AZ）を使用し、<strong>Blue/Green デプロイ</strong> を構成する。  </li>
+<li>新バージョン用の新しい環境を作成し、CNAME のスワップでトラフィックを切り替える。  </li>
+<li>デプロイ成功後も旧環境をバックアップとして残す。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（正解）</strong>  </p>
+<ul>
+<li>オンライン顧客ポータルを Elastic Beanstalk にデプロイし、外部 RDS MySQL（Multi-AZ）と接続する。  </li>
+<li>アプリケーションのデプロイには <strong>Immutable updates</strong> を使用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>Elastic Beanstalk 環境に組み込み RDS を追加し、Multi-AZ を有効化する。  </li>
+<li>高可用性のために、Elastic Beanstalk のデプロイ設定で <strong>Rolling with additional batch</strong> を使用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>組み込み RDS（Multi-AZ）を使った Elastic Beanstalk 環境を作成し、デプロイ設定を <strong>All at once</strong> にする。</li>
+</ul>
+</li>
+</ul>
+<h2 id="2">正解の選択肢と注釈（選択肢2）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>Elastic Beanstalk Immutable deployment</strong></li>
+<li><strong>外部 RDS Multi-AZ</strong></li>
+<li>フルキャパシティ / ロールバック容易 / コスト効率</li>
+</ul>
+</li>
+<li>
+<p><strong>要件との対応</strong></p>
+<ul>
+<li><strong>フルキャパシティ維持</strong>  <ul>
+<li>Immutable デプロイでは、新バージョン用の新インスタンス群を一時的に作成し、ヘルスチェック後にトラフィックを切り替えるため、既存環境はその間もフルキャパシティで動作する。</li>
+</ul>
+</li>
+<li><strong>ロールバック容易</strong>  <ul>
+<li>新環境に問題があった場合、トラフィックを元のインスタンスに戻すだけでよく、部分的なローリング更新による中途半端な状態がない。</li>
+</ul>
+</li>
+<li><strong>コスト効率</strong>  <ul>
+<li>Blue/Green のように常に 2 つの完全な環境を長期維持する必要はなく、デプロイ中の追加リソースのみ一時的に発生するため、コスト面で有利。</li>
+</ul>
+</li>
+<li><strong>DB の独立性</strong>  <ul>
+<li>RDS を Elastic Beanstalk 外部のリソースとして管理することで、アプリケーション環境の作り直しや切り替えが容易になる。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（Blue/Green + 旧環境維持）</strong>  <ul>
+<li>フルキャパシティは満たすが、旧環境をバックアップとして長く残す前提のため、<strong>コスト効率が悪い</strong>。  </li>
+<li>本問題は「最もコスト効果の高い」構成を求めている。</li>
+</ul>
+</li>
+<li><strong>選択肢3（Rolling with additional batch）</strong>  <ul>
+<li>追加バッチを使うとはいえ、ローリング更新中は一部インスタンスが旧バージョン、別の一部が新バージョンという状態になり、<strong>部分的な失敗時のロールバックが複雑</strong>になる。</li>
+</ul>
+</li>
+<li><strong>選択肢4（All at once）</strong>  <ul>
+<li>全インスタンスを一度に更新するため、デプロイ中にキャパシティや可用性が大きく揺らぎ、要件を満たさない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-60</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

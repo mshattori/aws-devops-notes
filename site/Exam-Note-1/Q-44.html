@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-44 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-44</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="44">問題44 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>スマートホームデバイスを開発する会社が、Web / Mobile / IoT / サードパーティ API などを処理する <strong>複数の AWS Lambda 関数</strong> からなるサーバーレス API 群を構築している。</li>
+<li>現在の CI/CD パイプラインは <strong>AWS CodePipeline + AWS CodeBuild</strong> を利用しており、各 Lambda 関数を <strong>順番にビルド・テスト・パッケージング・デプロイ</strong> している。</li>
+<li>コード変更が発生してからパイプラインが完了するまでの時間が長く、デプロイプロセスの高速化が求められている。</li>
+<li>パイプライン実行のトリガーには <strong>Amazon CloudWatch Events (EventBridge)</strong> を使用し、SysOps チームがパイプラインおよびリソースのパフォーマンスを監視している。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>独立した複数 Lambda 関数のデプロイをスピードアップするために、DevOps エンジニアは <strong>どのような CodePipeline 構成</strong> を取るべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>CodeBuild パイプラインのビルド環境を、メモリ・vCPU・ディスク容量が多い <strong>より大きなコンピュートタイプ</strong> へアップグレードする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>複数のビルドを並列実行できるように、<strong>マルチプロセッシングオプション付きのカスタム CodeBuild 実行環境</strong> を用意する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>各 Lambda 関数のアクションに対して、CodePipeline で <strong>同じ <code>runOrder</code> 値</strong> を指定する。  </li>
+<li>これにより、複数の Lambda 関数に対するビルド／デプロイアクションが <strong>並列に実行</strong> される。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>Docker レイヤーキャッシュモードを使用して CodeBuild 内のローカルキャッシュを有効にし、ビルド時間を短縮する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CodePipeline <code>runOrder</code></strong></li>
+<li><strong>並列アクション実行</strong></li>
+<li><strong>独立した Lambda 関数の同時デプロイ</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>CodePipeline のアクションに同じ <code>runOrder</code> を設定すると、<strong>同一ステージ内でそれらのアクションが並列実行</strong> される。  </li>
+<li>問題文の Lambda 関数は「独立した」関数であるため、並列実行しても依存関係の問題がなく、<strong>パイプライン全体の所要時間を直接短縮</strong> できる。  </li>
+<li>既存のインフラを変えずに、パイプライン定義の変更だけで高速化できる点も、最も適切な解として評価される。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1・2・4</strong> はビルド環境をチューニングする案だが、問題の本質は「<strong>独立した関数を順番に処理していること</strong>」にある。  </li>
+<li>いずれもアクションを直列から並列へ変えるわけではないため、<strong>構造的なボトルネック解消につながらない</strong>。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-44</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

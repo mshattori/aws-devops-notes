@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-69 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-69</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="69">問題69 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>あるアプリケーションは、パブリック IP を持つ Amazon EC2 インスタンスの <strong>Auto Scaling グループ</strong> 上で稼働している。</li>
+<li>インスタンスの起動時には <strong>user data スクリプト</strong> が実行され、インターネットから必要なアプリケーション依存パッケージをダウンロードしてインストールしている。</li>
+<li>セキュリティ強化のため、最近の変更で「これらのインスタンスからのインターネットアクセスを禁止」した結果、<br />
+  user data スクリプトが依存関係を取得できず、アプリケーションが完全に起動しなくなった。</li>
+<li>すべてのインスタンスは一見正常に起動しているが、アプリケーション自体は <strong>不完全なインストール</strong> 状態になっている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>この問題を解決しつつ、インスタンスがパブリックインターネットへ直接アクセスしないようにする <strong>最もセキュアなソリューション</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>パブリックインターネットから VPC に到達するトラフィックをブロックするために <strong>NAT Gateway</strong> を使用する。  </li>
+<li>EC2 インスタンスをプライベートサブネットに配置し、そのサブネットのデフォルトルートとして NAT Gateway を設定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（正解）</strong>  </p>
+<ul>
+<li>アプリケーションが必要とするすべての外部依存パッケージを一度インターネットからダウンロードし、<strong>S3 バケット</strong> に保存する。  </li>
+<li>VPC 内に <strong>S3 VPC エンドポイント</strong> を作成し、インスタンスに IAM インスタンスプロファイルを割り当てて S3 バケットへアクセスできるようにする。  </li>
+<li>user data スクリプトでは S3 から依存パッケージを取得してインストールする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>EC2 インスタンス用の新しいセキュリティグループを作成し、依存パッケージをホストするサイトへのアウトバウンド通信のみをホワイトリストとして許可する。  </li>
+<li>インストール完了後にそのルールを削除し、AWS Config で準拠状況を監視する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>EC2 インスタンスをプライベートサブネットに配置し、それぞれに Elastic IP を関連付ける。  </li>
+<li>インストール完了後に Elastic IP を解除するためのカスタムシェルスクリプトを実行する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="2">正解の選択肢と注釈（選択肢2）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>S3 バケット + VPC Endpoint</strong></li>
+<li><strong>インターネット非依存のインストール</strong></li>
+<li><strong>IAM ロールによるアクセス制御</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>要件との対応</strong></p>
+<ul>
+<li><strong>インターネット非接続でも依存関係を取得</strong>  <ul>
+<li>依存パッケージを事前に S3 に保存し、VPC エンドポイント経由でプライベートにアクセスさせることで、インスタンスからインターネットへの直接接続を不要にする。</li>
+</ul>
+</li>
+<li><strong>最もセキュアな構成</strong>  <ul>
+<li>VPC エンドポイント経由の S3 アクセスは <strong>インターネットを通過せず</strong>、トラフィックは AWS ネットワーク内に閉じる。  </li>
+<li>IAM ロールとバケットポリシーでアクセス制御が可能。</li>
+</ul>
+</li>
+<li><strong>自動化のしやすさ</strong>  <ul>
+<li>user data スクリプトの参照先 URL を S3 に変えるだけでよく、Auto Scaling との相性もよい。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（NAT Gateway）</strong>  <ul>
+<li>NAT Gateway を用いると、インスタンスは依然として <strong>インターネットへアウトバウンド通信</strong> することになり、<br />
+  「インターネットアクセスを禁止する」というセキュリティ要件に反する。</li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>ホワイトリストで一時的にインターネットアクセスを許可するため、運用が煩雑でセキュリティリスクも残る。  </li>
+<li>インストールのたびに SG を変更する必要がある。</li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>Elastic IP を一時的に関連付けてインターネットアクセスさせる点で、やはり要件と矛盾する。  </li>
+<li>IP の割り当て／解除をスクリプトで管理するのもオーバーヘッドが大きい。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">自分が選んだ不正解の回答について（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>問題点</strong></p>
+<ul>
+<li>NAT Gateway は「プライベートサブネットからインターネットへのアウトバウンド」を提供するサービスであり、<br />
+  それ自体はセキュアだが、<strong>インスタンスがインターネットに出られる</strong> ことには変わりがない。  </li>
+<li>問題文は「インスタンスがパブリックインターネットへアクセスしないこと」を強調しているため、この解は要件違反となる。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>「インターネットに出さずに外部リソースを利用したい」場合は、まず <strong>VPC エンドポイント + S3 / DynamoDB</strong> などを連想する。  </li>
+<li>NAT Gateway は「インターネットには出たいが、パブリック IP を持たせたくない」ケースに適することを整理しておく。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-69</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

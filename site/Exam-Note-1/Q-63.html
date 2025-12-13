@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-63 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-63</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="63">問題63 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>企業はいくつかのアプリケーションを AWS 上で稼働させており、それぞれ独自の <strong>Amazon Machine Image (AMI)</strong> を使用している。</li>
+<li>現在は新しいアプリケーションバージョンが出るたびに <strong>手動で AMI を作成してサーバーにデプロイ</strong> している。</li>
+<li>DevOps エンジニアは、CI/CD ワークフローの一環として AMI 作成プロセスを自動化し、<br />
+  さらに「新しく作成された AMI の ID を他のビルドパイプラインがプログラムから参照できるよう <strong>中央集約された場所</strong> に保存したい」と考えている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>最もコスト効率が高く、運用オーバーヘッドの少ない方法で、この要件を満たすソリューションはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>CodePipeline の新しいパイプラインを作成し、既存 EC2 インスタンスの EBS スナップショットを取得する。  </li>
+<li>そのスナップショットから新しい EC2 インスタンスを起動し、Lambda 関数でアプリケーションを更新後、AMI を作成して ID を S3 に保存する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>CodePipeline のパイプラインを作成し、複数の EC2 インスタンスを使って OVF 形式のイメージを生成・カスタマイズし、それを S3 に保存する。  </li>
+<li>VM Import を用いて AMI に変換し、AMI ID を <strong>Systems Manager Parameter Store</strong> に保存する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li><strong>AWS Systems Manager</strong> で、マシンイメージの作成方法を定義した <strong>Automation ドキュメント</strong> を作成する。  </li>
+<li>新しい CodePipeline パイプラインを構築し、<strong>カスタムアクション</strong> としてこの Automation を実行するよう連携する。  </li>
+<li>プロセスがトリガーされると Automation が AMI をビルドし、その AMI ID を <strong>Systems Manager Parameter Store</strong> に保存する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>Packer などのオープンソースツールを利用し、Jenkins パイプラインから AMI を作成する。  </li>
+<li>AMI ID は Amazon DynamoDB テーブルに保存する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の選択肢と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>AWS Systems Manager Automation</strong></li>
+<li><strong>CodePipeline カスタムアクション</strong></li>
+<li><strong>Parameter Store に AMI ID を保存</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>要件との対応</strong></p>
+<ul>
+<li><strong>AMI 作成プロセスの自動化</strong>  <ul>
+<li>Systems Manager Automation ドキュメントに AMI 作成手順（インスタンス起動 → 更新 → AMI 化など）を定義し、再利用可能な IaC として管理できる。</li>
+</ul>
+</li>
+<li><strong>CI/CD との統合</strong>  <ul>
+<li>CodePipeline のカスタムアクションとして Automation を呼び出すことで、ビルド／テスト／デプロイの流れに AMI 作成を自然に組み込める。</li>
+</ul>
+</li>
+<li><strong>AMI ID の中央管理</strong>  <ul>
+<li>Parameter Store に AMI ID を保存することで、他のパイプラインやスクリプトから <strong>パラメータ名で最新 AMI</strong> を参照できる。</li>
+</ul>
+</li>
+<li><strong>マネージドサービスによるコスト最適化</strong>  <ul>
+<li>追加のサーバー（Jenkins ホストなど）を維持する必要がなく、AWS マネージドサービスのみで完結する。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>スナップショットからインスタンスを起動し直すなど、フローが複雑で Lambda 実装も必要となり、運用負荷が高い。</li>
+</ul>
+</li>
+<li><strong>選択肢2</strong>  <ul>
+<li>OVF 形式への変換や VM Import/Export を挟む必要はなく、AMI 作成だけであれば Systems Manager Automation の方が簡潔。  </li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>Packer + Jenkins などの自前ツールチェーンは柔軟だが、<strong>EC2 上の Jenkins ホスト運用</strong> など追加管理コストがかかる。  </li>
+<li>本問では「MOST cost-effective」を求めているため、フルマネージドな選択肢が優先される。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-63</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

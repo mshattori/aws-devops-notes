@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-35 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-35</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="35">問題35 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある開発者は、複数のニュースソースを集約してモバイルニュースホームページを提供するアプリケーションを開発している。</li>
+<li>アプリケーションは主に複数の <strong>AWS Lambda 関数</strong> から構成され、それらが <strong>AWS CodeDeploy</strong> の 1 つのデプロイメントグループとして管理されている。</li>
+<li>新しいアプリケーションバージョンを本番へ完全デプロイする前に、すべての API をテストして問題がないことを確認する必要がある。</li>
+<li>API テストには <strong>Lambda で実装された検証スクリプト</strong> を利用し、デプロイ中に API をチェックして、エラーがあれば通知を受け、検証失敗時には <strong>自動ロールバック</strong> を行いたい。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記シナリオに対して、<strong>Select THREE</strong> の条件で最も適切なソリューションの組み合わせはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>Lambda からの結果を直接 <strong>Amazon CloudWatch アラーム</strong> に送信し、デプロイ中に 5xx エラーが受信されたら即座にロールバックをトリガーする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（正解）</strong>  </p>
+<ul>
+<li>Lambda ベースの検証スクリプトが <strong>デプロイ中に実行されるように構成</strong> する。  </li>
+<li>検証 Lambda の失敗を検知する <strong>CloudWatch アラーム</strong> を設定し、アラーム発火時にロールバックをトリガーする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li><strong>AppSpec のライフサイクルフック</strong>（例：<code>AfterAllowTestTraffic</code> など）に検証用 Lambda スクリプトを定義する。  </li>
+<li>テストトラフィックを用いて検証を実行し、チェックが失敗した場合はロールバックをトリガーする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li>デプロイメントグループに関連付けた <strong>CloudWatch アラーム</strong> を作成し、5xx エラーのしきい値に達した際にアラームが発火するようにする。  </li>
+<li>アラームから <strong>Amazon SNS トピック</strong> への通知、あるいは CodeDeploy のロールバック動作をトリガーする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢5（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>CodeDeploy に追加ステップを作成し、デプロイ完了後に Lambda 検証スクリプトをトリガーして新バージョンを検証する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="234">正解の選択肢と注釈（選択肢2・3・4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CodeDeploy AppSpec ライフサイクルフック</strong></li>
+<li><strong>CloudWatch アラーム連携による自動ロールバック</strong></li>
+<li><strong>デプロイ中（本番切り替え前）の検証</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この組み合わせが要件を満たす理由</strong></p>
+<ul>
+<li>いずれも <strong>デプロイの一部として検証を実行</strong> し、結果に応じて CodeDeploy のロールバック機能を利用する点が共通している。  </li>
+<li>AppSpec ライフサイクルフック（<code>BeforeAllowTraffic</code> / <code>AfterAllowTestTraffic</code> など）に検証 Lambda を組み込むことで、<strong>テストトラフィックでの検証 → 失敗時ロールバック</strong> という安全なパターンを構成できる。  </li>
+<li>CloudWatch アラームをデプロイメントグループに関連付けることで、<strong>5xx エラーなどのメトリクスに基づいた自動ロールバック</strong> が実現できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>その他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>「Lambda が直接 CloudWatch アラームへ結果を送信する」という表現は、CloudWatch アラームの通常の設計（メトリクスに基づく評価）とやや整合しない。  </li>
+<li>デプロイと検証のライフサイクル統合についての記述がなく、CodeDeploy の標準機能を十分に活用していない。</li>
+</ul>
+</li>
+<li><strong>選択肢5（デプロイ後の検証）</strong>  <ul>
+<li>デプロイ完了後に検証を行うため、検証が失敗しても <strong>ユーザー向けトラフィックはすでに新バージョンへ向かっている</strong> 可能性が高い。  </li>
+<li>問題文が求めているのは「デプロイ中に API を検証し、失敗時にロールバックする」ことであり、<strong>本番切り替え前のフェーズで検証する必要がある</strong>。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="5">不正解だった自分の回答に対する注釈（選択肢5）</h2>
+<ul>
+<li>
+<p><strong>どの選択肢を誤って選んだか</strong></p>
+<ul>
+<li><strong>選択肢5：デプロイ完了後に Lambda 検証を追加ステップで実行する構成</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>検証が失敗しても、すでに本番トラフィックが新バージョンへ流れているため、<strong>エンドユーザー影響が発生した後にロールバック</strong> することになる。  </li>
+<li>CodeDeploy が提供する <strong>ライフサイクルフックによる段階的検証 + 自動ロールバック</strong> という強力な仕組みを活用できていない。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>CodeDeploy + Lambda の問題では、まず <strong>AppSpec ライフサイクルフック（BeforeAllowTraffic / AfterAllowTestTraffic など）での検証実行</strong> を思い出す。  </li>
+<li>「自動ロールバック」「Select THREE」などのキーワードがある場合、<strong>CloudWatch アラーム + デプロイメントグループ連携</strong> を含む選択肢を優先して検討する。  </li>
+<li>検証は可能な限り <strong>本番トラフィック切り替え前</strong> に行うのが原則。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-35</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

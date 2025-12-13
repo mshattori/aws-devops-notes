@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-15 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-15</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="15">問題15 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある商業銀行は AWS 上にオンラインバンキングプラットフォームをホストしており、ハイブリッドクラウドアーキテクチャを採用している。</li>
+<li>CTO は Lead DevOps エンジニアに対し、本番環境への影響を最小化する <strong>デプロイメント戦略</strong> を実装するよう指示した。</li>
+<li>CI/CD プロセスには次の要件がある。<ul>
+<li>本番デプロイの前に、新しいバージョン用の <strong>新しい EC2 インスタンス群</strong> を自動的に起動し、デプロイ中のトラフィックはこれらの追加インスタンスが処理すること。</li>
+<li>すべての Availability Zone にまたがる EC2 インスタンスはロードバランシングされ、ハードウェア障害などでインスタンスが障害状態になっても自動的に自己修復されること。</li>
+<li>既存インスタンスの少なくとも <strong>半分のトラフィック</strong> は、新しいアプリケーションバージョンをホストする新インスタンス群にルーティングされること。</li>
+<li>トラフィックを新インスタンス側に少なくとも半分切り替えた場合でも、アプリケーション全体が容易にスケール可能であること。</li>
+<li>新しいインスタンス群にトラフィックを切り替える前に、<strong>一時ファイルを削除</strong>し、不要なファイルがデプロイ時に残らないようにすること。</li>
+<li>コスト削減のため、現在使用されていない、またはデプロイメントグループに属さない EC2 インスタンスは、デプロイ完了後すぐに <strong>終了</strong> されること。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記の要件を満たすために、どのように <strong>Application Load Balancer / Auto Scaling / CodeDeploy</strong> を構成すべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>Application Load Balancer を起動し、<strong>インプレースデプロイ</strong>を用いて新バージョンをリリースする。  </li>
+<li>デプロイメントグループには Auto Scaling グループと ALB ターゲットグループを関連付ける。  </li>
+<li>CodeDeploy では <code>CodeDeployDefault.OneAtATime</code> をデプロイ設定として使用し、<code>appspec.yml</code> の <code>BlockTraffic</code> フックを利用して一時ファイルを削除する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（自分が選択した不正解）</strong>  </p>
+<ul>
+<li>Application Load Balancer を起動し、<strong>ブルー/グリーンデプロイメント</strong> を用いて新バージョンをリリースする。  </li>
+<li>Auto Scaling グループと ALB ターゲットグループをデプロイメントグループに関連付ける。  </li>
+<li>CodeDeploy では <code>CodeDeployDefault.AllAtOnce</code> をデプロイ設定として使用し、デプロイ完了後に元の Auto Scaling グループのインスタンスを終了するよう構成する。  </li>
+<li>一時ファイルを削除するために、<code>appspec.yml</code> の <code>BlockTraffic</code> フックを使用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>Application Load Balancer を起動し、<strong>ブルー/グリーンデプロイメント</strong> を用いて新バージョンをリリースする。  </li>
+<li>Auto Scaling グループと ALB ターゲットグループをデプロイメントグループに関連付ける。  </li>
+<li>CodeDeploy でカスタムデプロイ設定を作成し、<strong>ヘルシーホストの割合を 50%</strong>（少なくとも半分のトラフィックが新バージョンに向かう）となるように設定する。  </li>
+<li>デプロイ成功後、元の Auto Scaling グループのインスタンスを自動で終了するよう構成する。  </li>
+<li>一時ファイルを本番トラフィック切り替え前に削除するため、<code>appspec.yml</code> の <code>BeforeAllowTraffic</code> フックを使用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>Application Load Balancer を起動し、<strong>インプレースデプロイ</strong> を用いて新バージョンをリリースする。  </li>
+<li>Auto Scaling グループと ALB ターゲットグループをデプロイメントグループに関連付ける。  </li>
+<li>デプロイ設定として <code>CodeDeployDefault.HalfAtATime</code> を使用し、<code>appspec.yml</code> の <code>BlockTraffic</code> フックを使用して一時ファイルを削除する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の回答に対する注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>Blue/Green Deployment</strong></li>
+<li><strong>Application Load Balancer (ALB)</strong></li>
+<li><strong>Auto Scaling Group</strong></li>
+<li><strong>Custom Deployment Configuration（Healthy host 50%）</strong></li>
+<li><strong>BeforeAllowTraffic フック</strong></li>
+<li><strong>旧インスタンス自動終了</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>要件との対応</strong></p>
+<ul>
+<li><strong>新しいインスタンス群を先に起動</strong>  <ul>
+<li>Blue/Green デプロイでは、新しいバージョン用のフリート（グリーン）を先に起動し、そこにアプリケーションをデプロイしてからトラフィックを切り替えるため、この要件を満たす。</li>
+</ul>
+</li>
+<li><strong>AZ をまたぐロードバランシングと自己修復</strong>  <ul>
+<li>ALB + Auto Scaling グループで構成することで、複数 AZ にまたがるインスタンスのロードバランシングとヘルスチェックによる自動復旧が実現できる。</li>
+</ul>
+</li>
+<li><strong>少なくとも半分のトラフィックを新バージョンへ切り替え</strong>  <ul>
+<li>CodeDeploy のカスタムデプロイ設定で <strong>ヘルシーホスト 50%</strong> を指定することで、トラフィックを段階的に切り替えつつ、少なくとも半分のトラフィックを新環境に向ける要件を満たす。</li>
+</ul>
+</li>
+<li><strong>スケーラビリティ</strong>  <ul>
+<li>Auto Scaling グループにより、新旧どちらの環境も負荷に応じてスケール可能であり、トラフィック切り替え後も簡単にスケールできる。</li>
+</ul>
+</li>
+<li><strong>一時ファイルの削除タイミング</strong>  <ul>
+<li><code>BeforeAllowTraffic</code> フックは、新しいインスタンス群にトラフィックを流し始める直前に実行されるため、このタイミングで一時ファイルを削除すると、クリーンな状態で本番トラフィックを受けられる。</li>
+</ul>
+</li>
+<li><strong>コスト削減（旧インスタンスの終了）</strong>  <ul>
+<li>CodeDeploy の blue/green 設定で、デプロイ成功後に旧環境のインスタンスを自動終了するように構成できるため、不要な EC2 コストを最小化できる。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="2">不正解だった自分の回答に対する注釈（選択肢2）</h2>
+<ul>
+<li>
+<p><strong>選択肢2の問題点</strong></p>
+<ul>
+<li><code>CodeDeployDefault.AllAtOnce</code> は、トラフィックの大部分を一度に新環境へ切り替える挙動となり、<strong>段階的なトラフィック移行</strong> や「少なくとも半分」など細かな割合制御を行う要件に合致しない。</li>
+<li>AllAtOnce は失敗時のリスクが高く、ミッションクリティカルなオンラインバンキングシステムには不向き。</li>
+<li>一時ファイル削除に <code>BlockTraffic</code> フックを使っているが、これは <strong>旧環境からトラフィックを外す前</strong> に動くフックであり、「新しいインスタンスにトラフィックを流す前に一時ファイルを削除する」という要件とタイミングが異なる。</li>
+<li>ヘルシーホストの割合を制御していないため、「少なくとも半分のトラフィックを新バージョンへ」という要件を明示的に満たしていない。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li><strong>Blue/Green + カスタムデプロイ設定 + BeforeAllowTraffic</strong> の組み合わせは、「新環境を先に用意して段階的に切り替えつつ、トラフィック切り替え前にクリーンアップを行い、旧環境を確実に廃棄する」という要件に強い。  </li>
+<li>CodeDeploy のライフサイクルフック（<code>BeforeAllowTraffic</code>, <code>AfterAllowTraffic</code>, <code>BlockTraffic</code>, <code>BeforeInstall</code> など）の <strong>実行タイミング</strong> を意識して、クリーンアップや検証処理をどこに置くかを設計する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-15</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

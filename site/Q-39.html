@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-39 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-39</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="39">問題39 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある保険会社は、アプリケーションのデプロイに <strong>AWS CloudFormation</strong> を利用している。</li>
+<li>マルチ AZ 構成の <strong>Amazon RDS for MySQL</strong> データベースに、金融データを保存する多層 Web アプリケーションをホストしている。</li>
+<li>会社は DevOps エンジニアに対し、RDS インスタンスを <strong>最新の MySQL メジャーバージョン</strong> へアップグレードするよう依頼した。</li>
+<li>営業への影響を最小化するため、アップグレード時の <strong>ダウンタイムを極力短くすること</strong> が最重要要件となっている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすように、DevOps エンジニアは CloudFormation テンプレートに対して <strong>どのような変更と手順</strong> を実装すべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>CloudFormation テンプレートの <code>AWS::RDS::DBInstance</code> リソースで <code>DBEngineVersion</code> プロパティを最新バージョンに更新する。  </li>
+<li><code>Update Stack</code> を実行してプライマリ DB をアップグレードする。  </li>
+<li>その後、現在のプライマリと同じプロパティを持つ新しい <strong>Read Replica</strong> を起動し、再度 <code>Update Stack</code> を実行する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>CloudFormation テンプレートの <code>AWS::RDS::DBInstance</code> リソースで <code>AllowMajorVersionUpgrade</code> プロパティを最新バージョン用に更新する。  </li>
+<li>その後、<code>Update Stack</code> を実行してアップグレードを適用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>CloudFormation テンプレートの <code>AWS::RDS::DBInstance</code> リソースで <code>EngineVersion</code> プロパティを最新の MySQL バージョンへ更新する。  </li>
+<li>プライマリ DB インスタンスと同じプロパティを持つ <strong>新しい Read Replica</strong> を起動する <strong>第 2 のアプリケーションスタック</strong> を作成する。  </li>
+<li>最後に <code>Update Stack</code> を実行してアップグレードを完了させる。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>CloudFormation テンプレートの <code>AWS::RDS::DBInstance</code> リソースで <code>AutoMinorVersionUpgrade</code> プロパティを最新バージョン用に更新する。  </li>
+<li>同じプロパティを持つ新しい Read Replica を起動し、その後 <code>Update Stack</code> を実行する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CloudFormation / AWS::RDS::DBInstance</strong></li>
+<li><strong>EngineVersion プロパティの更新</strong></li>
+<li><strong>Read Replica を利用したローリングアップグレード</strong></li>
+<li><strong>最小ダウンタイム</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><code>EngineVersion</code> をテンプレートで明示的に更新することで、<strong>インフラ as Code としてバージョン管理された安全なアップグレード</strong> が実現できる。  </li>
+<li>新しい Read Replica を別スタックとして作成し、複製が完了してから昇格させることで、<strong>切り替え時のダウンタイムを最小化</strong> できる。  </li>
+<li>Multi-AZ / Read Replica の組み合わせにより、アップグレード中も読み取りトラフィックを既存インスタンスへ逃がすなど、柔軟な移行戦略を取れる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>先にプライマリ DB を直接アップグレードしてしまうため、<strong>アップグレード中のダウンタイムが長くなりやすい</strong>。  </li>
+<li>Read Replica を後から追加しても、すでに本番 DB への影響が発生した後であり、要件に反する。</li>
+</ul>
+</li>
+<li><strong>選択肢2</strong>  <ul>
+<li><code>AllowMajorVersionUpgrade</code> はあくまで「メジャーバージョンの自動アップグレードを許可するフラグ」であり、<strong>実際のバージョン指定やダウンタイム削減戦略を示していない</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li><code>AutoMinorVersionUpgrade</code> はマイナーバージョン用であり、問題文が求める <strong>メジャーバージョンアップ</strong> の要件と合致しない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-39</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

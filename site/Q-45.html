@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-45 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-45</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="45">問題45 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>あるエンタープライズ ERP アプリケーションは、Auto Scaling グループ内の <strong>Amazon EC2 インスタンス群</strong> 上で稼働し、その前段に <strong>Application Load Balancer</strong> を配置している。</li>
+<li>アプリケーションは <strong>Amazon DynamoDB テーブル</strong> をデータストアとして利用し、その <strong>DynamoDB Streams</strong> からデータを取得してレポーティング処理を行っている。</li>
+<li>レポーティングモジュールでは 5 つの <strong>AWS Lambda 関数</strong> が DynamoDB Streams を読み取り、  <ul>
+<li>商品数をカウントする  </li>
+<li>在庫を監視する  </li>
+<li>新しいアイテムを <strong>Amazon Data Firehose</strong> に送信して分析する  </li>
+<li>などの処理を行っている。</li>
+</ul>
+</li>
+<li>ピーク時には Lambda 関数が <strong>ストリームスループット制限（throttling）</strong> によるエラーを受けており、一部のリクエストが失敗してレポーティングモジュールのパフォーマンスに悪影響を与えている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記課題を解決するために、<strong>最もスケーラブルでコスト効率が高く、運用オーバーヘッドの少ないソリューション</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>すべての Lambda 関数を削除し、処理を <strong>Auto Scaling 有効な Amazon ECS クラスター</strong> 上で稼働する <strong>AWS App Runner</strong> へ移行する。  </li>
+<li><strong>AWS Glue</strong> をセットアップして DynamoDB Streams を取り込み、<strong>Amazon Managed Service for Apache Flink Studio</strong> を利用するようにレポーティングモジュールを再設計する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>DynamoDB テーブルに新しい <strong>ローカルセカンダリインデックス（LSI）</strong> を追加してクエリ性能を向上させる。  </li>
+<li>テーブルの RCU を 2 倍に増やし、Lambda 関数がテーブルを直接クエリするようにリファクタリングし、DynamoDB Streams を無効化する。  </li>
+<li>各 Lambda 関数の同時実行数制限を上げ、<code>ParallelizationFactor</code> を 10 に設定する。  </li>
+<li>レポーティングモジュールを Apache Flink Studio を利用するよう再設計する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>アーキテクチャをリファクタリングし、<strong>Amazon Kinesis Adapter</strong> を利用して DynamoDB Streams からのデータを大規模にリアルタイム処理する。  </li>
+<li>ストリームを直接 Lambda で消費するのではなく、<strong>Amazon Kinesis Data Streams</strong> を介して処理し、レポーティングモジュールを <strong>Amazon Managed Service for Apache Flink Studio</strong> を利用するように再設計する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>レポーティングモジュールのコードベースの最適化に <strong>Amazon CodeGuru Service</strong> を使用する。  </li>
+<li>DynamoDB テーブルに新しい <strong>グローバルセカンダリインデックス（GSI）</strong> を追加し、RCU を増やしてテーブルからの直接クエリを行う。  </li>
+<li>DynamoDB Streams を無効化し、レポーティングモジュールは Flink Studio を利用するように再設計する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>DynamoDB Streams + Amazon Kinesis Adapter</strong></li>
+<li><strong>Amazon Kinesis Data Streams</strong></li>
+<li><strong>Amazon Managed Service for Apache Flink Studio</strong></li>
+<li><strong>スケーラブルなストリーム処理 / 最小運用負荷</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>DynamoDB Streams を <strong>Kinesis Data Streams と Kinesis Adapter</strong> によって取り込み、Flink Studio で処理することで、<strong>大規模ストリームデータを継続的に処理できるフルマネージドなアーキテクチャ</strong> を構築できる。  </li>
+<li>Kinesis Data Streams はシャードの数を増やすことで <strong>高いスループットとスケールアウト</strong> を実現でき、Lambda 単体で Streams を消費する構成に比べて throttling の問題を回避しやすい。  </li>
+<li>Flink Studio はストリーム分析のマネージドサービスであり、サーバー運用やスケーリング制御のオーバーヘッドを最小限に抑えつつ、複雑なイベント処理を実装できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>App Runner や ECS への全面移行は大掛かりな再アーキテクチャであり、<strong>「既存の DynamoDB Streams ベースの構成をスケーラブルにする」という要求に対して過剰</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢2・4（テーブルを直接クエリ）</strong>  <ul>
+<li>DynamoDB Streams を無効化し、テーブルから直接クエリする構成は、ストリーミング処理の強みを失ううえ、<strong>RCU 増加によるコスト増</strong> を招きやすい。  </li>
+<li>スループット問題のボトルネックはストリーム消費側（Lambda）にあり、GSI/LSI の追加だけでは根本解決にならない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-45</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

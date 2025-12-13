@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-43 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-43</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="43">問題43 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>大手食品・飲料会社が、Docker ベースのアプリケーションを <strong>Amazon ECS クラスター</strong> 上に移行している。</li>
+<li>クラスターは複数の ECS サービスを持ち、<strong>Application Load Balancer (ALB)</strong> を利用してトラフィックを均等に分散している。</li>
+<li>DevOps エンジニアは、すべてのサービスから発生するログを自動的に収集し、<strong>ほぼリアルタイムで分析可能な形で S3 バケットに保存</strong> する仕組みを構成する必要がある。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすために、どのように ECS 環境を構成すべきか。（<strong>Select THREE</strong>）</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li>Application Load Balancer の <strong>アクセスログ</strong> を有効にし、リクエストに関する詳細情報を取得する。  </li>
+<li>アクセスログの出力先として <strong>S3 バケット</strong> を指定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>CloudWatch Events に統合された Lambda 関数を 1 分ごとに起動し、<code>CreateLogGroup</code> と <code>CreateExportTask</code> CloudWatch Logs API を呼び出してログを S3 バケットへエクスポートする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>CloudWatch の <strong>Detailed Monitoring</strong> を使用して ALB へのリクエストの詳細情報を取得し、S3 バケットへの出力を構成する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li><strong>CloudWatch Logs サブスクリプションフィルター</strong> を作成し、ログを解析するために <strong>Amazon Kinesis</strong> と統合する。  </li>
+<li>CloudWatch Logs からログを S3 バケットへエクスポートするよう構成する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢5（正解）</strong>  </p>
+<ul>
+<li>必要な <strong>IAM ポリシー</strong> を作成し、<code>ecsInstanceRole</code> にアタッチする。  </li>
+<li>ECS インスタンスに <strong>CloudWatch Logs エージェント</strong> をインストールし、タスク定義では <strong><code>awslogs</code> ログドライバー</strong> を使用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢6</strong>  </p>
+<ul>
+<li>S3 バケット内のアクセスログを分析するために <strong>Amazon Macie</strong> を設定する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="145">正解と注釈（選択肢1・4・5）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>ALB Access Logs → S3</strong></li>
+<li><strong>CloudWatch Logs + Kinesis + S3</strong></li>
+<li><strong>ECS タスクの awslogs ログドライバー</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この組み合わせが要件を満たす理由</strong></p>
+<ul>
+<li><strong>選択肢1</strong> により、ALB へのリクエストに関する詳細なアクセスログを <strong>直接 S3</strong> へ蓄積できるため、後続のバッチ分析や Athena クエリが容易になる。  </li>
+<li><strong>選択肢5</strong> は ECS タスクのアプリケーションログを <strong>CloudWatch Logs</strong> へ送信するための標準構成であり、ログ集約の前提となる。  </li>
+<li><strong>選択肢4</strong> の CloudWatch Logs サブスクリプションフィルター + Kinesis により、CloudWatch Logs に集約したログを <strong>ストリーミングで分析しつつ S3 にエクスポート</strong> することができ、ほぼリアルタイムの可視化と長期保存を同時に実現できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2</strong>  <ul>
+<li><code>CreateExportTask</code> を 1 分ごとに Lambda から呼び出す構成は冗長かつコスト高であり、CloudWatch Logs サブスクリプションフィルターを使う場合と比べて <strong>リアルタイム性・運用性が劣る</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>Detailed Monitoring はメトリクス粒度の改善が目的であり、<strong>ログを S3 へ直接保存する機能はない</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢6</strong>  <ul>
+<li>Macie は主に <strong>機密データ検出</strong> が目的であり、ログ収集・集約の要件とは直接関係しない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-43</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

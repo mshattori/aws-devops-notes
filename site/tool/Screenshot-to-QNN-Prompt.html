@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Screenshot-to-QNN-Prompt - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Screenshot-to-QNN-Prompt</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="screenshot-q-nnmd-task-specification-for-codex-cli">Screenshot → Q-NN.md Task Specification (for Codex CLI)</h1>
+<p>This file defines how the Codex CLI assistant should behave when you ask it to convert AWS exam question screenshots into <code>Q-NN.md</code> Markdown files.</p>
+<p>When you want to run this task again, you can simply say in a new CLI session:</p>
+<blockquote>
+<p>Run the “Screenshot to Q-NN task” as defined in <code>tool/Screenshot-to-QNN-Prompt.md</code>.</p>
+</blockquote>
+<p>The assistant must then follow the specification below.</p>
+<hr />
+<h2 id="environment-assumptions">Environment assumptions</h2>
+<ul>
+<li>Current working directory: this AWS-DOP Obsidian vault (the notes repository).</li>
+<li>PNG screenshots of questions are located in <code>~/Desktop/Screenshot</code>.</li>
+<li>Each screenshot contains:</li>
+<li>A header like <code>問題11 正解</code> or <code>問題15 不正解</code>.</li>
+<li>An English scenario.</li>
+<li>Four answer options, with the correct one indicated in the UI.</li>
+</ul>
+<hr />
+<h2 id="overall-task">Overall task</h2>
+<ul>
+<li>For every screenshot file under <code>~/Desktop/Screenshot</code>, read the image and create a Markdown file in the current working directory named <code>Q-NN.md</code>, where:</li>
+<li><code>NN</code> is the numeric question ID shown in the header (<code>問題11</code> → <code>Q-11.md</code>).</li>
+<li>The <strong>content of all generated Markdown files must be written in Japanese</strong>, except for AWS service names and technical terms, which can remain in English.</li>
+</ul>
+<hr />
+<h2 id="required-structure-of-each-q-nnmd">Required structure of each <code>Q-NN.md</code></h2>
+<p>Each file must contain at least the following sections.</p>
+<ol>
+<li><strong>Title</strong></li>
+<li>A level-1 heading with the question number and correctness status.  </li>
+<li>
+<p>Example: <code># 問題11 正解</code> or <code># 問題15 不正解</code>.</p>
+</li>
+<li>
+<p><strong>問題文と選択肢（日本語要約）</strong></p>
+</li>
+<li>Short Japanese summary of the English scenario.</li>
+<li>Translation / rephrasing of each answer option into Japanese.</li>
+<li>
+<p>Use concise, exam-oriented bullet points.</p>
+</li>
+<li>
+<p><strong>正解の選択肢と注釈</strong></p>
+</li>
+<li>Clearly identify the correct option.</li>
+<li>Add annotations tailored to the problem:<ul>
+<li>Why this option satisfies all explicit requirements.</li>
+<li>Important AWS services, features, and design patterns involved.</li>
+<li>Why each other option is inappropriate (1–2 short bullets per wrong option).</li>
+</ul>
+</li>
+<li>
+<p>Use <strong>bold</strong> or inline code for key AWS terms and decision keywords.</p>
+</li>
+<li>
+<p><strong>不正解と表示されている場合の追加注釈</strong></p>
+</li>
+<li>If the screenshot header indicates the question was answered incorrectly (<code>不正解</code>), add a dedicated section explaining the wrong choice:<ul>
+<li>Explicitly state which option was selected but is incorrect.</li>
+<li>Explain clearly why it does <strong>not</strong> meet the requirements.</li>
+<li>Provide 1–3 bullet “学習ポイント” to avoid the same mistake.</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2 id="special-handling-for-question-15">Special handling for Question 15</h2>
+<p>For <code>問題15</code> (file <code>Q-15.md</code>):</p>
+<ul>
+<li>Always include a subsection such as <code>## 自分が選んだ不正解の回答</code>.</li>
+<li>In that subsection:</li>
+<li>Clearly state which option was chosen in the exam.</li>
+<li>Explain in Japanese why that option does not satisfy the scenario requirements.</li>
+<li>Add a short list of “学習ポイント” focusing on:<ul>
+<li>Deployment strategy choice (in-place vs blue/green).</li>
+<li>CodeDeploy deployment configuration (e.g., <code>AllAtOnce</code>, custom settings).</li>
+<li>Lifecycle hooks (<code>BeforeAllowTraffic</code>, <code>BlockTraffic</code>, etc.).</li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="formatting-rules">Formatting rules</h2>
+<ul>
+<li>Follow the existing heading style used in other <code>Q-NN.md</code> files in this repo.</li>
+<li>Prefer bullet lists to long paragraphs for explanations.</li>
+<li>Mix Japanese explanations with original English AWS terminology naturally.</li>
+<li>Ensure each file is self-contained and useful for quick pre-exam review.</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Screenshot-to-QNN-Prompt</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

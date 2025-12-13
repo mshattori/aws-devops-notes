@@ -370,8 +370,8 @@
 <li>
 <p>AD連携による管理コンソールSSO</p>
 <ul>
-<li>ADFS（Active Directory Federation Services）をIdPとして認証し、ADユーザーがロールを引き受ける。</li>
-<li>AssumeRoleWithSAML を許可するロールを関連付ける。</li>
+<li>ADFS（Active Directory Federation Services）をIdPとして認証を実施し、ADユーザーがロールを引き受ける。</li>
+<li>関連付けるロールでは信頼ポリシーで AssumeRoleWithSAML を許可。</li>
 </ul>
 </li>
 <li>
@@ -384,7 +384,7 @@
 <p>Organizations - SCP (Service Control Policy)</p>
 <ul>
 <li>メンバーアカウントのルートユーザーの権限を制限可能。</li>
-<li>例: 本番OUにデプロイ操作をDenyしつつ、パイプラインが使用するロールのみ例外でデプロイ操作を許可する、といったガードレールの適用。</li>
+<li>例: 本番OUのSCPで、デプロイ操作をDenyしつつ、パイプラインが使用するロールのみConditionで除外してデプロイを許可する、といったガードレールの適用。</li>
 </ul>
 </li>
 </ul>
@@ -518,7 +518,7 @@
 </ul>
 </li>
 <li>env セクション<ul>
-<li>環境変数設定。パラメータストアからも簡単に取得できる。</li>
+<li>環境変数設定。パラメータストア、シークレットマネージャの値も環境変数として設定できるる。</li>
 </ul>
 </li>
 </ul>
@@ -583,7 +583,7 @@
 <p>デプロイ設定</p>
 <ul>
 <li>EC2<ul>
-<li>AllAtOnce, HalfAtATime, OneAtATime, <strong>Custom (=min. health hosts)</strong></li>
+<li>AllAtOnce, HalfAtATime, OneAtATime, <strong>Custom (=min. health hosts, 必要稼働インスタンス数を指定)</strong></li>
 </ul>
 </li>
 <li>Lambda:<ul>
@@ -604,17 +604,19 @@
 <li>デプロイ処理の具体的な定義。リビジョンの root ディレクトリに配置。</li>
 <li>CodeDeploy エージェントによって実行される。</li>
 <li>ECS ではコンテナイメージが別途コンテナディレクトリに登録される必要があるので、AppSpec はコードと一緒に置かず S3 にファイル単体を置いても良い。</li>
-<li>files セクション<ul>
+<li>files セクション (EC2/オンプレ)<ul>
 <li>source, destination</li>
 </ul>
 </li>
-<li>resources セクション<ul>
+<li>resources セクション (ECS/Lambda)<ul>
 <li>Lambda: Name, Alias, CurrentVersion, TargetVersion</li>
 <li>ECS: TaskDefinition ARN (リビジョン番号含む), LoadBalancerInfo (ContainerName, ContainerPort)</li>
 </ul>
 </li>
 <li>hooks セクション<ul>
 <li>デプロイ前後に実行するスクリプトファイルを指定する (ECS, Lambda では Lambda 実行)</li>
+<li>ValidateService あるのは EC2/オンプレだけ。ApplicationStart 後の動作検証を実施。</li>
+<li>Blue/Green は ELB があるので Before/AfterAllowTrafic フックがある。</li>
 <li>EC2 - インプレース<ul>
 <li>ApplicationStop: 停止スクリプトを指定</li>
 <li>ApplicationStart: 起動スクリプトを指定</li>
@@ -623,7 +625,7 @@
 </ul>
 </li>
 <li>EC2 - Blue/Green<ul>
-<li>ALB があるので AllowTraffic 前後のフックがある。</li>
+<li>ALB があるので BeforeAllowTraffic フックが ValidateService に続く。</li>
 <li>停止側のインスタンスには BlockTraffic 前後のフックしかない。</li>
 <li><img alt="" src="_attachment/image_636.png" /></li>
 <li>Blue/Green を採用し 50% のカスタムデプロイ設定を行い、BeforeAllowTraffic フックでデプロイ中に作成される一時ファイルを削除する例。カスタムと BeforeAllowTraffic がキモ:<ul>
@@ -657,16 +659,27 @@
 </ul>
 <p>問題例: ECS のデプロイメント</p>
 <ul>
-<li>The app is hosted on a cluster of Auto Scaling ECS instances and its deployments are handled by AWS CodeDeploy.</li>
-<li>ALB health checks are not sufficient to tell that new version deployments are successful, rather you have custom validation scripts that verify all APIs of the application.</li>
-<li>You want to make sure that there are no 5XX error replies on the new version before continuing production deployment and that you are notified via email if results failed.</li>
-<li>You also want to configure automatic rollback to the older version when the validation fails.</li>
+<li>アプリケーションは Auto Scaling 対応の ECS クラスター上で稼働。デプロイは CodeDeploy によって実行される。</li>
+<li>ALB のヘルスチェックだけでは新バージョンのデプロイ成功可否を十分に判断できため、すべての API を検証するカスタム検証スクリプトを利用して、新バージョンが問題なく動作することを確認したい。</li>
+<li>新バージョンに対して 5xx エラーが発生していないことを確認してから本番トラフィックを切り替える必要がある。</li>
+<li>検証に失敗した場合はメール通知を受け取り、自動的に旧バージョンへロールバックしたい。</li>
 </ul>
-<p>解答: AfterAllowTestTraffic で Lambda でテストするが、ロールバックは Alarm によって発生させる</p>
+<p>解答: AfterAllowTestTraffic で Lambda でテストするが、ロールバックはデプロイグループに関連付けられた Alarm によって発生する</p>
 <ol>
-<li>Create your validation scripts on AWS Lambda and define the functions on the AppSpec lifecycle hook to validate the app using test traffic.</li>
-<li>Associate CloudWatch Alarms to your deployment group to have it trigger a rollback when the 5xx error alarm is active.</li>
-<li>Have AWS CloudWatch Alarms trigger an AWS SNS notification when the threshold for 5xx is reached on CloudWatch.</li>
+<li>AfterAllowTestTraffic フックで Lambda 検証<ul>
+<li>カスタム API 検証ロジックを実装した AWS Lambda 関数 を作成。AfterAllowTestTraffic に紐付ける。</li>
+</ul>
+</li>
+<li>CloudWatch Alarms をデプロイメントグループに関連付け<ul>
+<li>ALB もしくはターゲットグループのメトリクスから 5xx エラーをモニタリングする CloudWatch アラームを作成。</li>
+<li>アラームをデプロイメントグループに関連付け、自動ロールバックを構成。</li>
+</ul>
+</li>
+<li>CloudWatch Alarms から SNS によるメール通知を行う<ul>
+<li>5xx エラー用 CloudWatch アラームのアクションとして、Amazon SNS トピックへの通知を設定。</li>
+<li>セキュリティ／運用チームのメールアドレスを SNS トピックに Email サブスクリプションとして登録。</li>
+</ul>
+</li>
 </ol>
 <p>問題例: アプリケーションのエラーログでロールバック</p>
 <ul>
@@ -773,7 +786,7 @@
 </ul>
 </li>
 <li>各リージョンにアーティファクトストア (S3バケット) と SSE-KMS キーが必要となる。</li>
-<li>リージョン間でのアーティファクトのコピーが行われる。</li>
+<li>リージョン間でのアーティファクトのコピーが自動的に行われる。その際、コピー先のリージョンの KMS キーで再暗号化される。</li>
 <li><a href="https://docs.aws.amazon.com/codepipeline/latest/userguide/actions-create-cross-region.html">https://docs.aws.amazon.com/codepipeline/latest/userguide/actions-create-cross-region.html</a></li>
 </ul>
 <p>クロスアカウント</p>
@@ -795,9 +808,14 @@
 </ul>
 <p>問題例: CloudFormation アクションで CFn テンプレートのパラメータを指定して prod/staging/dev のコンフィグを分ける</p>
 <ul>
-<li>Launch a new pipeline using AWS CodePipeline that has multiple stages for each environment and configure it to use input parameters.</li>
-<li>Switch the associated UserData of the EC2 instances to match the environment where the application stack is being launched using CloudFormation mappings.</li>
-<li>Specify parameter overrides for AWS CloudFormation actions.</li>
+<li>各環境ごとに複数ステージを持つ AWS CodePipeline を使用して新しいパイプラインを起動し、入力パラメータを使用するように設定する。</li>
+<li>CloudFormation のマッピングを利用して、アプリケーションスタックを起動する環境に一致するよう EC2 インスタンスの UserData を切り替える。</li>
+<li>AWS CloudFormation アクションに対して<strong>パラメータオーバーライド</strong>を指定する。</li>
+</ul>
+<p>パラメータオーバーライド</p>
+<ul>
+<li>CodePipeline の CloudFormation で Cfn テンプレートに渡すパラメータを指定できる機能。</li>
+<li>なお問題で「入力パラメータ」と言っているのは単にパラメータオーバーライドの値を設定する、くらいの意味で別の機能ではない。</li>
 </ul>
 <h1 id="codestar">CodeStar</h1>
 <p>Code サービスによる CI/CD パイプラインをアプリのテンプレートから簡単に作成できる。</p>
@@ -922,7 +940,8 @@
 <p><img alt="" src="_attachment/image_643.png" /></p>
 <p>カスタム</p>
 <ul>
-<li>HalfAtOnce の代わりの割合か台数で必要な稼働中インスタンス数 (min. health) を指定する。</li>
+<li>デプロイ中の必要稼働インスタンスを数または割合で指定 (min. health)。</li>
+<li>HalfAtOnce は min.health=50%と同じ意味。</li>
 </ul>
 <p>EC2/オンプレ</p>
 <ul>
@@ -957,13 +976,13 @@
 <ul>
 <li>単純なインプレースデプロイ。新バージョンを全インスタンスに同時展開。</li>
 <li>環境の全インスタンスのアプリケーションが短時間停止する。</li>
-<li>展開終了までの合計時間は最短。インスタンスの追加コストなし。</li>
+<li><strong>展開終了までの時間は最短</strong>。<strong>インスタンス追加コストなし</strong>。</li>
 </ul>
 <p>Rolling</p>
 <ul>
 <li>環境のインスタンスを複数バッチに分割、バッチごとに新バージョンをデプロイ。(インプレース)</li>
 <li>バッチサイズ分のインスタンスを LB からデタッチしてデプロイ実施。ヘルスチェックが通ればそのバッチを LB に再アタッチ。全インスタンスにデプロイがされるまで繰り返し。</li>
-<li>インスタンスの追加コストなし。</li>
+<li><strong>インスタンス追加コストなし</strong>。</li>
 </ul>
 <p>Rolling with additional batch</p>
 <ul>
@@ -1102,7 +1121,8 @@
 <h3 id="_2">スタックのオプション</h3>
 <p>TimeoutInMinutes</p>
 <ul>
-<li>スタックのステータスが CREATE_FAILED になるまでに待機可能な時間。</li>
+<li>スタックを指定時間で CREATE_FAILED させるタイムアウト指定。スタック作成・更新が長時間固まるの防ぐ。</li>
+<li>デフォルトはタイムアウトなし。</li>
 </ul>
 <p>DisableRollback</p>
 <ul>
@@ -1309,12 +1329,13 @@ Resources:
 </li>
 <li>commands<ul>
 <li>インスタンス起動後、アプリケーションのファイルが展開される前に実行されるコマンド</li>
-<li>バックアップや旧ファイルのクリーンアップなど。</li>
 </ul>
 </li>
 <li>container_commands<ul>
-<li>アプリケーションのファイルが展開された後、アプリのデプロイ前に実行される</li>
-<li>デプロイ前の DB マイグレーションや設定ファイルの更新など</li>
+<li>アプリケーションのファイルが展開された後、アプリのデプロイ前に実行される<ul>
+<li>/opt/elasticbeanstalk/deploy/appsource/ に展開済</li>
+</ul>
+</li>
 <li><strong>leader_only: true</strong> ... 複数あるインスタンスのうち１つだけで実行</li>
 </ul>
 </li>
@@ -1323,13 +1344,20 @@ Resources:
 <ul>
 <li>/opt/elasticbeanstalk/hooks/ で実行される<ul>
 <li>preinit - アプリケーションのデプロイ前</li>
-<li>appdeploy - アプリケーションのデプロイ中</li>
+<li>appdeploy - デプロイ処理</li>
 <li>postinit - アプリケーションのデプロイ後</li>
 <li>configdeploy - ユーザによる設定変更時</li>
-<li>restartappserver - ユーザによるリスタート時</li>
+<li>restartappserver - ユーザによるアプリのリスタート時</li>
 </ul>
 </li>
 <li>デプロイ後にコマンド実行するには .ebextentions/files で appdeploy/post フォルダにスクリプトを作成する</li>
+</ul>
+<p>commands/container_commands はインスタンス起動時のみ、platform/hooks はデプロイごとに実行される</p>
+<ul>
+<li>commands → OS関連のセットアップ  </li>
+<li>container_commands → アプリのビルド準備。デプロイ毎に行う必要はない処理。アプリファイル展開後。</li>
+<li>hooks/appdeploy → デプロイ処理本体  </li>
+<li>hooks/postinit → デプロイ後の作業</li>
 </ul>
 <p>デプロイポリシー</p>
 <ul>
@@ -1459,7 +1487,7 @@ Resources:
 <ul>
 <li>(複数の)コンテナ定義、コンテナの CPU/メモリサイズ、タスク実行ロール</li>
 <li>コンテナへのボリュームマッピングやポートマッピング</li>
-<li>ネットワークモード (VPC)</li>
+<li>ネットワークモード (awsvpc, bridge, host)</li>
 <li>docker-compose.yaml 相当の設定</li>
 </ul>
 <p>Service</p>
@@ -1474,7 +1502,12 @@ Resources:
 <p>Capacity Provider（CP）</p>
 <ul>
 <li>タスク実行インフラの抽象化。旧来の Launch Type（Fargate/EC2）より柔軟で、現在の推奨方式。</li>
-<li>Capacity Storategy: <code>FARGATE</code> / <code>FARGATE_SPOT</code> / <code>EC2（ASG）</code> のタスク配分</li>
+<li>Capacity Storategy: <code>FARGATE</code> / <code>FARGATE_SPOT</code> / <code>EC2（ASG）</code> 毎にタスク配分<ul>
+<li>base：最初に確保するタスク数。</li>
+<li>weight：相対的な分配比率。</li>
+</ul>
+</li>
+<li>Managed Scaling: EC2 Capacity Provider が ASG を自動制御。</li>
 </ul>
 <p>ECS クラスタ</p>
 <ul>
@@ -1518,6 +1551,12 @@ Resources:
 <p>networkMode</p>
 <ul>
 <li><img alt="" src="_attachment/image_657.png" /></li>
+<li>awsvpc はタスクごとに ENI がアタッチされるためポート競合が起きない</li>
+<li>bridge はポートマッピング、host はホストのポートを占有</li>
+</ul>
+<p>volumes</p>
+<ul>
+<li>ホストのディレクトリ (Fragateでは揮発) や EFS をマウント</li>
 </ul>
 <p>containerDefinitions</p>
 <ul>
@@ -1592,9 +1631,14 @@ Resources:
 <li>Service 毎にターゲットグループは1つの模様。CodeDeploy の AppSpec でも containerPort を1つしか指定できない。</li>
 </ul>
 </li>
+<li>クラスタの EC2 インスタンスのセキュリティグループで、ALB にアサインしたセキュリティグループからの全トラフィックの接続を許可する。</li>
+</ul>
+<p>動的ポートマッピング</p>
+<ul>
+<li>コンテナインスタンスに同じポートのタスクを複数配置できるようにする、ELB ターゲットポートの自動割り当て。</li>
+<li>TaskDefinition のポートマッピング定義ではホストポートを 0 (ANY) に設定する</li>
 </ul>
 <p><img alt="" src="_attachment/image_658.png" /></p>
-<p>動的ポートマッピングを ALB で使用するため、TaskDefinition のポートマッピング定義でホストポートを 0 (ANY) に設定することで動的にポートがアサインされる。</p>
 <pre><code>      &quot;portMappings&quot;: [
         {
           &quot;hostPort&quot;: 0,
@@ -1603,7 +1647,6 @@ Resources:
         }
       ],
 </code></pre>
-<p>クラスタの EC2 インスタンスのセキュリティグループで、ALB にアサインしたセキュリティグループからの全トラフィックの接続を許可する。</p>
 <p>ECS Service Auto Scaling</p>
 <ul>
 <li>平均 CPU 使用率などのメトリクスで Auto Scaling で Service の維持タスク数を増減する。</li>
@@ -1638,12 +1681,17 @@ Resources:
 <ul>
 <li>レイヤストレージ ... コンテナ毎に独立。</li>
 <li>ボリュームストレージ ... コンテナ間で共有。タスク定義でマウントを指定する。</li>
-<li>どちらも揮発性でタスク停止で消去される。</li>
+<li>どちらも揮発性でタスク停止で消去される。(必要なら EFC をマウント)</li>
 </ul>
 <p>awsvpc ネットワークモード</p>
 <ul>
 <li>タスク毎に ENI が割り当てられ、VPC に接続される。</li>
 <li>タスク毎にセキュリティグループを指定できる。</li>
+</ul>
+<p>ECS Exec</p>
+<ul>
+<li>SSM Session Manager によりコンテナで対話型のシェルを実行する機能</li>
+<li>SSH キー不要、Fargete でも使用できる。(EC2 クラスタも SSH より ECS Exec 推奨)</li>
 </ul>
 <h1 id="ecr">ECR</h1>
 <p>プライベートなコンテナイメージレポジトリ。 IAM ポリシーでアクセス制御できる。</p>
@@ -2917,8 +2965,17 @@ Resources:
 <li>CloudTrail 証跡を暗号化する CMK のキーポリシーの <code>kms:EncryptionContext</code> 条件で暗号化を行う証跡の ARN を指定して制限する際に使う。</li>
 <li>目的: 意図しない KMS キーで証跡データを暗号化してしまうのを防ぎ、この証跡だけがこの KMS キーを利用できるように制限するため。</li>
 </ul>
-<p>Systems Manager Parameter Store</p>
-<p>Secrets Manager</p>
+<h2 id="systems-manager-parameter-store">Systems Manager Parameter Store</h2>
+<ul>
+<li>料金: 基本無料（Advanced は有料）</li>
+<li>SecureString 型は KMS による暗号化</li>
+</ul>
+<h2 id="secrets-manager">Secrets Manager</h2>
+<ul>
+<li>KMS による暗号化管理</li>
+<li>シークレットの自動ローテーション（Lambda ベース）</li>
+<li>データベース認証情報・APIキー・トークンの格納</li>
+</ul>
 <hr />
 <h1 id="high-availability-fault-tolerance-disaster-recovery">High Availability, Fault Tolerance, Disaster Recovery</h1>
 <p>Ref.
@@ -3901,7 +3958,8 @@ Resources:
 <p>例: 本番アカウントに対して「開発者が直接デプロイできないようにする」とき</p>
 <ul>
 <li>本番 OU に SCP で CloudFormation/EC2 の Create/Update を Deny</li>
-<li>ただしパイプラインが使用するロールのみを Allow</li>
+<li>ただしパイプラインが使用するロールの ARN のみを Condition で StringNotEquals により除外</li>
+<li><strong>SCP では Allow を指定しても意味がない</strong>ため Deny から除外するしかないことに注意</li>
 </ul>
 <h2 id="control-tower">Control Tower</h2>
 <p>Ref. <a href="References/AWS%20-%20Security%20-%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS - Security - CloudFormation, Service Catalog, Control Tower</a></p>

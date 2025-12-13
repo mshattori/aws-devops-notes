@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-40 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-40</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="40">問題40 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>急成長中の企業が <strong>AWS Organizations</strong> を利用し、複数の AWS アカウントを統合管理している。</li>
+<li>コンプライアンス要件により、すべてのサブアカウントからの <strong>Amazon VPC Flow Logs</strong> と <strong>Amazon CloudWatch Logs</strong> を、専用の <strong>監査用アカウント（Audit account）</strong> に集約して保存・分析する必要がある。</li>
+<li>ログは長期保存だけでなく、<strong>検索・取得・分析のために適切にインデックス化</strong> されている必要がある。</li>
+<li>近い将来さらにアカウントが増える見込みであり、スケーラブルな集中ログソリューションが求められている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすために、DevOps エンジニアが実装すべき <strong>最も適切なログ集約ソリューション</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>Audit アカウントに <strong>Amazon SQS FIFO キュー</strong> を作成し、そこからすべてのログを <strong>Amazon OpenSearch Service クラスター</strong> に送信する。  </li>
+<li>各サブアカウントで CloudWatch サブスクリプションフィルターを使用し、VPC Flow Logs と CloudWatch Logs を Audit アカウントの SQS キューへストリームする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>Audit アカウントで新しい <strong>Lambda 関数</strong> を起動し、大きな EC2 インスタンス上でホストされる自前の <strong>OpenSearch クラスター</strong> にログを送信する。  </li>
+<li>各サブアカウントからの CloudWatch サブスクリプションフィルターを Lambda 関数に接続し、そこからログをストリームする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>Audit アカウントで <strong>Amazon Kinesis Data Streams</strong> の新しいストリームを作成し、イベントハンドラーとして動作する <strong>Lambda 関数</strong> を用意して、すべてのログを <strong>Amazon OpenSearch Service クラスター</strong> へ送信する。  </li>
+<li>各サブアカウントから <strong>CloudWatch サブスクリプションフィルター</strong> を使用して、VPC Flow Logs と CloudWatch Logs を Audit アカウントの Kinesis Data Streams へストリームする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>Audit アカウントで Lambda 関数を起動し、VPC Flow Logs と CloudWatch Logs を OpenSearch クラスターへ送信する。  </li>
+<li>各サブアカウントの CloudWatch サブスクリプションフィルターを Lambda 関数に接続し、そこからログをストリームする。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>Amazon Kinesis Data Streams</strong></li>
+<li><strong>CloudWatch Logs サブスクリプションフィルター</strong></li>
+<li><strong>Amazon OpenSearch Service</strong></li>
+<li><strong>監査アカウントへの集中ログ集約</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>各サブアカウントからのログを <strong>CloudWatch Logs サブスクリプションフィルター → Kinesis Data Streams → Lambda → OpenSearch</strong> というパイプラインで集約することで、<strong>リアルタイム性とスケーラビリティ</strong> を両立できる。  </li>
+<li>Kinesis Data Streams は高スループットなストリーミング処理に最適であり、将来アカウントやログ量が増えても <strong>シャード追加によるスケールアウト</strong> が容易。  </li>
+<li>OpenSearch へのインデックス作成により、監査用途で必要な <strong>検索・取得・分析</strong> が効率的に行える。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（SQS FIFO 経由）</strong>  <ul>
+<li>SQS FIFO はメッセージ順序保証が目的であり、ストリーミングログの高スループット処理には適していない。  </li>
+<li>ログ量増加時にスケール制約へ直結しやすい。</li>
+</ul>
+</li>
+<li><strong>選択肢2・4（自前の Lambda + OpenSearch 直結）</strong>  <ul>
+<li>直接 Lambda にすべてのログを集約させると、<strong>Lambda の同時実行数・スループット制約</strong> に影響しやすく、大規模環境ではスケーラビリティに難がある。  </li>
+<li>Kinesis のようなバッファ／再試行機構がないため、ピーク時のスパイク吸収が難しくなる。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-40</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

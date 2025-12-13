@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-30 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-30</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="30">問題30 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある分析用 Web ポータルは <strong>Amazon EMR クラスター</strong> と、それを取り巻く <strong>Auto Scaling グループ上の EC2 インスタンス</strong> を利用してデータ処理を行っている。</li>
+<li>3 か月後、<strong>AWS Trusted Advisor</strong> から「縮小（スケールダウン）が設定されていないため EMR インスタンスが遊休状態で高コストになっている」と推奨が出た。</li>
+<li>今後は Trusted Advisor からの推奨事項を <strong>頻繁かつタイムリーに通知</strong> し、同じ問題が再発しないようにしたい。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>Trusted Advisor の推奨をタイムリーに把握するために有効なソリューションとして、<strong>最も適切な組み合わせ（Select THREE）</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li><strong>Amazon EventBridge</strong> を作成し、Trusted Advisor チェックの変更をモニタリングする。  </li>
+<li><strong>Amazon SES</strong> をトリガーとして設定し、メール通知を送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（自分が選択し、正解でもある）</strong>  </p>
+<ul>
+<li>Trusted Advisor チェックステータスの変更をモニタリングする <strong>EventBridge ルール</strong> を作成する。  </li>
+<li>ルールのターゲットとして <strong>Amazon SNS</strong> を設定し、通知メールを送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li><strong>Trusted Advisor</strong> の組み込み <strong>Amazon EventBridge 通知機能</strong> を有効化し、チェック結果の変更をスキャンさせる。  </li>
+<li>アカウントオーナーに自動で通知を送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（自分が選択し、正解でもある）</strong>  </p>
+<ul>
+<li>Trusted Advisor API を毎日実行する <strong>Lambda 関数</strong> を作成し、チェックを更新する。  </li>
+<li>結果に基づいてメッセージを <strong>SNS トピック</strong> へ公開し、サブスクライバーへ通知する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢5（正解だが自分は選択しなかった）</strong>  </p>
+<ul>
+<li>Trusted Advisor の変更を毎日取得する <strong>Lambda 関数</strong> を作成し、結果を <strong>CloudWatch Logs</strong> に送信する。  </li>
+<li>ログから <strong>CloudWatch Logs メトリクス</strong> を作成し、そのメトリクスに対する <strong>CloudWatch アラーム</strong> を構成して通知を送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢6（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>Trusted Advisor の組み込み <strong>メール通知機能</strong> を有効化し、通知メール（節約見積もりのサマリとチェック結果を含む）を自動受信する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="245">正解の選択肢と注釈（選択肢2・4・5）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>Trusted Advisor API / EventBridge / SNS</strong></li>
+<li><strong>Lambda による定期実行</strong></li>
+<li><strong>CloudWatch Logs メトリクス + アラーム</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この組み合わせが要件を満たす理由</strong></p>
+<ul>
+<li><strong>選択肢2</strong>  <ul>
+<li>Trusted Advisor イベントを <strong>EventBridge</strong> で直接トラッキングし、<strong>SNS メール</strong> によって即時通知できるため、もっともシンプルなイベント駆動型構成。  </li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>Trusted Advisor API を <strong>Lambda で定期実行</strong> することで、イベント型だけでなくスケジュール型のチェックも行える。  </li>
+<li>結果を SNS に公開することで、複数チーム・複数チャネルへの通知配信が容易。</li>
+</ul>
+</li>
+<li><strong>選択肢5</strong>  <ul>
+<li>Trusted Advisor 結果を <strong>CloudWatch Logs + メトリクス + アラーム</strong> に連携させることで、ダッシュボード表示やしきい値ベースのアラートを柔軟に定義できる。  </li>
+<li>通知方法をメール以外（例えば PagerDuty 連携など）へ拡張しやすい。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>その他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（EventBridge + SES）</strong>  <ul>
+<li>SES で直接メール送信を行うと、<strong>SNS ベースの標準的な通知パターン</strong> から外れるうえ、サブスクライバーの増減管理が煩雑になる。  </li>
+<li>問題文は SES を要求しておらず、よりシンプルな SNS を使うのがベストプラクティス。</li>
+</ul>
+</li>
+<li><strong>選択肢3（EventBridge 組み込み通知）</strong>  <ul>
+<li>「アカウントオーナーのみ」への通知に限定されやすく、運用チームへ柔軟に通知を配信できない。  </li>
+<li>他の監視基盤（CloudWatch Logs や既存 SNS トピック）との統合がしづらい。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="6">不正解だった自分の回答に対する注釈（選択肢6）</h2>
+<ul>
+<li>
+<p><strong>どの選択肢を誤って選んだか</strong></p>
+<ul>
+<li><strong>選択肢6：Trusted Advisor の組み込みメール通知機能</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>組み込みメール通知は、主にコスト節約サマリや一部の推奨事項をまとめて通知するものであり、<strong>特定チェックの変化を頻繁かつタイムリーに検出</strong> する用途には向かない。  </li>
+<li>宛先が固定されやすく、<strong>複数のオペレーションチーム / チャネル</strong> へ柔軟に通知を配送する要件を満たしにくい。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>Trusted Advisor を自動監視したい場合、まず <strong>EventBridge + SNS</strong> か <strong>Lambda + API + SNS/CloudWatch</strong> のパターンを思い出す。  </li>
+<li>「Select THREE」問題では、<strong>組み込みの単純なメール機能だけでは運用要件（頻度・配布先・連携性）を満たさない</strong> ケースが多い。  </li>
+<li>CloudWatch Logs / メトリクス / アラームを絡めた構成は、長期的な可視性とアラート制御の柔軟性が高い。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-30</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

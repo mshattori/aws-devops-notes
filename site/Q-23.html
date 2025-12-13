@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-23 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-23</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="23">問題23 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある組織は <strong>AWS Organizations</strong> 配下に複数アカウントを持つ。</li>
+<li>ネットワーク用 AWS アカウントでは <strong>AWS Transit Gateway</strong> を使用し、すべてのアウトバウンドトラフィックを <strong>ファイアウォールアプライアンス</strong> 経由で検査するようにしている。</li>
+<li>ファイアウォールは <code>CRITICAL / ERROR / HIGH / MID / LOW</code> などの重大度を含むすべてのイベントログを <strong>Amazon CloudWatch Logs</strong> に送信している。</li>
+<li>最近のセキュリティ監査で、事業継続性に影響し得るイベントに対して <strong>アラートが一切出ていない</strong> ことが判明した。</li>
+<li>会社は、今後は <strong>CRITICAL イベントが発生したら即座にセキュリティチームへ通知</strong> されるようにすることを求めている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすために、DevOps エンジニアが実装すべき <strong>最も適切な（MOST suitable）ソリューション</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li><code>CRITICAL</code> イベントを検索する <strong>CloudWatch Logs メトリクスフィルター</strong> を作成する。  </li>
+<li>検出結果に基づいてカスタムメトリクスを作成し、そのメトリクスに対して <strong>CloudWatch アラーム</strong> を関連付ける。  </li>
+<li>アラームのアクションとして <strong>Amazon SNS トピック</strong> への通知を設定し、セキュリティチームのメールアドレスをそのトピックにサブスクライブする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>ネットワーク AWS アカウントのフローログを <strong>Amazon Inspector</strong> でモニタリングする。  </li>
+<li><code>CRITICAL</code> Inspector イベントによってトリガーされる <strong>EventBridge ルール</strong> を作成し、ターゲットとして SNS トピックを指定する。  </li>
+<li>セキュリティチームのメールアドレスをその SNS トピックにサブスクライブする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li><strong>CloudWatch Synthetics canary</strong> を設定し、ファイアウォールのステータスを監視する。  </li>
+<li>ファイアウォールが <code>CRITICAL</code> 状態になったり <code>CRITICAL</code> イベントをログに書き込んだ場合に CloudWatch アラームを発火させ、SNS トピックへ通知する。  </li>
+<li>セキュリティチームのメールアドレスを SNS トピックにサブスクライブする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>すべてのアカウントに一貫したセキュリティポリシーを適用するために <strong>AWS Firewall Manager</strong> を利用する。  </li>
+<li><code>CRITICAL</code> Firewall Manager イベントによってトリガーされる <strong>EventBridge ルール</strong> を作成し、ターゲットとして SNS トピックを指定する。  </li>
+<li>セキュリティチームのメールアドレスをその SNS トピックにサブスクライブする。</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">正解の選択肢と注釈（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CloudWatch Logs メトリクスフィルター</strong></li>
+<li><strong>カスタムメトリクス + CloudWatch アラーム</strong></li>
+<li><strong>SNS 通知 + メール購読</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>ファイアウォールログはすでに <strong>CloudWatch Logs</strong> に集約されているため、ログ内容に対してメトリクスフィルターを定義するのが最短経路。  </li>
+<li><code>CRITICAL</code> という文字列を条件にメトリクスフィルターを作成すれば、<strong>任意のログソースに共通の検出ロジック</strong> を簡単に構成できる。</li>
+<li>メトリクスに紐づく <strong>CloudWatch アラーム → SNS → メール</strong> というチェーンは、監査・セキュリティ通知で頻出の標準パターンであり、追加のサービス導入が不要。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2（Inspector）</strong>  <ul>
+<li>ここで監視したいのは「ファイアウォールログ内の CRITICAL イベント」であり、<strong>Inspector の評価結果</strong> ではない。  </li>
+<li>既存ログ基盤である CloudWatch Logs を活用せず、不要に別サービスを導入している。</li>
+</ul>
+</li>
+<li><strong>選択肢3（Synthetics canary）</strong>  <ul>
+<li>Canary はアプリ／エンドポイントの可用性を合成モニタリングする用途であり、<strong>ログストリームの内容をフィルタリングする仕組みではない</strong>。  </li>
+<li><code>CRITICAL</code> ログ検知の要件を満たす直接的な手段ではない。</li>
+</ul>
+</li>
+<li><strong>選択肢4（Firewall Manager）</strong>  <ul>
+<li>Firewall Manager は <strong>ポリシー一元管理</strong> が主目的であり、個々のファイアウォールログの重大度に対してアラームを上げるサービスではない。  </li>
+<li>すでに CloudWatch Logs に送られているログを分析するには過剰な仕組みであり、要件（CRITICAL ログの検知）をシンプルに満たせない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="4">不正解だった自分の回答に対する注釈（選択肢4）</h2>
+<ul>
+<li>
+<p><strong>どの選択肢を誤って選んだか</strong></p>
+<ul>
+<li><strong>選択肢4：AWS Firewall Manager + EventBridge で CRITICAL イベントを検知する構成</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>Firewall Manager のイベントは「ポリシー適用状況」や「未保護リソース」などに関するものであり、<strong>ファイアウォールアプライアンスが出力する任意ログの重大度</strong> を直接反映しているわけではない。</li>
+<li>監査で問題になっているのは既存の <strong>CloudWatch Logs 内の CRITICAL ログが通知されていない点</strong> であり、ログソースを変えずに Logs 側で検知・アラートを構成するのが最適。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li><strong>ログベースの検知要件</strong> では、まず <strong>CloudWatch Logs メトリクスフィルター + CloudWatch アラーム + SNS</strong> の組み合わせを思い出す。  </li>
+<li><strong>Firewall Manager / Inspector / Synthetics</strong> などのサービスは目的が限定されているため、「ログ内の文字列検知」や「単純な重大度アラート」には過剰であることが多い。  </li>
+<li>問題文に「すでに CloudWatch Logs に送られている」「特定の重大度（CRITICAL）」とあれば、<strong>Logs 側でフィルタ → メトリクス → アラーム</strong> という流れを優先的に検討する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-23</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

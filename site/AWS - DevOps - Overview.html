@@ -2020,12 +2020,13 @@ Resources:
 </ul>
 <p>グローバルテーブル</p>
 <ul>
-<li>DynamoDB ストリームを利用したマルチリージョン・マルチマスターのレプリケーション。</li>
+<li>DynamoDB ストリームを利用した<strong>マルチリージョン・マルチマスター</strong>のレプリケーション。</li>
 <li>レプリカテーブル<ul>
 <li>リージョン毎にレプリケーションを受けるレプリカテーブルを作成する必要がある。</li>
-<li>同一アカウントのみ。</li>
+<li>リードレプリカとは異なり、<strong>特定リージョンにマスターがあるわけでない</strong>ことに注意。</li>
 </ul>
 </li>
+<li>同一アカウントのみ。</li>
 <li>ディザスタリカバリ / 近いリージョンのレプリカにアクセスすることでレイテンシー削減。</li>
 </ul>
 <p>DAX: DynamoDB Accelerator</p>
@@ -2096,8 +2097,8 @@ Resources:
 </li>
 <li>レコード投入<ul>
 <li>DynamoDB : アイテム取得、新規アイテム登録 </li>
-<li>SNS : トピックへのメッセージ送信</li>
-<li>SQS : キューへのメッセージ送信</li>
+<li>SNS: トピックへのメッセージ送信</li>
+<li>SQS: キューへのメッセージ送信</li>
 </ul>
 </li>
 <li>その他<ul>
@@ -2108,17 +2109,18 @@ Resources:
 </li>
 </ul>
 <h1 id="sns">SNS</h1>
+<p>トピックを作成してサブスクライバを登録。パブリッシャにトピックを登録する。</p>
 <p>パブリッシャ</p>
 <ul>
 <li>Code シリーズの通知ルール</li>
 <li>CodePipeline 承認アクション</li>
-<li>S3 イベント:  SNS, SQS, Lambda。</li>
-<li>CloudWatch アラーム: SNS, Auto Scaling, EC2 アクション。</li>
+<li>S3 イベント: SNS, SQS, Lambda</li>
+<li>CloudWatch アラーム: SNS, Auto Scaling, EC2 アクション</li>
 </ul>
 <p>サブスクライバ</p>
 <ul>
-<li>Lambda, SQS, HTTP(S)</li>
-<li>Email, SMS/モバイルプッシュ, Chatbot</li>
+<li>アクション: <strong>Lambda, SQS</strong>, HTTP(S)</li>
+<li>通知: Email, SMS/モバイルプッシュ, Chatbot</li>
 </ul>
 <p>Fanout パターン</p>
 <ul>
@@ -2546,6 +2548,11 @@ Resources:
 </ul>
 </li>
 <li>S3 イベントのターゲットは SNS, SQS, Lambda だけ。</li>
+</ul>
+<p>SNS との違い</p>
+<ul>
+<li>SNS 通知を行うサービスのほとんどは EventBridge でも連携できるが、EventBridge ではイベントの種類を特定できるのに対し、SNS ではイベント種類をフィルタするような機能はない。</li>
+<li>GuardDuty の Impact:IAMUser/AnomalousBehavior 通知タイプに対して Lambda 関数を呼び出す問題で「EventBridge ルールを作成する」が正解で、「SNS トピックを作成する」は間違いだった。</li>
 </ul>
 <h2 id="x-ray">X-Ray</h2>
 <p>サービスマップ</p>
@@ -3337,13 +3344,18 @@ Resources:
 <p>ECS (Service 使用時), Beanstalk (High Availability), OpsWorks でも使われる。</p>
 <p>ターゲットグループ</p>
 <ul>
-<li>ターゲットの種類: インスタンス ID, IP アドレス, Lambda (ALB のみ)</li>
+<li>ターゲットの種類: インスタンス ID, IP アドレス, Lambda (ALB のみ)<ul>
+<li>Lambda のターゲットグループは単体の Lambda 関数を指定する</li>
+</ul>
+</li>
 <li>ASG, ECS Service から統合されている。</li>
 </ul>
 <p>リスナー</p>
 <ul>
 <li>リスナールール: ルーティングのルールを定義する。</li>
 <li>ルールの条件が満たされると指定されたターゲットグループに転送などのアクションをとる。</li>
+<li>ポート以外にも、ホスト、パスによるルーティングが可能</li>
+<li>加重ルーティングもリスナールールで設定する</li>
 </ul>
 <p>ヘルスチェック</p>
 <ul>
@@ -3485,7 +3497,7 @@ Resources:
 <p><strong>マルチリージョン対応機能</strong></p>
 <ul>
 <li><strong>DynamoDB Global Tables</strong><ul>
-<li>Streams による多方向レプリケーション</li>
+<li>Streams による多方向レプリケーション (マルチリージョン・マルチアクティブ)</li>
 </ul>
 </li>
 <li><strong>AWS Config Aggregators</strong><ul>
@@ -3996,6 +4008,22 @@ Resources:
 <li>本番 OU に SCP で CloudFormation/EC2 の Create/Update を Deny</li>
 <li>ただしパイプラインが使用するロールの ARN のみを Condition で StringNotEquals により除外</li>
 <li><strong>SCP では Allow を指定しても意味がない</strong>ため Deny から除外するしかないことに注意</li>
+</ul>
+<h2 id="iam-policy">IAM Policy</h2>
+<ul>
+<li>Effect: Deny/Allow<ul>
+<li>明示的 Deny: 明示的な拒否は許可に優先。</li>
+<li>暗黙的 Deny: 明示的な許可がないとデフォルトで拒否。</li>
+</ul>
+</li>
+<li>Principal/NotPrincipal<ul>
+<li>アイデンティティベースのポリシーでは使用できない(省略される)。リソースベースでは必須。</li>
+<li>NotPrincipal は Effect: Deny で使用。他の全プリンシパルが許可される Allow で使用すべきでない。</li>
+</ul>
+</li>
+<li>Action/NotAction</li>
+<li>Resource/NotResouce</li>
+<li>Condition</li>
 </ul>
 <h2 id="control-tower">Control Tower</h2>
 <p>Ref. <a href="References/AWS%20-%20Security%20-%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS - Security - CloudFormation, Service Catalog, Control Tower</a></p>

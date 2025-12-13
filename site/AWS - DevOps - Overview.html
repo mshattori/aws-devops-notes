@@ -304,9 +304,8 @@
 <p>ECS - コンテナインスタンスロール</p>
 <ul>
 <li>ECSクラスターのEC2インスタンスのインスタンスロール。</li>
-<li>ECS Agentが使用するロール。</li>
-<li>ECS クラスター参加、タスク状態レポートなどの ECS API だけでなく、ECRの <code>ecr::GetAuthorizationToken</code> 権限も指定。</li>
-<li>旧来の EC2 Launch Type では CloudWatch Logs 書き込み権限もここでつけていたが、今は awslogs でタスク実行ロールに付与すると覚る。</li>
+<li>ECS Agentが使用するロール。ECS クラスター参加、タスク状態レポートなどの ECS API 権限を設定。</li>
+<li>旧来は ECR のプルや CloudWatch Logs 書き込み権限もここでつけていたが、今はタスク実行ロールで付与すると覚える。</li>
 </ul>
 </li>
 <li>
@@ -767,9 +766,9 @@
 </li>
 <li>パラレルアクション(=アクショングループ)とシーケンシャルアクション</li>
 <li><strong>runOrder:</strong> シーケンスの順番。パラレルアクションは同じ runOrder になる。<ul>
-<li>問題例: 複数の Lambda のデプロイを並行させることでパイプラインの処理時間を早める<ul>
-<li>シナリオ: CodePipeline + CodeBuild を利用しており、異なる Lambda 関数を順番にビルド・テスト・パッケージング・デプロイしている。パイプラインが完了するまでの時間が長く、高速化が求められている。</li>
-<li>回答: 各 Lambda 関数をするアクションに対して、CodePipeline で 同じ runOrder 値 を指定する。</li>
+<li>問題例: 複数 Lambda のデプロイを並行させることでパイプラインの処理時間を早める<ul>
+<li>シナリオ: CodePipeline + CodeBuild を利用して異なる Lambda 関数を順番にビルド・テスト・パッケージング・デプロイ。パイプライン完了までの時間が長く高速化が求められている。</li>
+<li>回答: 各 Lambda 関数をビルドするアクションに同じ runOrder 値を指定する。</li>
 </ul>
 </li>
 </ul>
@@ -1101,22 +1100,7 @@
 <li>AutoScalingReplacingUpdate</li>
 </ul>
 </li>
-<li>AWS::Lambda::Alias<ul>
-<li>Lambda の加重エイリアスを設定する。</li>
 </ul>
-</li>
-</ul>
-<pre><code>  alias:
-    Type: AWS::Lambda::Alias
-    Properties:
-      FunctionName: !Ref function
-      FunctionVersion: !GetAtt newVersion.Version
-      Name: BLUE
-      RoutingConfig:
-        AdditionalVersionWeights:
-          - FunctionVersion: !GetAtt version.Version
-            FunctionWeight: 0.5
-</code></pre>
 <p>DeletionPolicy 属性</p>
 <ul>
 <li>Delete, Retain, Snapshot</li>
@@ -1509,16 +1493,16 @@ Resources:
 <p>Capacity Provider（CP）</p>
 <ul>
 <li>タスク実行インフラの抽象化。旧来の Launch Type（Fargate/EC2）より柔軟で、現在の推奨方式。</li>
-<li>Capacity Storategy: <code>FARGATE</code> / <code>FARGATE_SPOT</code> / <code>EC2（ASG）</code> 毎にタスク配分<ul>
-<li>base：最初に確保するタスク数。</li>
-<li>weight：相対的な分配比率。</li>
+<li>Capacity Provider Storategy: <strong>FARGATE</strong> / <strong>FARGATE_SPOT</strong> / <strong>EC2（ASG）</strong> 毎にタスク配分を設定<ul>
+<li>base: 最初に確保するタスク数</li>
+<li>weight: 相対的な分配比率</li>
 </ul>
 </li>
 <li>Managed Scaling: EC2 Capacity Provider が ASG を自動制御。</li>
 </ul>
 <p>ECS クラスタ</p>
 <ul>
-<li>タスク実行環境の論理スコープ。VPC と実行環境設定 (Launch Type/CP) を設定。</li>
+<li>タスク実行環境の論理スコープ。<strong>VPC+サブネット</strong>と実行環境設定 (Launch Type/CP) を設定。</li>
 <li>クラスタごとに1つ以上の CP が登録できる (FARGATE CP &amp; EC2 CP)</li>
 <li>Fargate であってもコンテナは VPC 内リソース。クラスタ作成時に VPC を設定する。</li>
 </ul>
@@ -1526,9 +1510,8 @@ Resources:
 <ul>
 <li>コンテナインスタンス (EC2) で起動するデーモン。ECS API のやり取りを行う。Fargate では意識不要。</li>
 <li><strong>コンテナインスタンスロール</strong>が適用される。<ul>
-<li>ECS クラスターの EC2 インスタンスのインスタンスロールのこと。</li>
-<li>ECS API 系だけでなく、ECR の <code>ecr::GetAuthorizationToken</code> 権限も指定。</li>
-<li>ただし、実際の pull はタスク実行ロールでコンテナランタイムが実施。</li>
+<li>ECS クラスターの EC2 インスタンスのインスタンスロールのこと。ECS API 系の権限を指定。</li>
+<li>コンテナランタイムに必要な ECR や CloudWatch 系の権限をここで与えることもできるが、最小権限の原則でタスク実行ロールで与えるのが推奨。</li>
 </ul>
 </li>
 </ul>
@@ -1587,7 +1570,7 @@ Resources:
 <li>docker run --log-driver オプションの指定。</li>
 <li>"awslogs" で CloudWatch にログを送れる。</li>
 <li>問題例: ECS (ALB 使用) のログを取得する</li>
-<li>Create the required IAM Policy and attach it to the ecsInstanceRole. Install the Amazon CloudWatch Logs agent on the Amazon ECS instances. Use the awslogs Log Driver in the Amazon ECS task definition.</li>
+<li>Create the required IAM Policy and attach it to the ecsInstanceRole. Install the Amazon CloudWatch Logs agent on the Amazon ECS instances. Use the awslogs Log Driver in the Amazon ECS task definition. (なお、OSのログをとるのでなければ CloudWatch Logs エージェントは不要)</li>
 <li>Capture detailed information about requests sent to your load balancer by enabling access logging on the Application Load Balancer. Configure it to store the logs to the S3 bucket.</li>
 </ul>
 </li>
@@ -1620,7 +1603,7 @@ Resources:
 </ul>
 </li>
 <li>Blue/Green<ul>
-<li>CodeDeploy を使用。CodeDeploy アプリケーションが自動的に作成されう。</li>
+<li>CodeDeploy を使用。CodeDeploy アプリケーションが自動的に作成される。</li>
 </ul>
 </li>
 </ul>
@@ -1630,11 +1613,10 @@ Resources:
 </ul>
 <p>ELB 連携</p>
 <ul>
-<li>起動したコンテナが ELB ターゲットグループに追加される。</li>
-<li>インバウンド接続されるサーバを立てる場合には必須。</li>
+<li>インバウンド接続されるサーバを立てるために必須。起動したタスクが ELB ターゲットグループに追加される。</li>
 <li>ALB, NLB, CLB を選択可能。</li>
 <li>リスナールールの追加とその宛先ターゲットグループの設定を行う。<ul>
-<li>タスク内に複数コンテナがあってもタスクからの外部公開ポートは1つという前提？</li>
+<li>タスク内に複数コンテナがあってもタスクからの外部公開ポートは1つ</li>
 <li>Service 毎にターゲットグループは1つの模様。CodeDeploy の AppSpec でも containerPort を1つしか指定できない。</li>
 </ul>
 </li>
@@ -1642,7 +1624,7 @@ Resources:
 </ul>
 <p>動的ポートマッピング</p>
 <ul>
-<li>コンテナインスタンスに同じポートのタスクを複数配置できるようにする、ELB ターゲットポートの自動割り当て。</li>
+<li>コンテナインスタンスに同じポートのタスクが複数配置できるようにするための、ELB ターゲットポートの自動割り当て。</li>
 <li>TaskDefinition のポートマッピング定義ではホストポートを 0 (ANY) に設定する</li>
 </ul>
 <p><img alt="" src="_attachment/image_658.png" /></p>
@@ -1682,12 +1664,12 @@ Resources:
 </ul>
 <h1 id="fargate">Fargate</h1>
 <ul>
-<li>ボリュームは TaskDefinition の cpu/memory で指定。</li>
+<li>コンピューティングサイズは TaskDefinition の cpu/memory で指定。</li>
 </ul>
 <p>Fargate のストレージ</p>
 <ul>
 <li>レイヤストレージ ... コンテナ毎に独立。</li>
-<li>ボリュームストレージ ... コンテナ間で共有。タスク定義でマウントを指定する。</li>
+<li>ボリュームストレージ ... コンテナ間で共有。タスク定義でマウント指定する。</li>
 <li>どちらも揮発性でタスク停止で消去される。(必要なら EFC をマウント)</li>
 </ul>
 <p>awsvpc ネットワークモード</p>
@@ -1695,10 +1677,10 @@ Resources:
 <li>タスク毎に ENI が割り当てられ、VPC に接続される。</li>
 <li>タスク毎にセキュリティグループを指定できる。</li>
 </ul>
-<p>ECS Exec</p>
+<p>ECS Exec (aws ecs execute-command)</p>
 <ul>
 <li>SSM Session Manager によりコンテナで対話型のシェルを実行する機能</li>
-<li>SSH キー不要、Fargete でも使用できる。(EC2 クラスタも SSH より ECS Exec 推奨)</li>
+<li>SSH 不要、Fargete でも使用できる。(EC2 クラスタのコンテナインスタンスに SSH ログインできるのとは別の話)</li>
 </ul>
 <h1 id="ecr">ECR</h1>
 <p>プライベートなコンテナイメージレポジトリ。 IAM ポリシーでアクセス制御できる。</p>
@@ -1730,7 +1712,7 @@ Resources:
 <h1 id="lambda">Lambda</h1>
 <p>忘れがちなユースケース</p>
 <ul>
-<li>ALB のターゲット: API Gateway 使わなくても HTTP インターフェース付与できる</li>
+<li>ALB のターゲットグループ: API Gateway 使わなくても HTTP インターフェース付与できる</li>
 <li>CloudWatch Logs サブスクリプションフィルター</li>
 <li>DynamoDB ストリーム</li>
 </ul>

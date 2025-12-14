@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-33 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-33</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="33">問題33 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>大手ソフトウェア開発企業が、クラウドベースアプリケーションの 1 つで <strong>GitHub をソースコードリポジトリ</strong> として使用している。</li>
+<li>新しい要件として、<strong>開発 / テスト / 本番環境に対する継続的デプロイメントパイプライン（CI/CD）の自動化</strong> が求められている。</li>
+<li>追加要件：<ul>
+<li>各コード変更に対して <strong>セキュリティコードレビュー</strong> を行い、<strong>PII や機密データの漏洩がないことを確認</strong> する。  </li>
+<li>すべての変更は <strong>ユニットテスト + 機能テスト</strong> を通過する必要がある。  </li>
+<li>GitHub へのプッシュで自動的に CI/CD パイプラインが起動し、<code>devops-administrators@tutorialsdojo.com</code> へメール通知を送る。  </li>
+<li>ビルド / デプロイ失敗時にも通知を送付する。  </li>
+<li>テスト後には <strong>Amazon S3 へのステージング/本番デプロイに対する手動承認ステップ</strong> を含める。  </li>
+<li>ソリューションは <strong>CI/CD のベストプラクティス</strong> に忠実であること。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件すべてを満たすために、DevOps エンジニアが実装すべきオプションはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li><strong>AWS CodePipeline</strong> に、特定ブランチへの新しいコードコミットをトリガーとするパイプラインを構成する。  </li>
+<li>パイプライン内に、<strong>セキュリティレビュー、ユニットテスト、機能テスト、手動承認</strong> の各ステージを設定する。  </li>
+<li><strong>Amazon EventBridge</strong> を用いてパイプラインステージの状態変化イベントを検出し、<code>devops-administrators@tutorialsdojo.com</code> へメールを送信する SNS 通知を構成する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>master ブランチへのコミットをトリガーとする CodePipeline を構成し、同様のステージ（セキュリティレビュー、ユニットテスト、機能テスト、手動承認）を追加する。  </li>
+<li>パイプラインステージの状態変化を <strong>CloudWatch Logs 経由で検知</strong> し、Amazon SES を使用してメール通知を送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>特定ブランチへのコミットをトリガーとする CodePipeline を構成し、必要なステージを追加する。  </li>
+<li>パイプラインの状態変化を <strong>EventBridge</strong> で検出し、<strong>Amazon SES</strong> を通じてメールを送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>master ブランチへのコミットをトリガーとする CodePipeline を構成し、必要なステージを追加する。  </li>
+<li>パイプラインイベントを <strong>CloudTrail</strong> で検出し、SNS を通じて通知する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">正解の選択肢と注釈（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>GitHub Webhook トリガー付き AWS CodePipeline</strong>  </li>
+<li><strong>セキュリティレビュー / テスト / 手動承認ステージ</strong>  </li>
+<li><strong>EventBridge + SNS によるパイプラインイベント通知</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>CodePipeline は GitHub とネイティブ連携でき、特定ブランチへのコミットをトリガーにして <strong>CI/CD パイプラインを自動起動</strong> できる。  </li>
+<li>ステージとして、静的解析ツールやコードスキャンを利用した <strong>セキュリティレビュー</strong>、<strong>ユニットテスト / 機能テスト</strong>、本番デプロイ前の <strong>手動承認アクション</strong> をシンプルに組み込める。  </li>
+<li>CodePipeline のステートチェンジイベントは <strong>EventBridge</strong> に自動的に発行されるため、EventBridge ルールで特定ステージの成功 / 失敗をフィルタし、ターゲットの SNS トピック経由で <strong>メール通知を自動送信</strong> できる。  </li>
+<li>これにより、GitHub → CodePipeline → テスト → 手動承認 → S3 デプロイ → 通知 までが、一貫した <strong>ベストプラクティスに沿った CI/CD フロー</strong> として実現される。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2（CloudWatch Logs + SES）</strong>  <ul>
+<li>パイプラインイベントを CloudWatch Logs から検出するのは間接的であり、<strong>EventBridge という専用イベントバスを利用する方がシンプルかつリアルタイム</strong>。  </li>
+<li>SES での送信管理も必要となり、SNS に比べ設定が煩雑。  </li>
+</ul>
+</li>
+<li><strong>選択肢3（SES 通知）</strong>  <ul>
+<li>EventBridge 連携自体は良いが、SES を直接ターゲットにするよりも、<strong>SNS をメールチャネル + 将来の別チャネル通知のハブとして使う</strong> 方が拡張性が高く、ベストプラクティスに近い。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（CloudTrail ベース）</strong>  <ul>
+<li>CodePipeline のステージイベント検出に CloudTrail を使うのは不自然であり、EventBridge に比べて遅延や設定の複雑さが増す。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>GitHub 連携 CI/CD では、  <ul>
+<li><strong>CodePipeline + CodeBuild + CodeDeploy / S3</strong>  </li>
+<li><strong>EventBridge でパイプラインステートチェンジを検出 → SNS 通知</strong><br />
+  という流れを基本パターンとして覚える。  </li>
+</ul>
+</li>
+<li>セキュリティレビューや PII チェックが要件に含まれる場合、<strong>静的コード解析ステージ</strong> を追加し、テストや手動承認ステージと同列に扱う構成をイメージする。  </li>
+<li>通知は、まず <strong>SNS</strong> を使ってメール / ChatOps / 追加の Lambda 連携などに汎用的に拡張できる設計を優先する。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-33</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

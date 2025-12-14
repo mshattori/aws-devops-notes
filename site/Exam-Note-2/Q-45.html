@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-45 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-45</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="45">問題45 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業が <strong>AWS Amplify / AWS Mobile Hub</strong> を用いたモバイルマーケットプレイスの立ち上げを計画している。<br />
+  このアプリは世界中のユーザーを対象とし、バックエンド API は複数リージョンにデプロイされ、<strong>ユーザーに最も近いリージョンでトランザクション処理</strong> を行う設計。</li>
+<li>DevOps エンジニアは、あるリージョンで発生した <strong>売上・決済トランザクションが他リージョンにも自動的にレプリケート</strong> されるようなシステムアーキテクチャを設計するよう指示されている。</li>
+<li>近い将来、北米・南米・欧州・アジアなど複数リージョンで <strong>数百万ユーザー</strong> の利用が見込まれており、<br />
+  システムは <strong>高いスケーラビリティ・コスト効率・高可用性</strong> を満たす必要がある。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすために、DevOps エンジニアが実装すべきアーキテクチャはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>1 つのリージョンにプライマリライターを持つ <strong>Amazon Aurora Global Database</strong> を構成し、他リージョンには読み取り専用レプリカを配置する。  </li>
+<li>トランザクションをローカル Aurora インスタンスに書き込み、ストレージレイヤーの非同期レプリケーションでデータを複数リージョンへ複製する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>各リージョンごとに個別の Amazon DynamoDB テーブルを用意し、プライマリテーブルの最近の書き込みを Lambda 関数で読み込み、他リージョンのテーブルへリプレイする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>任意のリージョンに <strong>Amazon DynamoDB Global Table</strong> を作成し、DynamoDB Streams を有効化する。  </li>
+<li>データを複製したいリージョンごとにレプリカテーブルを設定し、各リージョンではローカルのレプリカテーブルへトランザクションを書き込む。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li>必要なすべての AWS リージョンにまたがる <strong>DynamoDB Global Table</strong> を作成する。  </li>
+<li>各リージョンでは、そのリージョンにあるレプリカテーブルへトランザクションを書き込む。  </li>
+<li>いずれかのレプリカテーブルで行われた変更は、<strong>グローバルテーブルの仕組みにより自動的にすべてのレプリカテーブルへレプリケート</strong> される。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4">正解の選択肢と注釈（選択肢4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>DynamoDB Global Tables</strong>  </li>
+<li><strong>マルチリージョン・マルチマスター</strong>  </li>
+<li><strong>自動レプリケーション / 高可用性 / スケーラビリティ</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>DynamoDB Global Tables は、<strong>複数リージョン間で自動レプリケーションされるマルチマスターテーブル</strong> を提供し、どのリージョンのクライアントもローカルレプリカへ読み書きできる。  </li>
+<li>ユーザーは最も近いリージョンの API / テーブルにアクセスするため、<strong>低レイテンシでトランザクション処理</strong> が可能。  </li>
+<li>いずれかのリージョンで書き込まれたデータは、バックグラウンドで他リージョンのレプリカへ非同期に複製されるため、<strong>グローバルな一貫性と高可用性</strong> を実現できる。  </li>
+<li>マネージドサービスとして提供されるため、<strong>カスタムレプリケーションロジックや複雑な ETL を実装する必要がなく、運用コストも低い。</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（Aurora Global Database）</strong>  <ul>
+<li>Aurora Global Database は読み取り専用レプリカモデル（単一ライタ）であり、<strong>各リージョンからローカルに書き込むユースケース</strong> には適さない。  </li>
+<li>高スループットのモバイルマーケットプレイスでは、マルチマスターパターンの DynamoDB Global Tables の方がスケーラブル。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（Lambda で書き込みリプレイ）</strong>  <ul>
+<li>Lambda + Streams によるカスタムレプリケーションは実装・運用が複雑であり、<strong>リージョン間レプリケーションを自前で管理する必要がある</strong>。  </li>
+<li>障害時のリトライや順序保証など、DynamoDB Global Tables が自動で処理してくれる部分をすべて自分で実装する必要があり、コストとリスクが高い。  </li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>一見正しそうだが、選択肢4 が <strong>Global Table の標準的な使い方（すべてのレプリカテーブルが対等）</strong> をより明確に述べており、試験では選択肢4 が意図された正解となる。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>グローバルユーザーを対象とするトランザクション系アプリケーションで、  <ul>
+<li><strong>低レイテンシなローカル書き込み</strong>  </li>
+<li><strong>マルチリージョン自動レプリケーション</strong>  </li>
+<li><strong>高いスケーラビリティ / マネージド運用</strong><br />
+  が求められる場合は、まず <strong>DynamoDB Global Tables</strong> を検討する。  </li>
+</ul>
+</li>
+<li>Aurora Global Database は主に <strong>RDB の読み取りスケールアウト + DR</strong> 用であり、<strong>マルチマスター書き込み</strong> が必要なシナリオとは用途が異なる点を意識する。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-45</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

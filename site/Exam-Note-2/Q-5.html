@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-5 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-5</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="5">問題5 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業は、複数の AWS アカウントを <strong>AWS Organizations</strong> で一元管理しており、従業員は複数の国に分散している。</li>
+<li>企業は <strong>IAM ユーザーに紐づく異常なアクティビティ</strong> を検知し、AWS アカウントのセキュリティポリシーを強化したいと考えている。</li>
+<li>要件は次のとおり。<ul>
+<li>異常なアクティビティが検出された従業員本人に通知する。</li>
+<li>同じ従業員のチームリーダーにも通知する。</li>
+<li>通知の送信には外部のメッセージングプラットフォームを使用し、そのプラットフォームは各受信者を特定するための <strong>user-id</strong> を必要とする。</li>
+</ul>
+</li>
+<li>企業はすでに、<strong>IAM ユーザー名から従業員本人とチームリーダーの user-id を取得できる社内 API</strong> を持っている。</li>
+<li>この要件を満たすソリューションを選択する必要がある。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>異常な IAM ユーザーアクティビティを検出し、従業員本人とチームリーダーに外部メッセージングプラットフォーム経由で通知するために、どのソリューション構成を採用すべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>組織内の 1 つの AWS アカウントを <strong>Amazon GuardDuty 管理者アカウント</strong> として指定する。  </li>
+<li>事業で利用している各 AWS アカウントを、その GuardDuty 管理者アカウントに関連付けられた <strong>メンバーアカウント</strong> として追加する。  </li>
+<li><strong>AWS Lambda 関数</strong> を作成し、IAM ユーザー名から社内 API を使って user-id を取得し、外部メッセージングプラットフォームへ通知を送信する。  </li>
+<li>GuardDuty 管理者アカウントで <strong>Amazon SNS トピック</strong> を作成し、<code>Impact:IAMUser/AnomalousBehavior</code> の検出結果に対応する通知を受け取って Lambda 関数をトリガーする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>組織内の 1 つの AWS アカウントを <strong>Amazon Detective 管理者アカウント</strong> として指定する。  </li>
+<li>事業で利用している各 AWS アカウントを、その Detective 管理者アカウントに関連付けられた <strong>メンバーアカウント</strong> として追加する。  </li>
+<li>Lambda 関数を作成し、IAM ユーザー名から user-id を取得して外部メッセージングプラットフォームへ通知を送信する。  </li>
+<li>Detective 管理者アカウントで SNS トピックを作成し、<code>Impact:IAMUser/AnomalousBehavior</code> タイプのイベントにマッチする通知を受け取って Lambda 関数をトリガーする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>組織内の 1 つの AWS アカウントを Amazon Detective 管理者アカウントとして指定する。  </li>
+<li>各 AWS アカウントを Detective メンバーアカウントとして追加する。  </li>
+<li>Lambda 関数を作成し、IAM ユーザー名から user-id を取得して外部メッセージングプラットフォームへ通知を送信する。  </li>
+<li>Detective 管理者アカウントで <strong>Amazon EventBridge</strong> のルールを作成し、<code>Impact:IAMUser/AnomalousBehavior</code> 通知タイプにマッチするイベントを検出して Lambda 関数を呼び出す。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li>組織内の 1 つの AWS アカウントを <strong>Amazon GuardDuty 管理者アカウント</strong> として指定する。  </li>
+<li>事業で利用している各 AWS アカウントを GuardDuty メンバーアカウントとして追加する。  </li>
+<li>Lambda 関数を作成し、IAM ユーザー名から社内 API を通じて従業員とチームリーダーの user-id を取得し、外部メッセージングプラットフォームへ通知を送信する。  </li>
+<li>GuardDuty 管理者アカウントで <strong>Amazon EventBridge ルール</strong> を作成し、<code>Impact:IAMUser/AnomalousBehavior</code> の GuardDuty 検出結果にマッチするイベントを検出して Lambda 関数をトリガーする。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">正解の選択肢と注釈</h2>
+<ul>
+<li>
+<p><strong>正解</strong></p>
+<ul>
+<li><strong>選択肢4：GuardDuty 管理者アカウント + EventBridge ルール + Lambda 通知連携。</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><strong>Amazon GuardDuty</strong> は、IAM ユーザーに紐づく異常なアクティビティ（<code>Impact:IAMUser/AnomalousBehavior</code> など）を継続的に検出する <strong>脅威検出サービス</strong> であり、本問の「異常な行動の監視」に最適。  </li>
+<li>GuardDuty の検出結果はネイティブに <strong>Amazon EventBridge</strong> に発行されるため、<code>detail.type = "Impact:IAMUser/AnomalousBehavior"</code> のようなイベントパターンでフィルタし、必要なときだけ Lambda を起動できる。  </li>
+<li>Lambda 関数側で <strong>IAM ユーザー名 → 従業員 user-id / チームリーダー user-id</strong> への変換を社内 API 経由で実行し、外部メッセージングプラットフォームへ通知することで、「本人＋リーダー双方への通知」という要件を満たす。  </li>
+<li><strong>Organizations の GuardDuty 管理者 / メンバーアカウント構成</strong> を使うことで、複数リージョン・複数アカウントの検出結果を一元的に集約し、単一の EventBridge ルールと Lambda で処理できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（GuardDuty + SNS トピック）</strong>  <ul>
+<li>GuardDuty は EventBridge との統合が標準であり、<code>Impact:IAMUser/AnomalousBehavior</code> のような検出タイプは <strong>EventBridge イベントパターン</strong> として扱うのが基本。  </li>
+<li>SNS を直接トリガーとして前提にしており、設計としては可能なケースもあるが、本問のキーワードとベストプラクティスは <strong>EventBridge ルールで GuardDuty 検出結果をフィルタする</strong> 方向。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（Detective + SNS）</strong>  <ul>
+<li><strong>Amazon Detective</strong> は脅威の「調査・可視化」が目的のサービスであり、GuardDuty や Security Hub からの検出結果を深掘りする用途で使う。  </li>
+<li>Detective 自体は GuardDuty のように <code>Impact:IAMUser/AnomalousBehavior</code> を検出して EventBridge / SNS へ通知するサービスではないため、「検出と通知」の要件を満たさない。  </li>
+</ul>
+</li>
+<li><strong>選択肢3（Detective + EventBridge、自分が選んだ不正解）</strong>  <ul>
+<li>EventBridge を使っている点は正しい方向性だが、そもそも <strong>異常検知を行うべきサービスが GuardDuty ではなく Detective になっている</strong> ため根本的に誤り。  </li>
+<li>Detective は GuardDuty の検出結果を調査するための二次的サービスであり、直接 <code>Impact:IAMUser/AnomalousBehavior</code> イベントを発行する想定ではない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_5">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解の選択肢</strong></p>
+<ul>
+<li><strong>選択肢3：Amazon Detective 管理者アカウント + EventBridge ルール + Lambda 通知</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>問題は「IAM ユーザーの異常なアクティビティを検知するサービス」を求めており、これは <strong>GuardDuty の役割</strong> であって Detective の役割ではない。  </li>
+<li>Detective は GuardDuty や Security Hub で検出された結果を元に、<strong>タイムラインや関係性を調査するためのサービス</strong> であり、検出・通知のエントリポイントとして利用するのは不適切。  </li>
+<li>異常検知を誤ったサービスに任せているため、<code>Impact:IAMUser/AnomalousBehavior</code> のような検出結果を前提とした EventBridge ルールも想定どおり動作しない。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li><strong>GuardDuty → 検出、Detective → 調査</strong> という役割分担を明確に覚えておく。  </li>
+<li>GuardDuty の検出結果からワークフローを開始したい場合は、まず <strong>Amazon EventBridge 統合</strong> を思い出し、<code>detail.type</code> などのイベントパターンでフィルタして Lambda や Step Functions を起動する。  </li>
+<li>「Organizations で複数アカウントをまとめて監視」「IAMUser/AnomalousBehavior」といったキーワードが出たら、<strong>GuardDuty 管理者アカウント + メンバーアカウント構成</strong> を連想する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-5</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -102,7 +102,7 @@
 <td>Pod もENIを持ち VPCに属する場合もある。</td>
 </tr>
 <tr>
-<td><strong>ElasticCache（Redis / Memcached）</strong></td>
+<td><strong>ElastiCache（Redis / Memcached）</strong></td>
 <td>サブネットに紐づく。</td>
 </tr>
 <tr>
@@ -573,7 +573,7 @@
 </ul>
 </li>
 <li>オンプレ: インプレースのみ</li>
-<li>ECS, Lambda:  Blue/Green のみ<ul>
+<li>ECS, Lambda: Blue/Green のみ<ul>
 <li>ECS: サービスにタスクセットと ELB ターゲットグループを作成して加重ターゲットグループ</li>
 <li>Lambda: 指定バージョン間で加重エイリアス</li>
 </ul>
@@ -830,6 +830,12 @@
 <li>CloudWatch メトリクス</li>
 <li>プロジェクト管理ダッシュボード</li>
 </ul>
+<p><strong>Amazon CodeGuru Reviewer</strong></p>
+<ul>
+<li>コードレビューを自動化するマネージドサービス。</li>
+<li>静的解析＋ML により、セキュリティ問題・バグ・パフォーマンス問題を検出。</li>
+<li>Ref. CodeGuru Profiler: 実行中アプリのパフォーマンスのプロファイリング</li>
+</ul>
 <h1 id="s3">S3</h1>
 <p>Ref.<a href="References/AWS%20-%20Security%20-%20S3,%20Glacier,%20RDS,%20DynamoDB.html">AWS - Security - S3, Glacier, RDS, DynamoDB</a></p>
 <p>ライフサイクルルール</p>
@@ -845,6 +851,28 @@
 <li>問題例: LegalHold タグ true のドキュメント以外は 90 日で削除したい<ul>
 <li>S3 イベントでオブジェクト作成時に Lambda 関数を開始する。LegalHold タグが存在しない場合は false の値を追加する。</li>
 <li>LegalHold タグが false のフィルタールールを指定した S3 ライフサイクルポリシーを作成し、90 日より古いオブジェクトを削除するよう設定する。</li>
+</ul>
+</li>
+</ul>
+<p>S3 のモニタリング</p>
+<ul>
+<li>S3 アクセスログ: リクエストIP/レイテンシ/エラーなどのサーバーアクセスログ。記録目的なので自動化には向かない。</li>
+<li>S3 イベント: バケットレベルオプションとして指定。取得できるのは「オブジェクトレベル」のイベントだけ<ul>
+<li>SNS, SQS, Lambda ターゲット</li>
+</ul>
+</li>
+<li>EventBridge の S3 データソース: 管理イベントとデータイベント (オブジェクトレベル) 両方のイベントを対象にできる<ul>
+<li>オブジェクトレベルイベント取得には CloudTrail 証跡が「データイベント」に対して有効になっている必要がある</li>
+</ul>
+</li>
+<li>CloudTrail: 管理プレーンおよびデータイベントの証跡<ul>
+<li>CloudWatch Logsに転送してメトリクスフィルターでアラーム通知も可能</li>
+</ul>
+</li>
+<li>NOTE<ul>
+<li>バケットポリシー変更のような管理イベントなら CloutTrail, EventBridge</li>
+<li>データイベントなら S3 イベントも候補</li>
+<li>アクセスログは監査や事後調査用途で、自動化には向かない</li>
 </ul>
 </li>
 </ul>
@@ -1643,8 +1671,7 @@ Resources:
 </ul>
 <p>forceNewDeployment</p>
 <ul>
-<li>UpdateService API のオプション</li>
-<li>latest タグのレポジトリのイメージが更新されていた場合に、サービス更新しても新しいバージョンはデプロイされないが、このオプションを指定することで新しいイメージがデプロイされる。</li>
+<li>UpdateService API のオプション。Fargate のバージョンを更新する方法。</li>
 </ul>
 <pre><code>aws ecs update-service --force-new-deployment --service store-prd --task-definition task-store-prd
 </code></pre>
@@ -1906,8 +1933,10 @@ Resources:
 </ul>
 <h1 id="dynamodb">DynamoDB</h1>
 <p>Ref.<a href="References/AWS%20DVA%20-%20S3,%20DynamoDB,%20ElastiCache,%20and%20other%20storage%20services.html">AWS DVA - S3, DynamoDB, ElastiCache, and other storage services</a></p>
-<p>DynamoDB は台帳 (テーブル) を各プライマリーキーごとにページ (パーティション) にまとめて管理するようなイメージ
-- プライマリキーで特定されるページに、ソートーキーで特定されるレコードが表に記録される感じ。</p>
+<p>DynamoDB は台帳 (テーブル) を各プライマリーキーごとにページ (パーティション) にまとめて管理するようなイメージ</p>
+<ul>
+<li>プライマリキーで特定されるページに表があり、ソートーキーで特定されるレコードが記録される感じ。</li>
+</ul>
 <p>パーティションキー(ハッシュ属性)</p>
 <ul>
 <li>テーブル内でユニーク。</li>
@@ -1937,7 +1966,7 @@ Resources:
 <ul>
 <li>異なるプライマリキーで検索したい場合に使用するインデックス。</li>
 <li>異なるプライマリキーで作った別テーブルにレプリケーションする仕組み。</li>
-<li>後から作成・削除することも可能。</li>
+<li>後から作成・削除することも可能。ソートキーも指定できる。</li>
 <li>読み込みは結果整合性のみ</li>
 </ul>
 <p>問題例</p>
@@ -2009,7 +2038,7 @@ Resources:
 </ul>
 </li>
 <li>同一アカウントのみ。</li>
-<li>ディザスタリカバリ / 近いリージョンのレプリカにアクセスすることでレイテンシー削減。</li>
+<li>ディザスタリカバリ / 同一リージョンのテーブルにアクセスすることでレイテンシー削減。</li>
 </ul>
 <p>DAX: DynamoDB Accelerator</p>
 <ul>
@@ -2387,7 +2416,7 @@ Resources:
 <li>クロスアカウントの送信先 (Destination) も設定できる。</li>
 <li>ログアグリゲーションの例:<ul>
 <li>中央アカウントで CloudWatch Logs の Destination を作成。(put-destination) この Destination のターゲットを S3 に投入する Kinesis Firehose とする。</li>
-<li>リモートアカウントに PutSubscriptionFilter を許可するリソースベースポリシーを Destination に付与する。(put-destination-policy)</li>
+<li>Destination のリソースベースポリシーでリモートアカウントに PutSubscriptionFilter を許可 (put-destination-policy)</li>
 <li>各アカウントでは中央アカウントの Destination をターゲットにサブスクリプションフィルターを作成する。(put-subscription-filter)</li>
 </ul>
 </li>
@@ -2430,7 +2459,7 @@ Resources:
 <ul>
 <li>コンシューマ不要で S3, Redshift, ES, Splunk に送信。</li>
 <li>バッファリング設定に基づきバッファリング・連結。S3 のスループットで足りない場合等。</li>
-<li>バッチで非同期に呼ばれる Lambda 関数でデータ変換も可能。</li>
+<li>バッチで非同期に呼ばれる Lambda 関数でデータ変換も可能。(Lambda transformer)</li>
 <li>ほぼリアルタイム (Min 60-sec latency)</li>
 </ul>
 <p>Data Analytics</p>
@@ -2497,18 +2526,21 @@ Resources:
 </ul>
 </li>
 </ul>
-<h2 id="cloudwatch-eventseventbridge">CloudWatch Events/EventBridge</h2>
+<h2 id="eventbridge">EventBridge</h2>
 <p>CloudTrail, AWS Config 等のイベントソースと、他の AWS サービスをターゲットを指定したルールを設定。</p>
 <p>ルール:</p>
 <ul>
 <li>イベントソースとターゲットを指定したルール。</li>
-<li>スケジュールの場合はイベントソースにスケジュール式 (rate, cron) を指定</li>
+<li><strong>スケジュール</strong>: Lambda のスケジュール実行など<ul>
+<li>イベントソースにスケジュール式 (rate, cron) を指定</li>
+</ul>
+</li>
 </ul>
 <p>ターゲット</p>
 <ul>
 <li>ECS タスクや EC2 CreateSnapshot API をターゲットにできるとのこと</li>
 </ul>
-<p>Event Bus</p>
+<p><strong>Event Bus</strong></p>
 <ul>
 <li>クロスアカウントでのイベント送信。各アカウントはデフォルトのイベントバスを 1 つ持つ。</li>
 <li>送信側アカウント<ul>
@@ -2516,7 +2548,7 @@ Resources:
 </ul>
 </li>
 <li>受信側アカウント<ul>
-<li>イベントバスで送信側アカウント ID を許可する。</li>
+<li>イベントバスで送信側アカウント ID を許可する。(Event Bus ポリシー: リソースベースポリシー)</li>
 <li>送信側アカウントからのイベントをイベントソースとしたルールを設定する。</li>
 </ul>
 </li>
@@ -2526,7 +2558,7 @@ Resources:
 <ul>
 <li>S3 イベントはバケットレベルオプションとして指定し、取得できるのはオブジェクトレベルのイベントだけ。</li>
 <li>CloudWatch Event の S3 データソースは管理イベントとデータイベント (オブジェクトレベル) 両方のイベントを対象にできる。<ul>
-<li>オブジェクトレベルイベントを取るには CloudTrail の証跡がデータイベントに対して有効になっている必要がある</li>
+<li>オブジェクトレベルイベントの取得には CloudTrail 証跡がデータイベントに対して有効になっている必要がある</li>
 </ul>
 </li>
 <li>S3 イベントのターゲットは SNS, SQS, Lambda だけ。</li>
@@ -2534,7 +2566,7 @@ Resources:
 <p>SNS との違い</p>
 <ul>
 <li>SNS 通知を行うサービスのほとんどは EventBridge でも連携できるが、EventBridge ではイベントの種類を特定できるのに対し、SNS ではイベント種類をフィルタするような機能はない。</li>
-<li>GuardDuty の Impact:IAMUser/AnomalousBehavior 通知タイプに対して Lambda 関数を呼び出す問題で「EventBridge ルールを作成する」が正解で、「SNS トピックを作成する」は間違いだった。</li>
+<li>例: GuardDuty の特定のイベント通知に対して Lambda 関数を呼び出す問題で「EventBridge ルールを作成する」が正解で、「SNS トピックを作成する」は間違いだった。SNS だけでは特定タイプの通知をフィルタできないため。</li>
 </ul>
 <h2 id="x-ray">X-Ray</h2>
 <p>サービスマップ</p>
@@ -2587,9 +2619,11 @@ Resources:
 - <a href="References/AWS%20-%20Security%20-%20Governance,%20Incident%20Response.html">AWS - Security - Governance, Incident Response</a>
 - <a href="References/AWS%20-%20Security%20-%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS - Security - CloudFormation, Service Catalog, Control Tower</a></p>
 <h1 id="aws-config">AWS Config</h1>
-<p>AWS リソース構成のスナップショットと変更履歴をS3に保存
-- AWS Config Recording を有効にする。</p>
-<p>CloudWatch Events 連携</p>
+<p>AWS リソース構成のスナップショットと変更履歴をS3に保存</p>
+<ul>
+<li>AWS Config Recording を有効にする</li>
+</ul>
+<p>EventBridge 連携</p>
 <ul>
 <li>リソース変更時や Config ルールの Noncompliant 発生時に SSM Automation 以外を行いたい場合。</li>
 </ul>
@@ -2617,6 +2651,7 @@ Resources:
 <p>修復アクション</p>
 <ul>
 <li>特定ルールの Noncompliant 発生時に実行する SSM Automation ランブックを指定。</li>
+<li>修復アクションを使わずに、Config ルール検出を EventBridge 経由で受けて Lambda で修復する問題例もある</li>
 </ul>
 <p>問題例: CloudTrail が全アカウントで有効になっているのを確認し、修復する</p>
 <p><img alt="" src="_attachment/image_668.png" /></p>
@@ -2657,12 +2692,17 @@ Resources:
 <p><strong>Automation</strong> (Runbook の実行)</p>
 <ul>
 <li>インスタンスや AWS リソースに Runbook で定義した処理を実行する。</li>
-<li>Runbook の例:<ul>
+<li>
+<p>Runbook の例:</p>
+<ul>
 <li><strong>AWS-UpdateLinuxAmi</strong>:  ベース AMI をインスタンス起動してアップデート実行後に新しい AMI を作成するまでの一連のステップを行う。</li>
 <li><strong>AWSSupport-ExecuteEC2Rescue</strong>: ログ収集やメモリダンプなどのトラブルシューティングを行う EC2Rescure を実行する。</li>
 </ul>
 </li>
-<li>SSM Automation は Codepipeline アクションと統合していないため、Invoke アクションの Lambda などを経由して呼び出す。</li>
+<li>
+<p>SSM Automation は Codepipeline アクションと統合していないため、Invoke アクションの Lambda などを経由して呼び出す。</p>
+</li>
+<li>EC2Rescue: ネットワーク設定ミス、RDP問題、ファイアウォール設定などで到達不能になった EC2 インスタンスを診断・修復する専用ツール </li>
 </ul>
 <h3 id="ssm_1">SSM メンテナンスウィンドウ</h3>
 <ul>
@@ -2811,6 +2851,10 @@ Resources:
 <li>CloudWatch Events 経由で Lambda による対応アクション (インスタンス隔離等)</li>
 <li>独自の脅威インテリジェンス・IP セーフリストをアップロードすることも可能。</li>
 <li>S3 Protection で S3 への脅威検知も対応。</li>
+<li>Organizations の GuardDuty 管理者/メンバーアカウント構成:<ul>
+<li>複数リージョン・複数アカウントの検出結果を管理者アカウントに一元的に集約</li>
+</ul>
+</li>
 </ul>
 <h1 id="amazon-detective">Amazon Detective</h1>
 <p>GuardDutyが検出したセキュリティインシデントを可視化・調査するSIEM</p>
@@ -2942,8 +2986,9 @@ Resources:
 </ul>
 </li>
 <li>Encrypt<ul>
+<li>CMK で最大 4KB までの任意のデータを直接暗号化。</li>
 <li>GenerateDataKey のデータキーを暗号化に使用するので、通常は使用しない。</li>
-<li>CMK の KeyId と最大 4KB までの任意のデータを指定して呼び出す。暗号化された CiphertextBlob が返る。</li>
+<li>CMK の KeyId とデータを渡す。暗号化された CiphertextBlob が返る。</li>
 <li>CiphertextBlob には CMK の情報と暗号化されたデータが含まれる。Decrypt 時は KeyId 指定不要。</li>
 <li>Usecase-1:  DB パスワードなどサイズの小さなシークレットを暗号化する場合。</li>
 <li>Usecase-2: データキーをクロスリージョンで共有するために、データキーを別リージョンの CMK で暗号化して渡す。</li>
@@ -2971,7 +3016,6 @@ Resources:
 </ul>
 <h2 id="secrets-manager">Secrets Manager</h2>
 <ul>
-<li>KMS による暗号化管理</li>
 <li>シークレットの自動ローテーション（Lambda ベース）</li>
 <li>データベース認証情報・APIキー・トークンの格納</li>
 </ul>
@@ -3218,7 +3262,7 @@ Resources:
 </ul>
 </li>
 <li>
-<p>問題例:</p>
+<p>問題例: Terminating:Wait で止めて　EventBridge 連携で SSM Automation　でログを退避 </p>
 <ul>
 <li>Delay the termination of unhealthy Amazon EC2 instances by adding a lifecycle hook to your Auto Scaling group to move instances in the Terminating state to the Terminating:Wait state.</li>
 <li>Set up a CloudWatch Events rule for the EC2 Instance-terminate Lifecycle Action Auto Scaling Event with an associated AWS Systems Manager Automation document.</li>
@@ -3226,10 +3270,18 @@ Resources:
 </ul>
 </li>
 </ul>
+<p>EventBridge 連携</p>
+<ul>
+<li>スケールイン・スケールアウトのライフサイクルアクションを EventBridge イベントで受けて、インスタンスの起動・終了に合わせてインスタンスのリストを更新するような問題例が出てくる。</li>
+</ul>
 <p><strong>CloudFormation による Auto Scaling 作成</strong></p>
+<p>作成時</p>
 <ul>
 <li>CreationPolicy &gt; ResourceSignal で希望数のインスタンスからシグナルあるまで ASG 作成成功を待機。</li>
 <li>起動設定の UserData で cfn-signal を実施。</li>
+</ul>
+<p>更新時</p>
+<ul>
 <li>スタック更新時でもデフォルトでは既存インスタンスは置き換わらない</li>
 <li>UpdatePolicy を指定することでスタック更新時にインスタンスがリプレースされる:<ul>
 <li>AutoScalingRollingUpdate: ASG 内で新しいインスタンスを立ててローリングアップデート</li>
@@ -3285,8 +3337,9 @@ Resources:
 <p>解答: Update を Fail になりにくくする設定を選ぶ</p>
 <ul>
 <li>In your <em>AutoScalingRollingUpdate</em> policy, set the <em>WaitOnResourceSignals</em> property to false.<ul>
-<li><em>WaitOnResourceSignals</em> が true　だと <em>PauseTime</em> がタイムアウトとなる。</li>
-<li>タイムアウトで Fail にならないようにする。アプリケーション起動などは失敗しているかもしれがないが、アップデート自体は Fail にならない。</li>
+<li>WaitOnResourceSignals = true の場合、CFn は各インスタンスからの成功シグナル（cfn-signal）を待つ。</li>
+<li>シグナル送信の実装やタイムアウトに問題があると、ASG 更新がブロックされる原因になる。</li>
+<li>一時的に false にして挙動を確認することで、リソースシグナルが原因かどうかを切り分けできる。</li>
 <li>Take note that if <em>WaitOnResourceSignals</em> is set to true, <em>PauseTime</em> changes to a timeout value.</li>
 <li>AWS CloudFormation waits to receive a success signal until the maximum time specified by the PauseTime value.</li>
 <li>If a signal is not received, AWS CloudFormation cancels the update.</li>
@@ -3323,11 +3376,11 @@ Resources:
 <p>外部公開サーバを高信頼・高可用性で構築するには必須。</p>
 <p>ASG から連携されて使用される。</p>
 <p>CodeDeploy の EC2, ECS の Blue/Green デプロイメントの実現手段</p>
-<p>ECS (Service 使用時), Beanstalk (High Availability), OpsWorks でも使われる。</p>
+<p>ECS, Beanstalk (High Availability), OpsWorks でも使われる。</p>
 <p>ターゲットグループ</p>
 <ul>
 <li>ターゲットの種類: インスタンス ID, IP アドレス, Lambda (ALB のみ)<ul>
-<li>Lambda のターゲットグループは単体の Lambda 関数を指定する</li>
+<li>Lambda のターゲットグループは単体の Lambda 関数のみが指定可能</li>
 </ul>
 </li>
 <li>ASG, ECS Service から統合されている。</li>
@@ -3457,7 +3510,7 @@ Resources:
 <li>EFS Standard: リージョン内の3つ以上のAZにレプリケーションされる。全 AZ にマウントターゲット。</li>
 <li>EFS One Zone: 単一 AZ だけで保管。安価。指定 AZ のみにマウントターゲット。</li>
 </ul>
-<p><strong>Amazon FSx</strong></p>
+<p><strong>(参考) Amazon FSx</strong></p>
 <p>汎用 NFS マネージドサービスである EFS に対して、ファイルシステム特化型のサービス</p>
 <ul>
 <li>FSx ONTAP = SMB (Windows) と NFS (Linux) のネイティブプロトコルサポート</li>
@@ -3466,35 +3519,50 @@ Resources:
 <li>FSx OpenZFS = ZFSベースの高速ファイルシステム (スナップショット/クローン/圧縮が超高速) </li>
 </ul>
 <p><strong>ElastiCache for Redis</strong>: リードレプリカ, フェイルオーバー, マルチ AZ サポート (Memcached は不可)</p>
+<ul>
+<li>マルチ AZ 構成でログインセッションを管理する</li>
+<li>ELB のスティッキーセッションはデプロイメントでインスタンスが入れ替わると無効だが、Redis で管理すれば大丈夫</li>
+</ul>
 <p><strong>EBS は AZ スコープリソース</strong></p>
 <ul>
 <li>別 AZ ではアタッチできず、Multi-AZ 利用ではスナップショットを使ったハックが必要になる。</li>
 <li>AMI はリージョンリソース。</li>
 </ul>
+<p>問題例: EBSのスナップショットを毎日取る</p>
+<ul>
+<li>毎日実行される EventBridge スケジュールルールで EBS CreateSnapshot API を直接呼び出す</li>
+<li>EventBridge はターゲットとして EC2 / EBS API アクションを直接指定できる</li>
+</ul>
 <p>Amazon Data Lifecycle Manager (DLM)</p>
 <ul>
 <li>EBS ボリュームのスナップショット作成、保持、削除を自動化。</li>
 </ul>
+<p><strong>Application Recovery Controller (ARC)</strong></p>
+<ul>
+<li>ゾーンシフトで問題のある AZ を回避してトラフィックをルーティング</li>
+<li>ELB の内部ルーティングテーブルを書き換える</li>
+</ul>
 <h2 id="multi-region-disaster-recovery">Multi Region (Disaster Recovery)</h2>
 <p><strong>マルチリージョン対応機能</strong></p>
 <ul>
-<li><strong>DynamoDB Global Tables</strong><ul>
-<li>Streams による多方向レプリケーション (マルチリージョン・マルチアクティブ)</li>
-</ul>
-</li>
+<li><strong>S3 Cross Region Replication</strong></li>
 <li><strong>AWS Config Aggregators</strong><ul>
 <li>マルチリージョン &amp; マルチアカウント対応</li>
 </ul>
 </li>
 <li><strong>RDS Cross Region Read Replicas</strong><ul>
-<li>DR/レイテンシー削減</li>
+<li>レイテンシー削減 / DR (手動のマスター昇格)</li>
 </ul>
 </li>
 <li><strong>Aurora Global Database</strong><ul>
-<li>1つのリージョンがマスター、他リージョンはDR/レイテンシー削減</li>
+<li>1つのリージョンがマスター、他リージョンはレイテンシー削減 / DR</li>
 </ul>
 </li>
-<li><strong>EBS ボリュームスナップショット・AMI・RDS スナップショット</strong><ul>
+<li><strong>DynamoDB Global Tables</strong><ul>
+<li>Streams による多方向レプリケーション (マルチリージョン・マルチアクティブ)、全リージョンがマスター</li>
+</ul>
+</li>
+<li><strong>EBS/AMI/RDS スナップショット</strong><ul>
 <li>他リージョンへコピー可能</li>
 </ul>
 </li>
@@ -3506,7 +3574,6 @@ Resources:
 <li>グローバル DNS ネットワーク</li>
 </ul>
 </li>
-<li><strong>S3 Cross Region Replication</strong></li>
 <li><strong>CloudFront</strong><ul>
 <li>エッジロケーションでのグローバル CDN</li>
 </ul>
@@ -3689,9 +3756,10 @@ Resources:
 </ul>
 </li>
 <li>DB クラスタ (オプションでマルチAZ)<ul>
-<li>プライマリ DB インスタンスと Aurora レプリカ (リードレプリカ)</li>
+<li>プライマリ DB インスタンスと Aurora レプリカ (リードレプリカ/Reader)</li>
 <li>DB クラスタ作成時にマルチ AZ 配置を指定することでマルチ AZ となる。<ul>
 <li>クラスタボリュームはデフォでマルチ AZ だが、DB クラスタではオプション。 </li>
+<li>Aurora はマスター/スタンバイでなく、リードレプリカ (Reader) でフェイルオーバー</li>
 </ul>
 </li>
 <li>リストアは数秒単位でクラスタを作成可能</li>
@@ -3711,8 +3779,8 @@ Resources:
 </ul>
 <p>Aurora グローバルデータベース</p>
 <ul>
-<li>別リージョンにリードレプリカを配置する。</li>
-<li>1 つのプライマリリージョン (マスター)と最大 5 つのセカンダリリージョン (読み取り専用) で構成。</li>
+<li>別リージョンにリードレプリカを配置する。レイテンシー低減。DR でマスターに昇格も可能。</li>
+<li>1 つのプライマリリージョン (マスター)と最大 5 つのセカンダリリージョン (リードレプリカ) で構成。</li>
 <li>問題例: コンプラ対応でカタログデータは Aurora Global DB に、顧客データを Aurora のリージョナル DB に保管する例:</li>
 <li><img alt="" src="_attachment/image_688.png" /></li>
 </ul>
@@ -3764,7 +3832,7 @@ Resources:
 </li>
 <li>Geolocation (位置情報) ルーティング<ul>
 <li>ユーザの位置情報に基づくルーティング。国やアメリカの州に結びつける。</li>
-<li>ユースケース: ローカライズ、コンプライアンス、パフォーマンス。</li>
+<li>ユースケース: <strong>コンプライアンス</strong>、ローカライズ</li>
 </ul>
 </li>
 <li>Geoproximity (地理近接性) ルーティング<ul>
@@ -3835,12 +3903,18 @@ Resources:
 <li>キャッシュによる DDoS 緩和。</li>
 <li>WAF, AWS Shield が設定できる。(Shield Standard はデフォルトで有効)</li>
 </ul>
+<p><strong>オリジングループ</strong></p>
+<ul>
+<li>CloudFront 内部のフェイルオーバー機能。</li>
+<li>Primary の 5xx や接続失敗で Secondary に切り替わる。</li>
+<li>静的サイトや読み取り中心の DR に適す。</li>
+</ul>
 <p><strong>オリジンの保護</strong></p>
 <p>オリジンサーバに直接アクセスされた場合にオリジン側でブロックする手法。</p>
 <p>S3 バケット</p>
 <ul>
-<li><strong>OAI (Origin Access Identity)</strong> というユーザをディストリビューションに設定する。S3 にはそのユーザからアクセスされているように見える。</li>
-<li>バケットポリシーで OAI の ARN を Principal としてアクセスを許可する。</li>
+<li><strong>OAC (Origin Access Control)</strong> をディストリビューションに設定。バケットポリシーで OAC の ARN を Principal としてアクセスのみを許可する。</li>
+<li>従来の OAI (Origin Access Identity)</li>
 </ul>
 <p>S3 静的 Web ホスティング</p>
 <ul>
@@ -3864,19 +3938,20 @@ Resources:
 </ul>
 <p>HTTPS 必須にする</p>
 <ul>
-<li>ディストリビューションのビューアプロトコルポリシーを設定。</li>
-<li><code>Redirect HTTP to HTTPS</code></li>
-<li><code>HTTPS Only</code></li>
+<li>ディストリビューションのビューアプロトコルポリシー設定:</li>
+<li><strong>Redirect HTTP to HTTPS</strong></li>
+<li><strong>HTTPS Only</strong></li>
+<li>Restrict Bucket Access 設定<ul>
+<li>OAI を設定するためのディストリビューションの設定項目</li>
+</ul>
+</li>
 </ul>
 <p><strong>エッジサーバ → オリジン間</strong></p>
 <p>S3 バケット・カスタムオリジン (ELB/EC2)</p>
 <ul>
 <li>Origin Protocol Policy を次のいずれかに設定:<ul>
-<li><code>HTTPS Only</code></li>
-<li><code>Match Viewer</code><ul>
-<li><code>Viewer Protocol Policy</code> で <code>Redirect HTTP to HTTPS</code> / <code>HTTPS Only</code> を指定する場合</li>
-</ul>
-</li>
+<li><strong>HTTPS Only</strong></li>
+<li><strong>Match Viewer</strong>: Viewer Protocol Policy で Redirect HTTP to HTTPS / HTTPS Only を指定する場合</li>
 </ul>
 </li>
 <li>SSL プロトコル (TLSv1.2, TLSv1.1, TLSv1, SSLv3) を選択。</li>
@@ -3888,7 +3963,7 @@ Resources:
 <li>S3 静的 Web ホスティングは HTTPS 非対応。</li>
 <li>S3 エンドポイント (<code>https://&lt;bucket&gt;.s3.&lt;region&gt;.amazonaws.com</code>) は HTTPS だが Web サイトのホスティングにはならない。</li>
 </ul>
-<p>CloudFront でカスタムドメインの証明書を使う場合、オリジンの ELB までの経路も HTTPS で保護したい場合、CloudFront 側の証明書は us-east-1 の ACM に登録し、もう1つの ELB の証明書は ELB と同じリージョンの ACM に登録する。</p>
+<p>CloudFront でカスタムドメインの証明書を使い、オリジンの ELB までの経路も HTTPS で保護したい場合、CloudFront の証明書は us-east-1 の ACM に登録し、もう1つの ELB の証明書は ELB と同じリージョンの ACM に登録。</p>
 <p>問題例:</p>
 <ul>
 <li>Their DevOps team needs to set up a CloudFront web distribution that uses a custom domain name where the origin is set to point to the ALB.</li>
@@ -3900,26 +3975,22 @@ Resources:
 <li>Import the certificate into AWS Certificate Manager and use it for the Application Load balancer.</li>
 <li>Set the Viewer Protocol Policy to HTTPS Only in CloudFront and then use an SSL/TLS certificate from a 3rd party certificate authority which was imported to either AWS Certificate Manager or the IAM certificate store.</li>
 </ul>
-<p>署名付き URL/署名付き Cookie</p>
+<p>署名付きURL/署名付きCookie</p>
 <ul>
 <li>レンタルコンテンツ配信や限定されたユーザへのコンテンツ配信など。</li>
-<li>署名付き Cookie<ul>
+<li>署名付きCookie<ul>
 <li>URL を変更したくない場合や複数の URL が使用される HLS で使用する。</li>
 <li>HLS: HTTP Live Streaming</li>
 </ul>
 </li>
 <li>署名付き URL/Cookie の使用には CloudFront キーペアやキーグループを登録する。<ul>
-<li>アプリケーション側が秘密鍵で署名付きURL/Cookie を署名し、CloudFront が公開鍵で検証する。</li>
+<li>オリジンのアプリケーションが秘密鍵で署名付きURL/Cookie を署名、CloudFront が公開鍵で検証。</li>
 </ul>
 </li>
+<li>Restrict Viewer Access 設定<ul>
+<li>署名付きURL/署名付きCookieがある場合のみアクセス許可するディストリビューションの設定項目</li>
 </ul>
-<p>Restrict Bucket Access 設定</p>
-<ul>
-<li>OAI を設定するための CloudFront ディストリビューションの設定項目</li>
-</ul>
-<p>Restrict Viewer Access 設定</p>
-<ul>
-<li>署名付きURL/署名付きCookieがある場合のみアクセスを許可する設定項目</li>
+</li>
 </ul>
 <p>フィールドレベル暗号化 (Field-Level Encryption)</p>
 <ul>
@@ -3939,13 +4010,13 @@ Resources:
 <p>Lambda@Edge</p>
 <ul>
 <li>CloudFront エッジロケーションでリクエスト/レスポンスをフックでき、Lambda 関数でリクエストを書き換えたりキャッシュできる。</li>
-<li>実行タイミング: Viewer Request -&gt; Origin Request -&gt; Origin Response -&gt; Viewer Response</li>
+<li>実行タイミング: Viewer Request → Origin Request → Origin Response → Viewer Response</li>
 </ul>
 <p>問題例: CloudFront を使ったシステムでのログイン処理の遅延への対処</p>
 <p>回答:</p>
 <ul>
-<li>In the given scenario, you can use Lambda@Edge to to execute the authentication process in AWS locations closer to the users.</li>
-<li>In addition, you can set up an origin failover by creating an origin group with two origins with one as the primary origin and the other as the second origin, which CloudFront automatically switches to when the primary origin fails. This will alleviate the occasional HTTP 504 errors that users are experiencing.</li>
+<li>In the given scenario, you can use <strong>Lambda@Edge to to execute the authentication process</strong> in AWS locations closer to the users.</li>
+<li>In addition, you can <strong>set up an origin failover by creating an origin group with two origins</strong> with one as the primary origin and the other as the second origin, which CloudFront automatically switches to when the primary origin fails. This will alleviate the occasional HTTP 504 errors that users are experiencing.</li>
 </ul>
 <p>問題例: スタティックな Single Page App を AWS でホストしてヘッダを追加したい</p>
 <ul>
@@ -3955,8 +4026,13 @@ Resources:
 <p>回答:</p>
 <ul>
 <li>Host the application on an S3 bucket configured for website hosting.</li>
-<li>Set up a CloudFront web distribution and set the S3 bucket as the origin with the origin response event set to trigger a Lambda@Edge function.</li>
+<li>Set up a CloudFront web distribution and set the S3 bucket as the origin with <strong>the origin response event set to trigger a Lambda@Edge function</strong>.</li>
 <li>Add the required security headers in the HTTP response using the Lambda function.</li>
+</ul>
+<p>NOTE: この問題は、CloudFront の<strong>レスポンスヘッダーポリシーでカスタムヘッダーを追加</strong>するのが正解に更新された。</p>
+<p>キャッシュヒット率のコントロール</p>
+<ul>
+<li>オリジンからのレスポンスに Cache-Control: max-age=&lt;長めの値&gt; を設定、CloudFront がオブジェクトを長くキャッシュ</li>
 </ul>
 <h2 id="aws-certificate-manager-acm">AWS Certificate Manager: ACM</h2>
 <ul>
@@ -3969,7 +4045,7 @@ Resources:
 </ul>
 </li>
 <li>証明書はインポートするか ACM が生成するパブリック証明書 (ACM 証明書) を使用。<ul>
-<li>ACM 証明書は統合サービスで無料で利用できる証明書</li>
+<li>ACM 証明書は統合サービスで無料で利用できる証明書 (AWSドメインであるが自己署名などではなく立派なパブリック証明書)</li>
 </ul>
 </li>
 </ul>
@@ -4000,13 +4076,28 @@ Resources:
 </li>
 <li>Principal/NotPrincipal<ul>
 <li>アイデンティティベースのポリシーでは使用できない(省略される)。リソースベースでは必須。</li>
-<li>NotPrincipal は Effect: Deny で使用。他の全プリンシパルが許可される Allow で使用すべきでない。</li>
+<li>NotPrincipal は Effect: Deny で使用。他の全プリンシパルが許可されるため Allow とともに使用すべきでない。</li>
 </ul>
 </li>
 <li>Action/NotAction</li>
 <li>Resource/NotResouce</li>
-<li>Condition</li>
+<li>Condition<ul>
+<li>ARN, IP Address (CIDR), VPC などの条件指定</li>
+<li>StringEquqls のような演算子として IpAddress/NotIpAddress がある。</li>
 </ul>
+</li>
+</ul>
+<pre><code>    &quot;Condition&quot;: {
+        &quot;NotIpAddress&quot;: {
+            &quot;aws:SourceIp&quot;: [
+                &quot;35.78.2.29/32&quot;
+            ],
+            &quot;aws:VpcSourceIp&quot;: [
+                &quot;172.31.0.0/16&quot;
+            ]
+        }
+    }
+</code></pre>
 <h2 id="control-tower">Control Tower</h2>
 <p>Ref. <a href="References/AWS%20-%20Security%20-%20CloudFormation,%20Service%20Catalog,%20Control%20Tower.html">AWS - Security - CloudFormation, Service Catalog, Control Tower</a></p>
 <p>マルチアカウント管理の問題を解決する Landing Zone を適用するサービス。</p>
@@ -4047,10 +4138,10 @@ Resources:
 <li>アプリケーションの検出、依存関係、性能 (CPU, RAM, I/O, etc.)。</li>
 </ul>
 </li>
-<li>AWS Migration Hub と統合 → 移行の進捗をトラッキング</li>
+<li><strong>AWS Migration Hub ダッシュボード</strong>と統合 → 移行の進捗をトラッキング</li>
 <li>エージェントレス型<ul>
 <li>VMware vCenter Server 環境</li>
-<li>AWS Agentless Discovery Connector (OVA 形式の仮想アプライアンス) を使用する。</li>
+<li>AWS Agentless Discovery Connector (OVA 形式の仮想アプライアンス) を使用。</li>
 </ul>
 </li>
 <li>エージェント型<ul>
@@ -4070,7 +4161,28 @@ Resources:
 </li>
 </ul>
 <p><img alt="" src="_attachment/image_692.png" /></p>
-<p>Direct Connect</p>
+<h2 id="storage-gateway">Storage Gateway</h2>
+<ul>
+<li>オンプレの Storage Gateway から S3 をバックエンドとして利用。<ul>
+<li>GW は仮想アプライアンス(VM) かハードウェアアプライアンス。</li>
+</ul>
+</li>
+<li>ファイルゲートウェイ: NFS インターフェース</li>
+<li>ボリュームゲートウェイ: iSCSI インターフェース。マウント可能。<ul>
+<li><strong>保管型</strong>ボリュームゲートウェイ (<strong>Stored volumes</strong>)<ul>
+<li>オンプレ側がプライマリで S3 がバックアップ。</li>
+</ul>
+</li>
+<li><strong>キャッシュ型</strong>ボリュームゲートウェイ (<strong>Cached volumes</strong>)<ul>
+<li>オンプレ側はキャッシュ。S3 側がプライマリ。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>テープゲートウェイ (VTL: Virtual Tape Library): iSCSI VTL インターフェース。</li>
+<li>暗号化: デフォルトで SSE-S3 有効。SSE-KMS も利用できる。</li>
+</ul>
+<h2 id="direct-connect">Direct Connect</h2>
 <ul>
 <li>オンプレ拠点 (オフィスや DC) と VPC を専用線で接続</li>
 <li>セットアップに数週間はかかるしお高い。</li>
@@ -4090,7 +4202,7 @@ Resources:
 </ul>
 </li>
 </ul>
-<p>Transit Gateway</p>
+<h2 id="transit-gateway">Transit Gateway</h2>
 <ul>
 <li>複数 VPC 同士やオンプレとの Direct Connect や VPN を HUB となるゲートウェイで接続。</li>
 <li>スター型ネットワークでルーティングテーブルの制御を Transit Gateway で集中管理。</li>

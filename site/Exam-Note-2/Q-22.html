@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-22 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-22</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="22">問題22 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある IT コンサル企業は、複数の AWS アカウントを <strong>AWS Organizations</strong> で管理しており、組織単位 (OU) ごとに部署やチームを分けている。</li>
+<li>ある日、IT セキュリティチームが、<strong>事前承認なしに第三者の AWS アカウントが突然組織に追加されていた疑い</strong> を報告した。<br />
+  この外部アカウントには高い権限が付与されていたが、幸い実害は発生していない。</li>
+<li>会社は、今後 AWS アカウントや Organizations 設定に対する変更が行われた場合には、<strong>即座に通知を受け取れる監視体制</strong> を構築したい。</li>
+<li>要件：  <ul>
+<li>AWS Organizations 関連の API コールやコンソール操作を詳細に記録する。  </li>
+<li>組織構成・ポリシーに対する変更を継続的に監視し、<strong>SNS / EventBridge によるアラート</strong> を受け取る。  </li>
+<li><strong>Select TWO</strong>。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすための <strong>最も適切な監視構成</strong> の組み合わせはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li>新しい <strong>Amazon CloudTrail トレイル</strong> を作成し、Organizations へのすべての API コール（Organizations コンソールからの操作を含む）を記録する。  </li>
+<li>さらに、AWS Organizations API へのコードベースの呼び出しもすべて追跡する。  </li>
+<li><strong>Amazon EventBridge と Amazon SNS を統合</strong> し、組織内で管理者が指定したアクションが発生した際にイベントを生成し、SNS を通じて通知を送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>AWS Marketplace からサードパーティの監視ツールを導入し、侵害が検出された場合にアラートを送信させる。  </li>
+<li>侵害の詳細は AWS GuardDuty で分析し、SNS で管理者へ通知する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>AWS Systems Manager と Amazon EventBridge を使用して組織全体の変更を監視し、アカウントの新しいアクティビティや設定変更を通知する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>CloudWatch Dashboard を作成して組織への変更を監視し、新しい SNS トピックを作成して通知を送る。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢5（正解）</strong>  </p>
+<ul>
+<li><strong>AWS Config</strong> を利用して AWS Organizations のコンプライアンスを監視する。  </li>
+<li>SNS トピックまたは EventBridge ルールを設定し、Organizations の設定やアカウント構成に変更があった場合にアラートを送信する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="15">正解の選択肢と注釈（選択肢1・5）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CloudTrail で Organizations API を完全記録</strong>  </li>
+<li><strong>EventBridge + SNS によるイベント通知</strong>  </li>
+<li><strong>AWS Config による Organizations 構成変更の監視</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この組み合わせが要件を満たす理由</strong></p>
+<ul>
+<li><strong>CloudTrail</strong> は、Organizations API を含むすべての管理プレーン API コールを記録できるため、<strong>いつ・誰が・どのようにアカウントを追加 / 削除 / 変更したか</strong> を完全にトレースできる。  </li>
+<li>CloudTrail を EventBridge と統合すれば、特定の Organizations イベント（例：<code>CreateAccount</code>, <code>InviteAccountToOrganization</code>, <code>AttachPolicy</code> など）発生時に <strong>リアルタイムで SNS 通知や自動ワークフロー</strong> を起動できる。  </li>
+<li><strong>AWS Config</strong> は Organizations リソースの構成状態を継続的に評価し、<strong>想定外のアカウント追加やポリシー変更</strong> を検出して SNS / EventBridge でアラートを送れる。  </li>
+<li>CloudTrail（操作ログ）と Config（現在の構成・コンプライアンス）の組み合わせにより、<strong>Who / When / What をフルカバーする監査 + 監視体制</strong> を実現できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2（サードパーティツール + GuardDuty）</strong>  <ul>
+<li>GuardDuty は脅威検出サービスであり、Organizations の構成変更やアカウント追加そのものを直接監視するわけではない。  </li>
+<li>サードパーティツール導入はコスト・運用面でオーバーヘッドが大きく、「MOST appropriate」な選択とは言い難い。  </li>
+</ul>
+</li>
+<li><strong>選択肢3（Systems Manager + EventBridge）</strong>  <ul>
+<li>Systems Manager はパッチ適用・オートメーションなど運用タスク向けであり、Organizations 管理の監査・記録には適さない。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（CloudWatch Dashboard + SNS）</strong>  <ul>
+<li>Dashboard はメトリクス可視化用であり、Organizations 構成変更の検出には向かない。  </li>
+<li>根本的なイベントソースとして CloudTrail / Config を利用していないため、要件を満たさない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>AWS アカウント / Organizations の変更監視では、  <ul>
+<li><strong>CloudTrail → 管理プレーン API コールの記録と EventBridge 連携</strong>  </li>
+<li><strong>AWS Config → リソース構成・ポリシーのコンプライアンス評価と SNS / EventBridge 通知</strong><br />
+  の組み合わせが基本パターン。  </li>
+</ul>
+</li>
+<li>「第三者アカウントが勝手に追加された疑い」などのシナリオでは、<strong>誰が招待 / 作成したかを追跡する CloudTrail</strong> と、<strong>現在の OU / SCP / アカウント構成を監視する Config</strong> の両方を使う構成を思い出す。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-22</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

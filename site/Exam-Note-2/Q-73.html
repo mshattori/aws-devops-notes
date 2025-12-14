@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-73 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-73</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="73">問題73 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>大手ソフトウェア企業が、複数 AZ に分散した EC2 Auto Scaling グループ上でアプリケーションをテストしている。<br />
+  インスタンス群は <strong>Application Load Balancer (ALB)</strong> の背後で稼働しており、デプロイには <strong>blue/green + immutable インスタンス</strong> 戦略を採用してサービス劣化を避けている。</li>
+<li>しかし最近、<strong>新バージョンのデプロイやスケーリングイベントが発生するたびにユーザーがログアウトされてしまう</strong> ことが判明した。<br />
+  これは、セッション情報が各 EC2 インスタンスのローカルメモリに保持されており、インスタンスの置き換えやスケールイン時に失われるためである。<br />
+  DevOps チームは、スケーリングやデプロイの有無にかかわらず、ユーザーがログイン状態を維持できるようにしたい。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記の問題を解決する <strong>最も効率的な方法</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>単一 AZ 上の大きな EC2 インスタンスに <strong>Memcached セッションストア</strong> を立ち上げ、アプリケーションからそのノードへセッション情報を書き込む。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>サポートする各 AZ ごとに 1 台の EC2 インスタンス上に <strong>Redis セッションストア</strong> を立ち上げ、それぞれ独立して運用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>複数 AZ にノードを持つ <strong>Amazon ElastiCache for Redis クラスター</strong> を新規に構築し、アプリケーションが <strong>セッション情報を ElastiCache に保存する</strong> ように構成する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>ALB でスティッキーセッション（Cookie ベース）を有効化し、ターゲットグループごとにアプリケーション独自 Cookie を設定する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の選択肢と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>セッションステートの外部化</strong>  </li>
+<li><strong>ElastiCache for Redis（マネージドインメモリストア）</strong>  </li>
+<li><strong>マルチ AZ クラスターで高可用なセッション共有</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>セッション情報を <strong>ElastiCache for Redis の共有ストアに保存</strong> することで、どの EC2 インスタンスにリクエストがルーティングされても、<strong>同じセッションデータへアクセス可能</strong> になる。  </li>
+<li>ElastiCache は <strong>マネージドなフェイルオーバー / マルチ AZ レプリケーション / 自動バックアップ</strong> を提供するため、単一 EC2 インスタンス上の自前 Redis/Memcached よりも可用性・スケーラビリティに優れる。  </li>
+<li>Auto Scaling や blue/green デプロイでインスタンスが入れ替わっても、セッションストアは別リソースとして存続するため、<strong>ユーザーがログアウトされることなく継続利用</strong> できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（単一 AZ Memcached）</strong>  <ul>
+<li>セッションストア自体が <strong>単一障害点 (SPOF)</strong> となり、AZ 障害やインスタンス障害に脆弱。  </li>
+<li>可用性・スケーラビリティの観点で「MOST efficient」とは言えない。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（AZ ごとの独立 Redis）</strong>  <ul>
+<li>各 AZ に別々の Redis を立てると、<strong>セッションが AZ 間で共有されず、AZ を跨いだリクエストで再ログインが必要</strong> となる。  </li>
+<li>セッションレプリケーションの自前実装も複雑。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（ALB スティッキーセッション）</strong>  <ul>
+<li>スティッキーセッションは、<strong>インスタンス入れ替え時のセッション喪失</strong> を防げない（セッションデータは依然としてインスタンスローカル）。  </li>
+<li>また、スケーリング時に特定インスタンスにトラフィックが偏る可能性があり、スケーラビリティを損なう。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>ステートフルな Web アプリを Auto Scaling + ALB 環境で動かす場合、  <ul>
+<li><strong>セッション情報は必ず外部ストア（ElastiCache, DynamoDB など）へ移す</strong>。  </li>
+<li>ロードバランサのスティッキーセッションだけに頼るのは避ける。<br />
+  という設計パターンを覚えておく。  </li>
+</ul>
+</li>
+<li>ElastiCache for Redis は、<strong>高速・マネージド・マルチ AZ</strong> の観点から、セッションストア用途に非常に適している。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-73</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

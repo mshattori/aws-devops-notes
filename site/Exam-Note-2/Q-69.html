@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-69 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-69</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="69">問題69 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業が、社内利用向けの <strong>サーバーレス Angular アプリケーション</strong> を AWS 上に構築している。<br />
+  デプロイプロセスでは、アプリを <strong>AWS CodeBuild</strong> でビルドし、成果物を S3 バケットへコピーしている。</li>
+<li><code>buildspec.yml</code> の <code>post_build</code> ステップには、次のようなコマンドが記述されている：</li>
+</ul>
+<pre><code class="language-yaml">post_build:
+  commands:
+    - aws s3 cp dist s3://&lt;bucket-name&gt;/ --acl authenticated-read
+</code></pre>
+<ul>
+<li>セキュリティチームがデプロイ後に確認したところ、この S3 バケット内のオブジェクトは <strong>任意の AWS アカウントからアクセス可能</strong> であることが判明した。<br />
+  しかし、このアプリケーションは <strong>社内利用のみ</strong> を想定している。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>最もセキュアな方法でこの問題を解決するには、どのような対応を行うべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li><code>buildspec.yml</code> の <code>post_build</code> コマンド内の <code>--acl authenticated-read</code> を <code>--acl public-read-write</code> に置き換える。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li><code>--acl authenticated-read</code> を <code>--acl public-read</code> に置き換える。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li><code>post_build</code> コマンドに <code>--sse AES256</code> を追加してオブジェクトを暗号化する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li><strong>ビジネスが所有する AWS アカウントだけがオブジェクトへアクセスできるように S3 バケットポリシーを構成</strong> する。  </li>
+<li>さらに、<code>buildspec.yml</code> の <code>post_build</code> コマンドから <code>--acl authenticated-read</code> を削除する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4">正解の選択肢と注釈（選択肢4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong><code>--acl authenticated-read</code> による過度なアクセス権限</strong>  </li>
+<li><strong>バケットポリシーで明示的にアクセス可能アカウントを制限</strong>  </li>
+<li><strong>オブジェクト ACL に依存しない最小権限設計</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><code>--acl authenticated-read</code> は「<strong>任意の AWS アカウントの認証済みユーザー</strong> に読み取り権限を付与」する ACL であり、<strong>社内限定アプリケーションには過剰なアクセス許可</strong> となる。  </li>
+<li><code>buildspec.yml</code> から ACL オプションを削除し、オブジェクト ACL をデフォルト（バケットオーナーのみ）に戻すことで、<strong>S3 アクセス制御をバケットポリシーへ一元化</strong> できる。  </li>
+<li>バケットポリシーで、企業が所有するアカウント / IAM ロール / VPC エンドポイントなどに限定して <code>s3:GetObject</code> を許可すれば、<strong>最小権限で社内ユーザーのみアクセス可能</strong> な構成となる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1・2（public-read / public-read-write）</strong>  <ul>
+<li>インターネット上のすべてのユーザーに読み取り（あるいは書き込み）を許可してしまうため、<strong>社内限定という要件から完全に外れる</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢3（サーバーサイド暗号化のみ）</strong>  <ul>
+<li>暗号化はデータ保護として有用だが、<strong>アクセス権限の広さそのものは変えない</strong> ため、問題の本質（過度な公開）を解決できない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>S3 へのデプロイ時に <code>--acl</code> オプションを多用すると、<strong>バケットポリシーとは別経路でアクセス権限が付与され、意図しない公開につながる</strong> ことがある。  <ul>
+<li>特に <code>authenticated-read</code> や <code>public-read</code> などの canned ACL は、マルチテナント / 公開サイトでない限り避ける。  </li>
+<li>代わりに、<strong>バケットポリシー + IAM ポリシー</strong> を使って、組織の AWS アカウントやロールに限定してアクセスを許可する。  </li>
+</ul>
+</li>
+<li>セキュリティ上の問題が「誰でも読める / 多くのアカウントから読める」場合、<strong>暗号化よりもまずアクセス制御の見直し</strong> が優先される。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-69</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

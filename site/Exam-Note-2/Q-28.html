@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-28 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-28</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="28">問題28 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>データアナリティクスチームは、モバイルアプリのユーザー行動分析のために <strong>100 台の EC2 インスタンスノードからなる大規模 Hadoop クラスター</strong> を使用している。</li>
+<li>現在は、<strong>AWS Health</strong> から EC2 メンテナンス関連のメール通知が来るたびに、DevOps チームが手動でそれをデータアナリティクスチームへ転送している。<br />
+  対象は、  <ul>
+<li>特定の EC2 インスタンスに対するメンテナンス通知  </li>
+<li>旧世代インスタンスタイプのリタイア通知<br />
+  など。</li>
+</ul>
+</li>
+<li>データアナリティクスチームは、これらメンテナンスがクラスターへ与える影響を素早く把握し、<strong>HDFS が障害から復旧できるよう事前に対策を取りたい</strong> と考えている。</li>
+<li>要件：  <ul>
+<li>この通知プロセスを <strong>最も迅速に（FASTEST way）自動化</strong> したい。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たす最も速い自動化方法はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li><strong>AWS Systems Manager Resource Data Sync</strong> を使用して、関連する EC2 インスタンスの AWS Health イベントを追跡する。  </li>
+<li>Resource Data Sync が定期的に AWS Health API をポーリングし、EC2 更新を取得するよう構成する。  </li>
+<li>条件に一致するイベントがあれば、データアナリティクスチームへ通知を送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>AWS Health イベントに対して <strong>CloudWatch メトリクスフィルター</strong> を作成し、しきい値に達した際に通知を送る CloudWatch アラームを設定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li><strong>AWS EventBridge（CloudWatch Events）</strong> で AWS Health をイベントソースとするルールを作成する。  </li>
+<li>サービスとして EC2 を選択し、通知を受け取りたいイベントタイプを指定する。  </li>
+<li>ルールのターゲットとして <strong>Amazon SNS トピック</strong> を設定し、データアナリティクスチームがそのトピックをサブスクライブする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>データアナリティクスチームのメールアドレスを AWS アカウントの追加連絡先として登録し、EC2 メンテナンスメールを直接受け取れるようにする。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の選択肢と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>AWS Health → EventBridge 連携</strong>  </li>
+<li><strong>SNS でチームへ自動通知</strong>  </li>
+<li><strong>最速・最小実装の自動化</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>AWS Health は <strong>EventBridge のネイティブイベントソース</strong> として統合されており、メンテナンスやインスタンスタイプリタイアなどのイベントが発生すると、即座に EventBridge にイベントが流れる。  </li>
+<li>EventBridge ルールでサービス（EC2）やイベントタイプを絞り込み、ターゲットを SNS トピックに設定するだけで、<strong>ほぼリアルタイムにメール / チャットなどへ通知</strong> できる。  </li>
+<li>追加のポーリング処理や複雑な設定が不要で、「FASTEST way」というキーワードに最も合致する。  </li>
+<li>DevOps チームによる手動転送が不要となり、<strong>メンテナンス情報が直接データアナリティクスチームへ届く</strong> ようになる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（SSM Resource Data Sync）</strong>  <ul>
+<li>Resource Data Sync は主に <strong>インベントリ / 構成情報の集約</strong> に使われ、AWS Health イベントのリアルタイム通知には適さない。  </li>
+<li>Health API をポーリングする構成は、EventBridge ネイティブ連携に比べて遅く、実装も複雑。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（CloudWatch Metric Filter + Alarm）</strong>  <ul>
+<li>Health イベントを CloudWatch Logs に流す追加設定やメトリクスフィルター作成が必要で、<strong>EventBridge 直接連携より手間がかかる</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（メール連絡先追加）</strong>  <ul>
+<li>仕組みとしては簡単だが、<strong>DevOps / Analytics 両チームで設定管理が煩雑</strong> になりやすく、SNS / EventBridge を用いた自動化に比べて柔軟性が低い。  </li>
+<li>通知チャネルをメール以外（Slack など）に広げたい場合にも拡張性に欠ける。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li><strong>AWS Health / メンテナンス通知の自動化</strong> では、まず <strong>EventBridge ルール + SNS</strong> の組み合わせを思い出す。  </li>
+<li>「FASTEST way」「最小の実装で自動化」と問われた場合、<strong>既存のマネージド統合（Health → EventBridge / GuardDuty → EventBridge など）</strong> を活用できるかを確認する。  </li>
+<li>メール転送への依存は、運用の属人化につながるため、<strong>SNS / EventBridge によるイベント駆動通知</strong> へ置き換える発想を持つ。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-28</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-13 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-13</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="13">問題13 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業は、<strong>特許情報を含む機密ファイル</strong> を US East (Ohio) リージョンの <strong>Amazon S3 バケット</strong> に保存している。</li>
+<li>プロジェクトメンバーが S3 オブジェクトに対して行う <strong>PUT / GET / DELETE などの操作</strong> を監査目的でモニタリングし、<br />
+  その履歴を簡単に検索・確認できるようにしたい。</li>
+<li>要件：<ul>
+<li>S3 オブジェクトレベルの操作を監査できること。  </li>
+<li>ログの検索・レビューが容易であること。  </li>
+<li><strong>コスト効率が最も良い（MOST cost-effectively）</strong> 解決策を選択すること。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記の要件を最もコスト効率よく満たすソリューションはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li><strong>AWS CloudTrail</strong> トレイルを作成し、S3 API コールのログを S3 バケットに保存する。  </li>
+<li>S3 バケット上の <strong>data events</strong> を記録する <strong>AWS Lambda 関数</strong> を作成し、S3 オブジェクトに対するすべてのアクションごとに発火する <strong>Amazon EventBridge ルール</strong> からその Lambda をトリガーする。  </li>
+<li>出力されたログを <strong>Amazon CloudWatch Logs グループ</strong> で閲覧する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>S3 バケットでアクセスログを有効化し、ログを別の S3 バケットに出力する。  </li>
+<li>ログを <strong>Amazon OpenSearch Service</strong> にインポートし、ログを簡単に検索・クエリできるようにする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>CloudWatch Log グループを作成し、S3 ログをオブジェクトレベルイベントとしてこのロググループに送信するよう構成する。  </li>
+<li>作成した CloudWatch Log グループ上でイベントログを検索・閲覧する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>S3 バケットのログ記録を有効化する。  </li>
+<li>S3 バケットのオブジェクトレベルイベントを監視する <strong>Amazon EventBridge ルール</strong> を作成する。  </li>
+<li>ルールのターゲットとして CloudWatch Logs グループを指定し、イベントログを CloudWatch Logs に送信して閲覧・検索する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">正解の選択肢と注釈（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CloudTrail data events for S3</strong>  </li>
+<li><strong>EventBridge + Lambda + CloudWatch Logs</strong>  </li>
+<li><strong>オブジェクトレベル監査 + コスト効率</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><strong>CloudTrail data events</strong> を有効化することで、S3 オブジェクトに対する <strong>PUT / GET / DELETE などの操作</strong> を詳細に記録でき、監査要件を満たせる。  </li>
+<li>CloudTrail のログは S3 バケットに保存されるため、<strong>低コストで長期保存</strong> できる。必要に応じて Athena などでクエリすることも可能。  </li>
+<li>さらに EventBridge + Lambda を使って、監査用に必要なイベントを抽出し <strong>CloudWatch Logs</strong> へ送ることで、頻繁に検索したいイベントだけをロググループに集約可能。  </li>
+<li>この構成により、<strong>保存コスト（S3）と検索性（CloudWatch Logs）をバランス良く両立</strong> できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2（自分が選んだ不正解：S3 アクセスログ + OpenSearch）</strong>  <ul>
+<li>S3 アクセスログは主に <strong>サーバーアクセスログ（リクエスト元 IP / レイテンシ / エラーなど）</strong> を記録するもので、CloudTrail data events ほどオブジェクトレベル操作の詳細に特化していない。  </li>
+<li>さらに、OpenSearch クラスターを常時稼働させると、<strong>マネージド検索クラスターのコスト</strong> が高くつき、「MOST cost-effective」という要件に反する。  </li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>S3 から直接 CloudWatch Logs へのオブジェクトレベルイベント送信という前提が曖昧で、通常のサービス統合パターンと異なる。  </li>
+<li>すべての data events を CloudWatch Logs に送り続けると、<strong>ログ取り込みコストが高くなりがち</strong> で、コスト効率の観点で CloudTrail + S3 には劣る。  </li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>S3 アクセスログ + EventBridge + CloudWatch Logs という複雑な構成になり、設計が冗長。  </li>
+<li>アクセスログベースでの EventBridge 連携は標準的なパターンではなく、<strong>CloudTrail data events を使ったシンプルな構成に比べてコスト・運用負荷ともに高くなる</strong>。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解の選択肢</strong></p>
+<ul>
+<li><strong>選択肢2：S3 アクセスログを別バケットに保存し、OpenSearch で検索する構成</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>OpenSearch を常時稼働させると、インスタンス・ストレージ・スナップショットなどのコストがかかり、<strong>「MOST cost-effective」な解決策とは言い難い</strong>。  </li>
+<li>S3 アクセスログは HTTP レベルのログであり、CloudTrail data events が提供するような <strong>API コール単位の監査ログ</strong> とは性質が異なる。  </li>
+<li>監査要件を満たすには、<strong>CloudTrail + S3（必要に応じて Athena や CloudWatch Logs）</strong> のような、AWS が推奨する監査向けサービスを利用するのが望ましい。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li><strong>監査・API コールの記録 → CloudTrail、S3 アクセスパターン分析 → アクセスログ / OpenSearch など</strong> と用途を明確に区別する。  </li>
+<li>「MOST cost-effective」というキーワードがある場合、<strong>マネージド検索クラスター（OpenSearch など）の常時稼働コスト</strong> を意識し、まずは S3 + CloudTrail / Athena / CloudWatch Logs のような軽量な構成を検討する。  </li>
+<li>S3 のオブジェクトレベル操作の監査には <strong>CloudTrail data events for S3</strong> を最優先で思い出す。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-13</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

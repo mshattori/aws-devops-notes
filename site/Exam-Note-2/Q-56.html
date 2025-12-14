@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-56 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-56</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="56">問題56 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>開発者が AWS 上でモバイルクイズアプリを開発しており、<strong>AWS CodeDeploy</strong> を使って複数の EC2 インスタンスへアプリケーションをデプロイしている。  </li>
+<li>あるリリースでは、スケジュールされたデプロイ完了後に <strong>ホットフィックスファイル</strong> を適用する必要があり、これらのファイルは現在のアプリケーションリビジョンには含まれていなかった。<br />
+  そのため開発者は、ターゲットインスタンスへホットフィックスファイルを <strong>手動でアップロード</strong> した。</li>
+<li>次のアプリケーションリリースでは、新しいリビジョンにホットフィックスファイルを含めたが、デプロイが失敗して CodeDeploy が <strong>前のリビジョンへ自動ロールバック</strong> を行った。<br />
+  すると、手動で追加していたホットフィックスファイルが失われ、アプリケーションが正しく動作しなくなった。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>この問題の <strong>原因</strong> は何か。また、<strong>今後どのように防止すべきか</strong>。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li>デフォルトでは、CodeDeploy はデプロイ先ロケーション上の <strong>すべてのファイルを削除</strong> し、自動ロールバックにより旧リビジョンのファイルのみをクリーンにデプロイする。  </li>
+<li>今後は「<strong>Retain the content</strong>」オプションを選択し、旧アプリリビジョンに含まれるファイルのみをデプロイし、既存コンテンツ（手動で配置したファイル）を保持するようにする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>デフォルトでは CodeDeploy はすべてのファイルを削除し、自動ロールバックで旧リビジョンをクリーンにデプロイする。  </li>
+<li>今後は「<strong>Overwrite the content</strong>」オプションを選択し、旧アプリリビジョンのファイルのみが上書きされ、既存コンテンツは保持されるようにする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>デフォルトでは CodeDeploy はすべてのファイルを保持するが、自動ロールバックでは旧リビジョンのファイルのみをデプロイする。  </li>
+<li>今後は「Fail the deployment」オプションを選択し、旧リビジョンに含まれるファイルのみがデプロイされ、既存コンテンツは保持されるようにする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>デフォルトでは CodeDeploy はすべてのファイルを保持する。  </li>
+<li>今後は「Overwrite the content」オプションを選択し、旧リビジョンのファイルのみが上書きされ、既存コンテンツは保持されるようにする。</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">正解の選択肢と注釈（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CodeDeploy デプロイ設定：Retain the content / Overwrite the content</strong>  </li>
+<li><strong>自動ロールバック時のデプロイルート上のファイル削除</strong>  </li>
+<li><strong>手動追加ファイルが失われた原因</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この問題の原因</strong></p>
+<ul>
+<li>CodeDeploy のデフォルト設定では、<strong>デプロイルートディレクトリ内の既存ファイルを削除した上で新しいリビジョンのファイルを展開</strong> する。  </li>
+<li>また、自動ロールバックが発生すると、<strong>旧リビジョンのファイルだけをクリーンに再デプロイ</strong> するため、そのディレクトリ上に手動で追加されていたホットフィックスファイルはすべて削除される。  </li>
+<li>その結果、ロールバック後の環境からホットフィックスファイルが消え、アプリケーションが動作しなくなった。</li>
+</ul>
+</li>
+<li>
+<p><strong>今後の防止策</strong></p>
+<ul>
+<li>同様の状況を避けるには、CodeDeploy のデプロイ設定で <strong>「Retain the content」オプション</strong> を選択し、<br />
+<strong>既存コンテンツ（手動で追加したファイル）を削除せずに、アプリリビジョンに含まれるファイルのみを更新</strong> するようにする。  </li>
+<li>ただし、手動で追加するファイルが増えると構成管理が複雑化するため、<strong>可能な限りホットフィックスもアプリケーションリビジョンに取り込む</strong> ことが望ましい。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2（Overwrite the content、自分の誤答）</strong>  <ul>
+<li>「Overwrite the content」は、既存コンテンツを上書き・削除する方向であり、<strong>手動で追加したファイルを保持したい要件と逆</strong>。  </li>
+<li>デフォルト挙動とほぼ同じであり、問題の再発防止にはならない。  </li>
+</ul>
+</li>
+<li><strong>選択肢3・4</strong>  <ul>
+<li>「デフォルトでファイルを保持する」という前提が誤りであり、CodeDeploy の実際のデフォルト挙動と一致しない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>CodeDeploy では、デプロイ時に <strong>既存ファイルを削除するか保持するか</strong> を制御するオプションがあり、  <ul>
+<li><strong>Overwrite the content</strong>：デプロイルートをクリーンにしてから新リビジョンを展開。  </li>
+<li><strong>Retain the content</strong>：既存コンテンツを残したまま、リビジョンに含まれるファイルのみを更新。<br />
+  という挙動の違いを押さえておく。  </li>
+</ul>
+</li>
+<li>手動で配置したファイルを維持したい場合、<strong>Retain the content</strong> を選択するか、そもそも <strong>手動ファイルをリビジョンへ統合する</strong> のがベストプラクティス。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-56</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

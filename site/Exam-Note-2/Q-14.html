@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-14 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-14</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="14">問題14 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>大手 IT コンサルティング企業が、<strong>GraphQL API</strong> とモバイルアプリケーションを構築している。<br />
+  このアプリは、ユーザーが公共の道路状況やトラフィックに関する写真・動画・コメントを投稿し、それを当局へ共有できる仕組み。</li>
+<li>投稿されたレポートやフィードバックは、<strong>公共当局が閲覧し意思決定に利用する</strong>。<br />
+  そのため、投稿者はさまざまな <strong>SNS や IdP（Facebook / Google / OIDC 対応 IdP など）</strong> で認証できる必要がある。</li>
+<li>バックエンドでは、  <ul>
+<li>写真・動画を保存するための <strong>Amazon S3 バケット</strong>  </li>
+<li>テキストベースのレポートを保存するための <strong>Amazon DynamoDB テーブル</strong><br />
+  へのアクセスが必要。</li>
+</ul>
+</li>
+<li>最近、モバイルアプリのプロトタイプが完成し、多くのユーザーが利用することが見込まれている。<br />
+  チームは、プロジェクトに合うように API を改修し、DynamoDB / S3 への直接アクセスとユーザー認証・承認を適切に扱えるようにしたい。</li>
+<li>要件：<ul>
+<li><strong>コスト効率が良く、スケーラブル</strong> な認証・認可ソリューションであること。  </li>
+<li>モバイルアプリから S3 / DynamoDB へアクセスする際は、<strong>一時的なセキュリティ認証情報</strong> を使うこと。</li>
+</ul>
+</li>
+<li><strong>Select TWO</strong> で最適なオプションを選ぶ。</li>
+</ul>
+<h2 id="_2">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li><strong>STS AssumeRoleWithWebIdentity API</strong> を利用し、Facebook / Google / その他 OIDC 対応 IdP と連携した <strong>Web アイデンティティフェデレーション</strong> をセットアップする。  </li>
+<li>Amazon S3 と DynamoDB へのアクセスを許可する <strong>IAM ロール</strong> を作成し、必要な権限を付与する。  </li>
+<li>モバイルアプリは、STS を通じて取得した <strong>一時的なセキュリティ認証情報</strong> を使用して、S3 に写真・動画をアップロードし、DynamoDB にレポートを保存する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>IAM でアイデンティティプールに相当する仕組みを作成し、モバイルアプリ用の ID を管理する。  </li>
+<li>認証済み / 未認証ユーザー向けの IAM ロールをそれぞれ作成し、S3 / DynamoDB へのアクセス権限を付与する。  </li>
+<li><strong>AWS STS GetFederationToken</strong> を使って一時認証情報を払い出し、モバイルアプリから利用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li><strong>Amazon Cognito ユーザープール</strong> を作成し、モバイルアプリのエンドユーザーの認証情報を管理する。  </li>
+<li>Cognito が、認証済み・ゲストユーザーに必要な IAM ロールを自動作成し、それぞれに権限を付与する。  </li>
+<li>モバイルアプリに AWS SDK for React Native を組み込み、<strong>Cognito から取得した一時認証情報</strong> をクライアントに渡して S3 / DynamoDB にアクセスさせる。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li><strong>Amazon Cognito ID プール</strong> を作成し、モバイルアプリのユーザー ID を保存する。  </li>
+<li>Cognito が認証済み・未認証ユーザー向け IAM ロールを自動的に作成し、Cognito ユーザー向けの権限のみを付与する。  </li>
+<li>AWS SDK for React Native をアプリに統合し、クライアントオブジェクトが Cognito から取得した一時セキュリティ認証情報を使用して S3 / DynamoDB にアクセスする。</li>
+</ul>
+</li>
+</ul>
+<h2 id="13">正解の選択肢と注釈（選択肢1・3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>STS AssumeRoleWithWebIdentity</strong>  </li>
+<li><strong>Amazon Cognito（ID プール / ユーザープール）</strong>  </li>
+<li><strong>ソーシャルログイン + 一時認証情報 + S3 / DynamoDB 直接アクセス</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この組み合わせが要件を満たす理由</strong></p>
+<ul>
+<li>選択肢1は、Facebook / Google などの <strong>外部 IdP と直接フェデレーションするパターン</strong> を示しており、STS <code>AssumeRoleWithWebIdentity</code> を用いて一時的な認証情報を払い出すことで、S3 / DynamoDB へのアクセスを安全に付与できる。  </li>
+<li>選択肢3は、<strong>Amazon Cognito（特に ID プール）</strong> を利用して、モバイルアプリユーザーに対して一時認証情報を発行し、S3 / DynamoDB へ直接アクセスさせる <strong>一般的なモバイルバックエンドパターン</strong> を表している。  </li>
+<li>Cognito は、複数のソーシャル IdP（Facebook / Google / OIDC など）と統合可能であり、<strong>大規模ユーザーベースに対してスケーラブルかつコスト効率の良い認証基盤</strong> を提供する。  </li>
+<li>いずれも、モバイルアプリ側で <strong>長期 IAM アクセスキーを保持する必要がなく、一時的な STS 認証情報のみを利用</strong> するため、セキュリティとスケーラビリティの要件を満たす。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2</strong>  <ul>
+<li><code>GetFederationToken</code> ベースの構成は、企業内部のフェデレーテッドユーザー向けには利用されるが、本問のように <strong>多くの一般ユーザーが利用するモバイルアプリ</strong> にはスケールしにくい。  </li>
+<li>ソーシャル IdP 連携やユーザー管理機能を自前で実装する必要があり、<strong>コストや運用負荷が高くなりやすい</strong>。</li>
+</ul>
+</li>
+<li><strong>選択肢4（自分が選んだ不正解）</strong>  <ul>
+<li>問題文の英語では、<strong>Cognito Identity Pool を ID 情報の「ストア」として扱い、Cognito ユーザー向けにのみ権限を与える</strong> という表現になっており、ソーシャル IdP とのフェデレーションや大規模スケールを十分に考慮していない。  </li>
+<li>「Cognito が自動的に IAM ロールを作成し、Cognito ユーザーにのみ権限を付与する」という記述は一部正しいが、<strong>OIDC / ソーシャルプロバイダとの幅広い統合やポリシー設計のニュアンスが欠けており、選択肢3 と比較して汎用性に劣る</strong>。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_3">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解の選択肢</strong></p>
+<ul>
+<li><strong>選択肢4：Cognito ID プールのみを使い、Cognito ユーザー向けに限定して権限を付与する構成</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>本問のシナリオでは、Facebook / Google / OIDC IdP など <strong>複数のソーシャル IdP からのサインイン</strong> が前提であり、Cognito を使う場合もそれら外部 IdP を統合する設計が求められる。  </li>
+<li>選択肢4の説明は、Cognito ユーザーに限定した単純な構成を想定しており、<strong>多様な IdP とのフェデレーションを明示していない</strong> 点で要件とのズレがある。  </li>
+<li>また、コスト効率とスケーラビリティを考えると、<strong>Cognito + STS（AssumeRoleWithWebIdentity）を利用し、モバイルアプリには一時認証情報のみを渡す</strong> というベストプラクティスを押さえる必要がある。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>モバイルアプリから S3 / DynamoDB に直接アクセスさせる設計では、<strong>長期アクセスキーではなく STS による一時認証情報</strong> を必ず利用する。  </li>
+<li>ソーシャルログイン + 多数ユーザーのシナリオでは、<strong>Amazon Cognito（ユーザープール / ID プール） + STS AssumeRoleWithWebIdentity</strong> の組み合わせを最優先で検討する。  </li>
+<li>各選択肢の文言に「WebIdentity」「Cognito」「一時セキュリティ認証情報」が含まれているかを確認し、ユーザー数・IdP の種類・コスト効率を総合的に見て判断する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-14</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

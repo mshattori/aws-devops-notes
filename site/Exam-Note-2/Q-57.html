@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-57 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-57</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="57">問題57 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>国際的な IT コンサル企業が、世界中のオンプレミスデータセンターから <strong>財務・規制関連ファイル</strong> を中央ポータルへアップロードする仕組みを運用している。<br />
+  データは <code>financial-tdojo-reports</code> という <strong>Amazon S3 バケット</strong> に保存されている。</li>
+<li>別チームは、同じ S3 バケットをオリジンとする <strong>CloudFront Web ディストリビューション</strong> を通じてレポートをダウンロードしているが、<br />
+  スタッフが <strong>CloudFront 経由の URL と S3 直接 URL の両方</strong> を使ってファイルにアクセスしていることが判明した。</li>
+<li>IT セキュリティチームはこれをリスクと見なし、<strong>CloudFront をバイパスして S3 へ直接アクセスできないようにする</strong> 新アーキテクチャへの再設計を要求した。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件（CloudFront 経由のみアクセスを許可し、S3 バケットへの直接アクセスを禁止）を満たすために、エンジニアは何をすべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>CloudFront ディストリビューションでカスタム SSL を設定し、各ユーザーの既存の S3 直接アクセス権限を取り消す。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>CloudFront ディストリビューションでフィールドレベル暗号化を設定し、各ユーザーの S3 直接アクセス権限を取り消す。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>CloudFront ディストリビューションのオリジンである S3 バケットに対して <strong>Origin Access Control (OAC)</strong> を作成し、CloudFront ディストリビューションと関連付ける。  </li>
+<li><code>financial-tdojo-reports</code> バケットのバケットポリシーを更新し、<strong>指定した CloudFront ディストリビューションからのアクセスのみ許可</strong> するようにする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>ディストリビューションで <strong>Signed URL</strong> を使用するように構成し、署名鍵ペアを作成する。  </li>
+<li>公開鍵に S3 バケットへのアクセス権限を付与する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の選択肢と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CloudFront Origin Access Control (OAC)</strong>  </li>
+<li><strong>S3 バケットポリシーで CloudFront からのアクセスのみ許可</strong>  </li>
+<li><strong>S3 直接 URL アクセスの遮断</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>OAC（または従来の OAI）は、<strong>CloudFront から S3 へのアクセスを署名付きリクエストに限定</strong> し、ユーザーが直接 S3 URL へアクセスすることを防ぐための標準的なパターン。  </li>
+<li><code>financial-tdojo-reports</code> バケットポリシーで、<code>aws:PrincipalArn</code> や <code>AWS:SourceArn</code> / <code>AWS:SourceAccount</code> などを使って <strong>指定 CloudFront ディストリビューションのみを許可</strong> すれば、それ以外のプリンシパルからの S3 GetObject は拒否される。  </li>
+<li>これにより、ユーザーは <strong>必ず CloudFront 経由でのみレポートを取得</strong> することになり、セキュリティチームの要件を満たせる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（カスタム SSL のみ）</strong>  <ul>
+<li>SSL 証明書の変更は通信経路の暗号化に関するものであり、<strong>S3 直接 URL をブロックする仕組みにはならない</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（フィールドレベル暗号化）</strong>  <ul>
+<li>CloudFront フィールドレベル暗号化は、リクエスト内の特定フィールドを暗号化するための機能であり、<strong>S3 への直接アクセス制御とは無関係</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（Signed URL のみ）</strong>  <ul>
+<li>Signed URL を使うと CloudFront 経由のアクセス制御は強化できるが、<strong>S3 バケットポリシーで直接アクセスをブロックしない限り、S3 URL へ直接アクセスされる可能性</strong> が残る。  </li>
+<li>OAC + バケットポリシーが最も明確かつシンプルな制御方法。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li><strong>「CloudFront をバイパスせず、必ず CloudFront 経由にしたい」</strong> という要件では、  <ul>
+<li><strong>CloudFront OAC / OAI</strong> を設定して S3 バケットと関連付ける。  </li>
+<li>S3 バケットポリシーで <strong>CloudFront ディストリビューションのプリンシパルからのアクセスのみ許可</strong> し、他のアクセスを拒否する。<br />
+  というパターンを最優先で思い出す。  </li>
+</ul>
+</li>
+<li>Signed URL / カスタム SSL / フィールドレベル暗号化は補助的な機能であり、<strong>S3 直接アクセスの遮断には OAC + バケットポリシーが本命</strong> となる。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-57</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-74 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-74</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="74">問題74 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業が <strong>AWS Fargate 上の ECS タスク</strong> で大きな ZIP ファイルを処理するバッチジョブを実行している。<br />
+  ジョブは、ファイルが <strong>Amazon S3 バケットにアップロードされたタイミング</strong> でトリガーされる。</li>
+<li>コスト削減のため、会社は <strong>最小タスク数を 1</strong> に保ち、オブジェクトがアップロードされたときのみタスク数を増やしたい。<br />
+  処理が完了したら、S3 バケットは空にし、<strong>すべての ECS タスクを停止</strong> したい。<br />
+  S3 バケットではすでに <strong>オブジェクトレベルのログ記録</strong> が有効化されている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>この要件を <strong>最も簡単（EASIEST）</strong> に実装する方法はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>S3 オブジェクトレベル操作が CloudTrail に記録されるので、CloudTrail に対する CloudWatch アラームを使う。  </li>
+<li>S3 イベントに応じてタスク数のスケールアウト / スケールインを行う 2 つのアラームアクションを設定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>S3 <code>PUT</code> オペレーションを検出する EventBridge ルールを作成し、ターゲットとして <strong>ECS キャパシティプロバイダー設定を更新する Lambda 関数</strong> を指定してタスク数をスケールアウトする。  </li>
+<li>別の EventBridge ルールを作成して S3 <code>DELETE</code> オペレーションを検出し、同じくキャパシティプロバイダーを更新してスケールインする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>CloudTrail に記録される S3 オブジェクト操作に対して CloudWatch アラームを作成し、タスク数の増減を行う 2 つの Lambda 関数をアクションとして設定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li>S3 オブジェクト <code>PUT</code> オペレーションを検出する <strong>Amazon EventBridge ルール</strong> を作成し、ターゲットとして ECS クラスターに <strong>新しいタスクを起動する</strong> アクションを設定する。  </li>
+<li>別の EventBridge ルールで S3 <code>DELETE</code> オペレーションを検出し、ターゲットを <strong>すべての ECS タスクを停止する Lambda 関数</strong> に設定する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4">正解の選択肢と注釈（選択肢4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>S3 イベント → EventBridge → ECS RunTask / StopTask</strong>  </li>
+<li><strong>CloudTrail / CloudWatch Alarms を介さないシンプルな構成</strong>  </li>
+<li><strong>最小限の Lambda（停止処理のみ）</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>オブジェクトレベルログが有効な S3 は <strong>EventBridge と統合</strong> されており、<code>PutObject</code> / <code>DeleteObject</code> イベントを直接 EventBridge ルールでキャッチできる。  </li>
+<li><code>PutObject</code> イベント時に、ECS の <strong>RunTask</strong> アクションをターゲットとして設定すれば、<strong>新たなファイルがアップロードされるたびに自動で Fargate タスクを起動</strong> できる。  </li>
+<li><code>DeleteObject</code> イベント時には、S3 バケットが空になったタイミングで Lambda 関数から <strong>ECS <code>ListTasks</code> / <code>StopTask</code></strong> を呼び出すことで、すべてのタスクを終了できる。  </li>
+<li>CloudTrail / CloudWatch Alarms / キャパシティプロバイダーなど追加コンポーネントを挟まないため、構成が最も簡単で運用負荷も小さい。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1・3（CloudTrail + CloudWatch Alarm）</strong>  <ul>
+<li>CloudTrail 経由でイベントを検出すると、<strong>イベント到達までの遅延が増え</strong>、Alarm 設定も複雑になる。  </li>
+<li>「EASIEST way」という要件に対して過剰設計。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（キャパシティプロバイダー更新、自分の誤答）</strong>  <ul>
+<li>キャパシティプロバイダー経由で Desired Count を変更する設計は柔軟だが、<strong>Lambda ロジックと ECS 設定が複雑になりやすい</strong>。  </li>
+<li>S3 イベントに応じて単純にタスクを起動 / 停止するだけなら、RunTask / StopTask を直接ターゲットにする方が容易。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>S3 イベントをトリガーに <strong>短時間のバッチ処理を行う Fargate タスク</strong> を動的に起動したい場合、  <ul>
+<li><strong>S3 → EventBridge → ECS RunTask</strong> というシンプルなチェーンをまず検討する。  </li>
+<li>CloudTrail + CloudWatch Alarms は主に監査・アラート向けであり、リアルタイムイベント駆動ワークフローには EventBridge を使う。  </li>
+</ul>
+</li>
+<li>「EASIEST way」「SIMPLEST architecture」と問われたときは、<strong>コンポーネント数が最も少なく、マネージド連携を最大限活用している</strong> 選択肢を探す。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-74</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

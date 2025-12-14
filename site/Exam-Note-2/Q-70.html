@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-70 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-70</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="70">問題70 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業は、パートナー向け SDK 配布を効率化するために <strong>API Gateway REST API</strong> を利用している。<br />
+  REST API の変更は <strong>AWS CodePipeline</strong> から一日に何度もデプロイされる。<br />
+  デプロイが失敗した場合は、REST API が前バージョンへロールバックされるためサービス継続性は確保されるが、<br />
+  エンジニアは依然として、<strong>生成された SDK を手動でダウンロードして S3 バケットへアップロード</strong> する作業を行っており、ミスが多くなっている。</li>
+<li>要件：  <ul>
+<li>SDK の生成および S3 へのアップロードを自動化する。  </li>
+<li>デプロイパイプラインとは独立して、API ステージの更新に合わせて SDK を更新したい。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たす最適なオプションはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>Lambda 関数を作成し、API Gateway <code>GetSdk</code> を使って生成済み SDK をダウンロードして S3 にアップロードする。  </li>
+<li>CodePipeline 内に別のアクションを追加し、この Lambda をデプロイアクション失敗時にトリガーする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>EventBridge ルールで API Gateway の <code>CreateDeployment</code> オペレーションをフィルタし、SDK を生成して S3 にアップロードする Lambda 関数をトリガーする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>API Gateway <code>GetSdk</code> を利用して SDK を <strong>生成およびダウンロード</strong> し、S3 にアップロードする Lambda 関数を作成する。  </li>
+<li><strong>EventBridge ルール</strong> で API Gateway の <code>UpdateStage</code> オペレーションをフィルタし、そのイベントが発生したときに Lambda 関数を起動する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>パイプラインに別アクションを追加して、Lambda 関数で各言語の SDK を生成・アップロードする。  </li>
+<li>この Lambda アクションは常にパイプライン内から起動される。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の選択肢と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>API Gateway <code>GetSdk</code> API</strong>  </li>
+<li><strong>EventBridge で <code>UpdateStage</code> イベントをトリガー</strong>  </li>
+<li><strong>SDK 生成・S3 アップロードの完全自動化</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><code>UpdateStage</code> オペレーションは、API ステージの設定が更新されたタイミングで発生し、<strong>本番ステージへの新バージョン反映と直結</strong> している。  </li>
+<li>EventBridge ルールで <code>UpdateStage</code> イベントをキャッチし、ターゲットの Lambda 関数を起動することで、<strong>ステージ更新のたびに自動的に SDK を再生成 + S3 アップロード</strong> できる。  </li>
+<li><code>GetSdk</code> API は SDK を生成して ZIP として返すため、Lambda からこれを呼び出してそのまま S3 に保存すれば、<strong>人手を介さない安定した配布フロー</strong> が構築できる。  </li>
+<li>CodePipeline の成否には依存せず、「実際にステージが更新された」という事実に基づいて SDK を更新するため、一貫性も高い。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（CodePipeline 失敗時トリガー、自分の誤答）</strong>  <ul>
+<li>デプロイが失敗したときのみ Lambda を起動する構成であり、<strong>成功時に SDK を更新しない</strong> ため要件と逆。  </li>
+<li>SDK の更新タイミングがパイプライン失敗に依存するのは不自然。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（<code>CreateDeployment</code> でトリガー）</strong>  <ul>
+<li><code>CreateDeployment</code> はデプロイメントオブジェクトの作成であり、<strong>どのステージへ適用されたか / いつトラフィックに反映されたか</strong> とは直接結びつかない。  </li>
+<li>ステージが更新されないデプロイメントでもイベントが発生しうる。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（常にパイプライン内から呼び出し）</strong>  <ul>
+<li>パイプライン外でステージを更新した場合や追加のデプロイフローを導入した場合に対応できず、<strong>API ステージ実態との同期が崩れる</strong> 可能性がある。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解の選択肢</strong></p>
+<ul>
+<li><strong>選択肢1：デプロイ失敗時のみ SDK を S3 にアップロードする構成</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>SDK は本来 <strong>成功したデプロイ / ステージ更新に合わせて更新されるべき</strong> であり、失敗時にのみ更新する設計は非合理的。  </li>
+<li>また、デプロイパイプライン内部にだけロジックを閉じ込めると、将来パイプライン以外からの変更を検出できない。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+</li>
+<li>
+<p>API Gateway とイベント駆動の統合パターンとして、  </p>
+<ul>
+<li><strong>デプロイメント / ステージ更新 (<code>CreateDeployment</code>, <code>UpdateStage</code>) の EventBridge イベント</strong>  </li>
+<li>それをトリガーにする <strong>Lambda 関数（SDK 生成 / ドキュメント更新など）</strong><br />
+  を覚えておくと、CI/CD とは独立したメンテナンス自動化を設計しやすい。  </li>
+</ul>
+</li>
+<li>「手作業で <code>GetSdk</code> → S3 アップロード」というフローが出てきたら、<strong>Lambda + EventBridge での自動化</strong> をまず検討する。  </li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-70</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

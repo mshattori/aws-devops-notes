@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-38 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-38</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="38">問題38 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>デジタル決済ゲートウェイシステムが AWS 上で稼働しており、数千のビジネスワークロードを処理している。<br />
+  システムは、<strong>Auto Scaling グループ (ASG)</strong> 上の EC2 インスタンス群、Application Load Balancer、マルチ AZ 構成の Amazon RDS で構成されている。</li>
+<li>会社は、新バージョンのシステムをデプロイするために <strong>複数の CloudFormation テンプレート</strong> を利用している。<br />
+  CloudFormation がローリングアップデートをどのように扱うかは、<strong><code>AutoScalingRollingUpdate</code> ポリシー</strong> を使って制御している。</li>
+<li>最近、スタックの更新中に多くのデプロイ失敗が発生し、サービス停止やビジネス中断につながっている。<br />
+  DevOps エンジニアは、<strong>ローリングアップデート中に ASG の更新がブロックされる原因を特定する</strong> 必要がある。</li>
+<li>試験では、「このシナリオで、DevOps エンジニアはどのようにトラブルシュートすべきか（<strong>Select THREE</strong>）」を問われている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記状況のトラブルシュートのために実施すべきステップとして、適切なものを 3 つ選べ。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li>ローリングアップデート中に、以下の Auto Scaling プロセスを一時停止する：  <ul>
+<li><code>HealthCheck</code>  </li>
+<li><code>ReplaceUnhealthy</code>  </li>
+<li><code>AZRebalance</code>  </li>
+<li><code>AlarmNotification</code>  </li>
+<li><code>ScheduledActions</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（正解）</strong>  </p>
+<ul>
+<li><code>AutoScalingRollingUpdate</code> ポリシーの <code>MinSuccessfulInstancesPercent</code> プロパティを設定し、<strong>1 台のインスタンス起動に失敗しただけでスタック全体がロールバックされることを防ぐ</strong>。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li><code>AutoScalingRollingUpdate</code> から <code>AutoScalingReplacingUpdate</code> にポリシーを切り替え、<code>WillReplace</code> プロパティを <code>true</code> に設定して、既存インスタンスをまとめて置き換える。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li><code>AutoScalingRollingUpdate</code> ポリシーの <code>WaitOnResourceSignals</code> プロパティを <code>true</code> に設定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢5</strong>  </p>
+<ul>
+<li>ELB に関連する Auto Scaling プロセス（<code>Launch</code>、<code>Terminate</code>、<code>AddToLoadBalancer</code>）を一時停止する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢6（正解）</strong>  </p>
+<ul>
+<li><code>AutoScalingRollingUpdate</code> ポリシーの <code>WaitOnResourceSignals</code> プロパティを <code>false</code> に設定する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="126">正解の組み合わせと注釈（選択肢1・2・6）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>AutoScalingRollingUpdate ポリシーのパラメータ調整</strong>  </li>
+<li><strong>ASG プロセスの一時停止による安定化</strong>  </li>
+<li><strong><code>WaitOnResourceSignals</code> / <code>MinSuccessfulInstancesPercent</code> の理解</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この組み合わせが要件を満たす理由</strong></p>
+<ul>
+<li><strong>選択肢1</strong>：  <ul>
+<li>ローリングアップデート中に <code>HealthCheck</code> や <code>ReplaceUnhealthy</code> などが有効のままだと、<strong>CloudFormation がインスタンスを入れ替えている最中に Auto Scaling が別途置き換えを実行</strong> し、競合や予期せぬロールバックを招く可能性がある。  </li>
+<li>これらのプロセスを一時停止することで、ローリングアップデート中の挙動を安定化できる。  </li>
+</ul>
+</li>
+<li><strong>選択肢2</strong>：  <ul>
+<li><code>MinSuccessfulInstancesPercent</code> を適切に設定すれば、<strong>一部インスタンスが失敗しても許容範囲内であればアップデートを継続</strong> できるため、単一失敗で全スタックがロールバックする事態を避けられる。  </li>
+</ul>
+</li>
+<li><strong>選択肢6</strong>：  <ul>
+<li><code>WaitOnResourceSignals = true</code> の場合、CloudFormation は <strong>各インスタンスからの成功シグナル（例：cfn-signal）を待つ</strong>。  </li>
+<li>シグナル送信の実装やタイムアウトに問題があると、ASG 更新がブロックされる原因になる。  </li>
+<li>一時的に <code>false</code> にして挙動を確認することで、<strong>リソースシグナルが原因かどうかを切り分け</strong> できる。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢3（ReplacingUpdate + WillReplace）</strong>  <ul>
+<li>すべてのインスタンスをまとめて置き換える方式は、<strong>高トラフィックな決済システムにとってリスクが高く、アップデート中のサービス停止時間が長くなり得る</strong>。  </li>
+<li>本問の目的はローリングアップデートのトラブルシュートであり、置き換え戦略そのものを変えることではない。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（WaitOnResourceSignals = true、自分が選んだ不正解）</strong>  <ul>
+<li>すでにスタック更新がブロックされている状況で <code>true</code> に設定すると、<strong>さらにシグナル待ちでタイムアウトが増える可能性があり、問題を悪化させる</strong>。  </li>
+<li>トラブルシュートとしては、むしろ <code>false</code> にして挙動を切り分けるのが正しい。  </li>
+</ul>
+</li>
+<li><strong>選択肢5（Launch / Terminate / AddToLoadBalancer の停止）</strong>  <ul>
+<li>これらを停止すると、ASG 自体がインスタンスを起動 / 終了 / ロードバランサーへ登録できなくなり、<strong>ローリングアップデートの前提を壊してしまう</strong>。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解のポイント</strong></p>
+<ul>
+<li><code>WaitOnResourceSignals</code> を <code>true</code> にすることで「より信頼性が高くなる」と考えがちだが、実際には <strong>シグナルが適切に送信されているか / タイムアウト設定は適切か</strong> を先に確認すべき。  </li>
+<li>スタック更新がハングしている場合は、<code>WaitOnResourceSignals</code> を無効化して挙動を確認し、<strong>問題の切り分け</strong> を行うのが重要。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>CloudFormation の <strong>ローリングアップデートポリシー</strong> に関する問題では、  <ul>
+<li><code>MinSuccessfulInstancesPercent</code>  </li>
+<li><code>PauseTime</code>  </li>
+<li><code>WaitOnResourceSignals</code>  </li>
+<li>一時停止すべき Auto Scaling プロセス<br />
+  といったパラメータの意味をしっかり押さえる。  </li>
+</ul>
+</li>
+<li>トラブルシュート系の問題では、「何を無効化 / 一時停止して原因を切り分けるか」という視点で選択肢を読む。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-38</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

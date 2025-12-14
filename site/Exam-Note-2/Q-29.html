@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-29 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-29</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="29">問題29 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>JavaScript ベースの <strong>オンライン給与計算アプリ</strong> がオンプレミスで稼働しており、AWS へのマイグレーションを予定している。<br />
+  このアプリはサーバーサイドコードを持たず、<strong>Vue.js + Bootstrap</strong> で構成された UI のみで動作する。</li>
+<li>アプリでは給与などの機密情報を扱う可能性があり、<strong>OWASP の推奨に従って次のような HTTP レスポンスヘッダーを追加する必要</strong> がある。<ul>
+<li><code>X-Content-Type-Options</code>  </li>
+<li><code>X-Frame-Options</code>  </li>
+<li><code>X-XSS-Protection</code>  など</li>
+</ul>
+</li>
+<li>要件：  <ul>
+<li>アプリを AWS 上でホストする。  </li>
+<li>上記セキュリティヘッダーを HTTP レスポンスに付与し、<strong>OWASP 準拠</strong> を満たす。  </li>
+<li>最も適切でシンプルなソリューションを選択する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たす <strong>最も適切なソリューション</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>アプリケーションを <strong>ウェブサイトホスティングを有効にした S3 バケット</strong> 上でホストする。  </li>
+<li>S3 バケットをオリジンとする <strong>Amazon CloudFront ディストリビューション</strong> を作成し、<strong>Origin Response イベント</strong> をトリガーとする <strong>Lambda@Edge 関数</strong> を設定する。  </li>
+<li>Lambda@Edge で必要なセキュリティヘッダーを HTTP レスポンスに追加する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>アプリケーションを静的ウェブホスティング用 S3 バケット上でホストし、<strong>サーバーアクセスログ</strong> を有効化してユーザーアクティビティを追跡する。  </li>
+<li>S3 バケットポリシーを構成し、必要なセキュリティヘッダーを返すようにする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>アプリケーションを静的ウェブホスティング用 S3 バケット上でホストし、サーバーアクセスログを有効化してユーザーアクティビティを追跡する。  </li>
+<li>S3 クライアントサイド暗号化を有効化し、必要なセキュリティヘッダーを返すように設定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li>アプリケーションを静的ウェブホスティング用 S3 バケット上でホストし、S3 バケットをオリジンとする CloudFront ディストリビューションを作成する。  </li>
+<li><strong>CloudFront のカスタム Request / Response Behavior（レスポンスヘッダー設定）</strong> を利用して、必要なセキュリティヘッダーを自動的に HTTP レスポンスに追加する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4">正解の選択肢と注釈（選択肢4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>S3 静的ウェブホスティング + CloudFront</strong>  </li>
+<li><strong>CloudFront Response Headers Policy / 行動のカスタマイズ</strong>  </li>
+<li><strong>Lambda@Edge 不要の簡潔な構成</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>オンライン給与計算アプリは完全なフロントエンドアプリであり、<strong>S3 静的ウェブサイト + CloudFront</strong> の組み合わせが最もシンプルかつコスト効率が良い。  </li>
+<li>CloudFront では、<strong>カスタムレスポンスヘッダーポリシー（Response Headers Policy）</strong> を用いて <code>X-Content-Type-Options</code>、<code>X-Frame-Options</code>、<code>X-XSS-Protection</code> などをレスポンスに自動付与できる。  </li>
+<li>この機能を使えば、追加の Lambda@Edge コードを記述することなく、<strong>クリック操作だけで OWASP 推奨ヘッダーを差し込める</strong> ため、運用・メンテナンスの手間も少ない。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（Lambda@Edge 使用、自分が選んだ不正解）</strong>  <ul>
+<li>Lambda@Edge でレスポンスヘッダーを書き換えることも可能だが、<strong>コード管理・デプロイ・バージョニングが必要になり、構成が複雑</strong> になる。  </li>
+<li>CloudFront のネイティブなレスポンスヘッダーポリシーを使えばコード不要で同じことができるため、「MOST suitable」という観点では過剰設計。  </li>
+</ul>
+</li>
+<li><strong>選択肢2・3（S3 のみでヘッダー制御）</strong>  <ul>
+<li>S3 静的ウェブサイトホスティングは、一部レスポンスヘッダーをメタデータとして設定できるものの、<strong>複数の OWASP セキュリティヘッダーを一元管理する用途には適していない</strong>。  </li>
+<li>また、サーバーアクセスログやクライアントサイド暗号化は、ヘッダー付与の要件とは直接関係がない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解の選択肢</strong></p>
+<ul>
+<li><strong>選択肢1：Lambda@Edge でレスポンスヘッダーを追加する構成</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>機能面では要件を満たせるものの、<strong>Lambda@Edge のコードとデプロイパイプラインの管理</strong> が発生し、メンテナンスコストが高くなる。  </li>
+<li>CloudFront のレスポンスヘッダーポリシーを使えば <strong>ノーコードで同じことができる</strong> ため、「最も適切なソリューション」としては選択肢4が優先される。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>静的サイト + セキュリティヘッダー付与の問題では、まず <strong>S3 + CloudFront + Response Headers Policy</strong> を思い出す。  </li>
+<li>Lambda@Edge / CloudFront Functions は、<strong>複雑な条件分岐や動的変換が必要な場合の最終手段</strong> として考え、単純なヘッダー追加にはマネージド機能を優先する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-29</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

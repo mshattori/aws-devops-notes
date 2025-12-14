@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-65 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-65</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="65">問題65 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業は、オンプレミスデータセンターのストレージを <strong>AWS VPC と Direct Connect</strong> で接続している。<br />
+  DevOps チームは <strong>Media Asset Management (MAM)</strong> システムを運用しており、50 TB を超えるデジタル動画・メディアファイルをオンプレミスのテープライブラリに保存している。</li>
+<li>メディア資産が膨大なため、将来的には <strong>顔認識を使った検索</strong> を実現する自動カタログシステムを導入したい。<br />
+  カタログには、シーン内に登場する人物の名前と静止画像を含むメタデータを保存する。<br />
+  最終的には、動画コンテンツを AWS 上の MAM 動画コンテンツに移行したい。</li>
+<li>要件：<ul>
+<li><strong>継続的な運用オーバーヘッドを最小化</strong> すること。  </li>
+<li>既存システムへの <strong>影響（中断）を最小限</strong> に抑えること。  </li>
+<li>上記を満たすソリューションを選ぶ。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>どの選択肢が、最小限の運用オーバーヘッドとシステム影響で要件を満たすか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li>オンプレミスファイルシステムを <strong>AWS Storage Gateway（ファイルゲートウェイ）</strong> と接続する。  </li>
+<li>MAM ソリューションを使って、現在のデータストアからメディアファイルを抽出し、ファイルゲートウェイへ送信する。  </li>
+<li>Amazon Rekognition の顔コレクションを作成し、処理済みのメディアファイルから <strong>顔のカタログ</strong> を構築する。  </li>
+<li><strong>AWS Lambda 関数</strong> を起動し、Storage Gateway バックエンドの S3 バケットにあるメディアファイルに対して Rekognition JavaScript SDK を呼び出して顔を検出させる。  </li>
+<li>Lambda 関数で取得したメタデータを MAM ソリューションのカタログに格納する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>Amazon Kinesis Video Streams を使用してビデオ取り込みストリームを作成し、Rekognition で顔コレクションを構築する。  </li>
+<li>MAM のメディアファイルを Kinesis Video Streams へストリーミングし、Rekognition で処理する。  </li>
+<li>ストリームコンシューマーを構成してメタデータを取得し、MAM に保存する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>オンプレミスデータセンターに <strong>テープゲートウェイアプライアンス</strong> を起動し、AWS Storage Gateway へ接続する。  </li>
+<li>MAM ソリューションからメディアファイルを AWS Cloud 上のテープゲートウェイに送信し、そこから Rekognition 用の顔コレクションを構築する。  </li>
+<li>Lambda 関数で、テープゲートウェイからリアルタイムに Rekognition を呼び出して処理し、メタデータを MAM に保存する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>すべてのメディアファイルをオンプレミスライブラリから大型 EC2 インスタンス上の <strong>EBS ボリューム</strong> へ移動し、オープンソースの顔認識ツールを起動してメタデータを取得する。  </li>
+<li>その後、メディアファイルを S3 バケットへコピーする。</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">正解の選択肢と注釈（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>AWS Storage Gateway File Gateway</strong>  </li>
+<li><strong>オンプレミスファイルサーバー ↔ S3 バックアップ</strong>  </li>
+<li><strong>Lambda + Rekognition による顔検出</strong>  </li>
+<li><strong>最小限のオペレーション + 既存ワークフロー継続</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><strong>File Gateway</strong> はオンプレミスにキャッシュを持ちつつ、バックエンドを S3 にマッピングするため、MAM システムからは従来どおり <strong>ファイル共有としてアクセス</strong> できる。  </li>
+<li>既存のワークフローを大きく変えずに、メディアファイルを S3 に徐々に取り込みつつ、<strong>Lambda + Rekognition</strong> で顔検出・メタデータ生成を自動化できる。  </li>
+<li>テープゲートウェイや大規模な EC2/EBS を新たに運用する必要がなく、<strong>継続的な運用オーバーヘッドが小さい</strong>。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2（Kinesis Video Streams）</strong>  <ul>
+<li>ビデオストリームのリアルタイム処理向けであり、既存の 50 TB 以上のアーカイブメディアを処理するには <strong>取り込みパイプラインの設計・運用が複雑</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢3（テープゲートウェイ、自分の誤答）</strong>  <ul>
+<li>テープゲートウェイはバックアップ / アーカイブ用であり、<strong>ランダムアクセスや頻繁な読み取り</strong> を前提とした顔認識処理には不向き。  </li>
+<li>テープメディアからのリアルタイム処理はレイテンシが高く、アプリケーション統合も難しい。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（EC2 + オープンソース顔認識）</strong>  <ul>
+<li>独自の顔認識ソリューションを運用・スケールさせる必要があり、<strong>管理負荷・保守コストが大きい</strong>。  </li>
+<li>Rekognition のマネージドなスケーラビリティと精度を活用していない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解の選択肢</strong></p>
+<ul>
+<li><strong>選択肢3：テープゲートウェイを使ってリアルタイム処理</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>テープゲートウェイはアーカイブ用途であり、<strong>頻繁な読み書きやランダムアクセスを伴うワークロードには適さない</strong>。  </li>
+<li>顔認識のような処理には File Gateway + S3 の方が、<strong>低レイテンシでオブジェクトベースの処理が可能</strong> で運用オーバーヘッドも小さい。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>Storage Gateway の 3 種類のモードの用途を整理する：  <ul>
+<li><strong>File Gateway</strong>：オンプレミスファイルサーバー ↔ S3 オブジェクトストレージ連携。  </li>
+<li><strong>Volume Gateway</strong>：ブロックストレージ（iSCSI）バックアップ。  </li>
+<li><strong>Tape Gateway</strong>：仮想テープライブラリによる長期アーカイブ。  </li>
+</ul>
+</li>
+<li>アーカイブからの分析・検索など <strong>頻繁な参照が想定される場合</strong> は、Tape Gateway ではなく File Gateway / S3 への移行を優先する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-65</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

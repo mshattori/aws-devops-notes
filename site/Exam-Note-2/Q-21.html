@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-21 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-21</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="21">問題21 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>大手デジタルコンサル企業の IT 部門には、<strong>DevOps チーム</strong> と <strong>Security チーム</strong> の 2 チームが存在し、それぞれクラウドアーキテクチャの異なる部分を担当している。</li>
+<li>企業は AWS CloudFormation を用いて、すべての AWS アカウントのリソースと <strong>AWS Config</strong> などの設定管理を行っている。</li>
+<li><strong>Security チーム</strong>  <ul>
+<li>OS レベルのパッチ適用やベース AMI 更新を担当する。  </li>
+</ul>
+</li>
+<li><strong>DevOps チーム</strong>  <ul>
+<li>アプリケーションレベルの依存関係や更新を管理し、新しい EC2 インスタンス起動時には <strong>常に最新の AMI</strong> を使用する必要がある。</li>
+</ul>
+</li>
+<li>課題は、Security チームが作成する新しい AMI を DevOps チームが <strong>自動的かつスケーラブルに参照できる仕組み</strong> を整えること。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記の 2 つのプロセスとチームを統合するために、最もスケーラブルな方法はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>Security チームが、OS と DevOps チームのテンプレートを含む <strong>ネストされた CloudFormation スタック</strong> を管理する。  </li>
+<li>DevOps チームがアプリケーションコードを更新するたびに、Security チームがスタック更新を実行してアプリケーションスタックをデプロイする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>Security チームが、<strong>AWS CodePipeline</strong> パイプラインを起動する CloudFormation スタックを作成する。  </li>
+<li>このパイプラインが新しい AMI をビルドし、その最新 AMI の ARN を暗号化した S3 オブジェクトとしてパイプラインの出力に保存する。  </li>
+<li>DevOps チームは、自身の CloudFormation テンプレートでクロススタック参照を使用し、S3 オブジェクトから最新 AMI ARN を取得してアプリケーションデプロイに利用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>Security チームが CloudFormation テンプレートを作成し、新しい AMI バージョンごとに <strong>AMI ARN の一覧を含む暗号化済み S3 オブジェクト</strong> をスタックの出力として生成する。  </li>
+<li>DevOps チームはクロススタック参照を使用してその S3 オブジェクトを取得し、最新 AMI ARN を読み出して使用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li>Security チームが CloudFormation スタックを作成し、その中で <strong>AWS CodePipeline</strong> パイプラインを構成して新しい <strong>Amazon Machine Image (AMI)</strong> をビルドする。  </li>
+<li>パイプラインの出力として、最新の AMI ARN を <strong>AWS Systems Manager Parameter Store</strong> のパラメータとして登録する。  </li>
+<li>DevOps チームは、自身の CloudFormation スタック内で <strong><code>AWS::SSM::Parameter</code> セクション</strong> を利用し、Parameter Store から最新 AMI ARN を取得して EC2 起動時に使用する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4">正解の選択肢と注釈（選択肢4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CodePipeline による AMI ビルドパイプライン</strong>  </li>
+<li><strong>SSM Parameter Store に最新 AMI ARN を保存</strong>  </li>
+<li><strong>CloudFormation から <code>AWS::SSM::Parameter</code> で参照</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>Security チームは CodePipeline ベースの <strong>イメージビルドパイプライン</strong> によって、OS パッチ適用済みの最新 AMI を継続的に作成できる。  </li>
+<li>最新 AMI ARN を <strong>Parameter Store</strong> に書き込んでおけば、DevOps チーム側の CloudFormation テンプレートでは <code>AWS::SSM::Parameter</code> を参照するだけで、<strong>常に最新 AMI を自動的に取得</strong> できる。  </li>
+<li>Parameter Store はマルチアカウント・マルチスタックで再利用しやすく、<strong>チーム間の疎結合・スケーラブルな連携</strong> を実現する。  </li>
+<li>DevOps 側テンプレートをほとんど変更せずに、Security チームが AMI 更新プロセスを独立して改善できるため、責務分離の観点でも優れている。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>ネストスタックでアプリケーションと OS 更新を一体管理すると、<strong>Security チームが毎回アプリケーションスタック更新を担当することになり、スケーラビリティが低い</strong>。  </li>
+<li>チーム間の責務分離が不十分で、DevOps チームの自律性も下がる。  </li>
+</ul>
+</li>
+<li><strong>選択肢2・3（S3 オブジェクトに AMI ARN を保存）</strong>  <ul>
+<li>暗号化 S3 オブジェクトに AMI ARN を保存し、クロススタック参照で取得する設計は複雑であり、<strong>Parameter Store を利用した参照に比べて実装・運用コストが高い</strong>。  </li>
+<li>S3 オブジェクトのバージョン管理やパース処理など、余分なロジックが必要になる。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li><strong>OS イメージ（AMI）を継続的に更新するパターン</strong> では、  <ul>
+<li><strong>CodePipeline / Image Builder などで AMI をビルド</strong>  </li>
+<li><strong>最新 AMI ID / ARN を Systems Manager Parameter Store（または SSM パラメータ）に格納</strong>  </li>
+<li><strong>CloudFormation / CDK / 他のツールから Parameter Store を参照</strong><br />
+  という設計を覚えておく。  </li>
+</ul>
+</li>
+<li>チーム間連携を問う問題では、<strong>疎結合なインターフェース（SSM Parameter Store / S3 / Systems Manager</strong> など）を介して情報を共有し、各チームが自身のスタックを独立して管理できる構成が「MOST scalable」であることが多い。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-21</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

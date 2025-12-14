@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-27 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-27</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="27">問題27 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある先進的テクノロジー企業は <strong>ハイブリッドクラウドアーキテクチャ</strong> を採用しており、50 個のモジュールから構成される Web アプリケーション群を運用している。<br />
+  各モジュールは、Auto Scaling グループ内のオンデマンド EC2 インスタンス群 + 外部向け ALB + Amazon RDS からなるマルチティア構成。</li>
+<li><strong>Application Security チーム</strong> は、インターネットからの一般的なアクセスをブロックし、<strong>社内データセンターのコーポレートネットワークからのみ 50 個のアプリケーションへアクセスできるようにすること</strong> を求められている。</li>
+<li>社内ネットワーク側では、インターネット接続用に 10 台のプロキシサーバーがあり、それぞれに固定の IP アドレスが割り当てられている。<br />
+  これら <strong>プロキシ IP アドレスのリストは年に 2 回更新</strong> され、その CSV ファイルが定期的に <strong>プライベートな S3 バケット</strong> にアップロードされる。</li>
+<li>DevOps エンジニアは、アプリケーションが常に最新のプロキシ IP からのみアクセス可能であることを保証しつつ、<strong>コスト効率が高く、運用負荷が最小となるソリューション</strong> を設計する必要がある。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすために、どのソリューションが最も適切か。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li><strong>Python ベースのカスタム Boto スクリプト</strong> を開発し、AWS SDK for Python を使用して S3 バケットからプロキシ IP リストの CSV ファイルをダウンロードする。  </li>
+<li>スクリプトで <strong>ELB セキュリティグループ</strong> を更新し、CSV 内の IP アドレスからの HTTPS インバウンドのみを許可するように設定する。  </li>
+<li>スクリプトを AWS Lambda 関数としてホストし、<strong>EventBridge スケジュール（毎分実行）</strong> で起動する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（正解）</strong>  </p>
+<ul>
+<li>AWS Lambda 関数を作成し、S3 バケット内の CSV ファイルから最新のプロキシ IP アドレスリストを読み取る。  </li>
+<li>Lambda 関数で ELB セキュリティグループを更新し、CSV で指定された IP からの HTTPS リクエストのみを許可する。  </li>
+<li><strong>S3 Event Notification</strong> を設定し、CSV ファイルが更新されたタイミングで Lambda 関数が自動的に起動されるようにする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>ELB セキュリティグループをインターネットからの HTTPS アクセスを許可するよう構成する。  </li>
+<li>Amazon Cognito を Active Directory と統合して ID プロバイダとして使用し、50 個すべてのモジュールに Cognito を統合して、<strong>社内ユーザーのみがログイン可能</strong> にする。  </li>
+<li>ユーザーアクセスログを CloudWatch Logs に保存し、AWS Config を年 2 回実行して設定を更新する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>すべてのアプリケーションとモジュールを同一 VPC にホストし、オンプレミスとの Direct Connect をアクティブ / スタンバイ構成で設定する。  </li>
+<li>ELB セキュリティグループを、コーポレートネットワークの IP アドレスからの HTTPS 接続のみを許可するよう更新する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="2">正解の選択肢と注釈（選択肢2）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>S3 Event Notification → Lambda トリガー</strong>  </li>
+<li><strong>ELB セキュリティグループの動的更新</strong>  </li>
+<li><strong>年数回の IP 変更に対する最小運用負荷</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>プロキシ IP リストは <strong>年 2 回程度しか更新されない</strong> ため、<strong>イベント駆動で必要なときだけ処理を行う</strong> のが最もコスト効率が良い。  </li>
+<li>S3 Event Notification を使えば、CSV ファイルがアップロード / 更新されたタイミングでのみ Lambda 関数が起動し、ELB セキュリティグループを最新の IP リストに合わせて自動更新できる。  </li>
+<li>Lambda は実行時間に対してのみ課金されるため、年数回の更新であれば <strong>ほぼゼロコストに近い運用</strong> が可能。  </li>
+<li>すべてのアプリケーションは既存の ALB + セキュリティグループ構成を維持したまま、<strong>コーポレートネットワーク経由のアクセスのみを許可する制御</strong> を実現できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（自分が選んだ不正解：毎分スケジュール実行）</strong>  <ul>
+<li>EventBridge で毎分 Lambda を実行すると、IP リストが年に 2 回しか更新されないにもかかわらず、<strong>不要な実行が大量に発生しコストが無駄</strong> になる。  </li>
+<li>「最もコスト効果が高く、運用負荷が最小」との要件に明確に反する。  </li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>インターネットからのアクセスを許可した上で Cognito 認証に頼る構成であり、<strong>ネットワークレベルでコーポレート IP 以外をブロックする</strong> という要件を満たしていない。  </li>
+<li>50 モジュールすべてに Cognito を統合するのも運用コストが高い。  </li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>Direct Connect を新規構成するのはコストも複雑さも高く、既存ハイブリッド環境の前提から外れる可能性がある。  </li>
+<li>問題は <strong>ELB セキュリティグループの IP リスト更新の自動化</strong> であり、Direct Connect 自体は必須ではない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解の選択肢</strong></p>
+<ul>
+<li><strong>選択肢1：Lambda を毎分スケジュール実行し、常に CSV を読み込んで SG を更新する構成</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>IP リスト更新の頻度（年 2 回程度）に対して、毎分実行は明らかに過剰であり、<strong>コスト効率・運用効率ともに悪い</strong>。  </li>
+<li>EventBridge スケジュールを細かく設定するより、<strong>S3 Event Notification で変更イベントにのみ反応する設計</strong> の方がシンプルでベストプラクティス。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>「更新頻度が低い設定ファイル（CSV など）が S3 に保存され、変更時のみ処理したい」場合は、<strong>S3 Event Notification → Lambda</strong> のイベント駆動パターンを最優先で検討する。  </li>
+<li>スケジュール実行とイベント駆動のどちらが良いかを判断する際には、<strong>変更頻度とコスト / 運用負荷</strong> を意識する。  </li>
+<li>ネットワークレベルで特定 IP からのみアクセスさせたい要件では、<strong>セキュリティグループ / NACL の IP 設定自動更新</strong> を使った解決策を探す。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-27</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

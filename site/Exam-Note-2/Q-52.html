@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-52 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-52</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="52">問題52 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>大手通信会社が、マルチティアのエンタープライズアプリケーションを AWS へ移行している。<br />
+  このアプリは、<strong>Elastic Fabric Adapter (EFA)</strong> と <strong>インスタンスストアボリューム</strong> を利用するため、<strong>単一の Amazon EC2 Dedicated Instance</strong> 上でホストする必要がある。<br />
+  サーバーライセンスの制約により、<strong>Auto Scaling は利用できない</strong>。</li>
+<li>データベース層には <strong>Amazon Aurora</strong> を採用し、トランザクションデータを保存する。<br />
+  EC2 / Aurora どちらかに障害が発生しても、高可用性を維持し自動復旧できる構成が求められる。<br />
+  その際、ソリューションは <strong>MOST cost-effective</strong> である必要がある。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記の移行タスクに対して、最もコスト効率の良いソリューションはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>AWS Personal Health Dashboard (AWS Health) イベントを使って EC2 Dedicated Instance を監視する。  </li>
+<li>単一インスタンス Aurora データベースを起動する。  </li>
+<li>EC2 障害時に自動復旧するための Config ルールとリメディエーションアクションを含む <strong>Config Conformance Pack</strong> を作成する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>（選択肢1 と同じ内容で、誤植による重複オプション）</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>AWS Health イベントで EC2 Dedicated Instance を監視する。  </li>
+<li>Elastic IP アドレスを割り当てて EC2 インスタンスにアタッチする。  </li>
+<li>別の AZ に 2 台目の EC2 インスタンスを起動し、EventBridge ルールで Lambda 関数をトリガーして、1 台目に障害が発生した際に EIP を 2 台目へ付け替える。  </li>
+<li>Aurora は単一インスタンス構成とする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li>AWS Health イベントで EC2 Dedicated Instance を監視する。  </li>
+<li><strong>Amazon EventBridge ルール</strong> を設定して、インスタンスステータスが障害状態になったときに <strong>AWS Lambda 関数</strong> をトリガーする。  </li>
+<li>Lambda 関数で、利用可能な AZ に新しい EC2 インスタンスを起動する。  </li>
+<li>Aurora データベースは <strong>Read Replica を別 AZ に構成</strong> し、プライマリ DB インスタンス障害時には Read Replica をプライマリへ昇格させる。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4">正解の選択肢と注釈（選択肢4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>AWS Health + EventBridge + Lambda による EC2 自動復旧</strong>  </li>
+<li><strong>Aurora Read Replica を利用した高可用性</strong>  </li>
+<li><strong>Dedicated Instance 制約下でのコスト効率</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>EC2 側では、Dedicated Instance のヘルスイベントを <strong>AWS Health → EventBridge → Lambda</strong> で検知し、<strong>障害発生時にのみ新しいインスタンスを起動</strong> するため、常時 2 台構成を取るよりコスト効率が高い。  </li>
+<li>Aurora では、同一リージョンの別 AZ に <strong>Read Replica</strong> を構成することで、プライマリ障害時に <strong>手動 / 自動プロモーション</strong> により高可用性を確保できる。  </li>
+<li>EC2 / DB の両方について、<strong>待機系リソースを最小限に抑えつつ障害復旧パスを確保</strong> している点が「MOST cost-effective」に合致する。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1・2（Config Conformance Pack）</strong>  <ul>
+<li>Config は構成・コンプライアンス監視が主目的であり、EC2 障害からの即時復旧を自動化するには不向き。  </li>
+<li>Aurora も単一インスタンス構成のままであり、DB 障害時の高可用性要件を満たしていない。  </li>
+</ul>
+</li>
+<li><strong>選択肢3（待機系 EC2 を常時起動 + 単一 Aurora）</strong>  <ul>
+<li>2 台目の EC2 を常に起動させる構成は、Dedicated Instance であることを考えると <strong>コストが高い</strong>。  </li>
+<li>Aurora が単一インスタンスのため、DB 障害時の可用性が確保できない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>Auto Scaling が使えない単一インスタンス要件のシナリオでは、  <ul>
+<li><strong>AWS Health / EventBridge / Lambda</strong> で障害イベントを検出 → 必要なときだけ代替インスタンスを起動する、というパターンが有効。  </li>
+<li>データベース層の高可用性には、<strong>Aurora Read Replica / マルチ AZ</strong> など、マネージドなレプリケーション機能を活用する。  </li>
+<li>「MOST cost-effective」が付いている場合、<strong>常時待機系を動かす構成よりも、障害時にだけリソースを立ち上げる構成</strong> を優先して検討する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-52</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

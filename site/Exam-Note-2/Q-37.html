@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-37 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-37</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="37">問題37 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>多国籍企業が、グローバルなクラウドアーキテクチャとして <strong>複数の AWS アカウント</strong> を利用している。<br />
+  本番環境の AWS リソースは、複数のビジネスユニット間で共有されている。</li>
+<li>1 つのビジネスユニットは、<strong>本番環境のリソースを持つ複数の AWS アカウント</strong> を持つ場合がある。</li>
+<li>最近、あるビジネスユニットの開発者が、別のビジネスユニットが所有する Amazon EC2 インスタンスを <strong>誤って終了してしまう事象</strong> が多発した。<br />
+  DevOps エンジニアは、<strong>自分のビジネスユニットが所有する EC2 インスタンスと AWS リソースだけを終了できるように制御するマルチアカウント戦略</strong> を設計するよう依頼された。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすマルチアカウント戦略はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>すべてのアカウントを <strong>AWS Organizations</strong> で一元管理し、同じビジネスユニットに属するアカウントをそれぞれの <strong>OU（組織単位）</strong> にグループ化する。  </li>
+<li>本番アカウントごとに IAM ロールを作成し、そのビジネスユニットが所有する EC2 インスタンスへアクセスできるように <strong>リソースレベルの終了権限</strong> を付与するポリシーを設定する。  </li>
+<li><code>AWSServiceRoleForOrganizations</code> サービスリンクロールを OU 配下のメンバーアカウントに関連付け、トラストアクセスを有効にする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>すべてのアカウントを <strong>AWS Service Catalog</strong> で一元管理し、ビジネスユニットごとに OU にグループ化する。  </li>
+<li>本番アカウントに <strong>Service Control Policy (SCP)</strong> を設定し、特定ビジネスユニットが所有する EC2 インスタンスに対するリソースレベルの終了権限を付与する。  </li>
+<li>クロスアカウントアクセスと SCP を OU に関連付け、メンバーアカウントが自動的に継承するようにする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>すべてのアカウントを <strong>AWS Organizations</strong> で一元管理し、同じビジネスユニットに属するアカウントを <strong>OUごとにグループ化</strong> する。  </li>
+<li>本番アカウントに IAM ロールを作成し、特定ビジネスユニットが所有する EC2 インスタンスを終了できる <strong>リソースレベル権限</strong> を付与したポリシーを設定する。  </li>
+<li>そのクロスアカウントアクセスと IAM ロールを、OU 内のすべてのメンバーアカウントに関連付ける。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>AWS Config と AWS Control Tower を利用してマルチアカウントのアグリゲーションを行う。  </li>
+<li>各ビジネスユニットごとに EC2 インスタンスを集約するよう Config を構成し、Control Tower のカスタマイズ機能 (CfCT) を使って、Landing Zone にデプロイされるアカウントでのみ特定ビジネスユニットに EC2 終了権限を与える。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の選択肢と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>AWS Organizations で OU 単位にアカウントを整理</strong>  </li>
+<li><strong>IAM ロール + リソースレベルポリシー（<code>Condition</code> でタグ / アカウントを制限）</strong>  </li>
+<li><strong>クロスアカウントアクセスを OU 内メンバーアカウントへ関連付け</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>Organizations を使ってアカウントをビジネスユニットごとの OU にグループ化することで、<strong>ガバナンスと権限委譲の境界</strong> を明確にできる。  </li>
+<li>本番アカウントに作成した IAM ロールに、<code>ec2:TerminateInstances</code> を <strong>特定ビジネスユニット所有のインスタンスに限定するリソースレベルポリシー</strong>（例：タグやアカウント ID ベース）を付与することで、<strong>自分の BU のリソースのみ終了可能</strong> にできる。  </li>
+<li>OU 内のメンバーアカウントから、そのロールへクロスアカウント AssumeRole させる設計により、<strong>同じ BU 内の複数アカウントをまたいだ運用</strong> を安全に行える。  </li>
+<li>これにより、他 BU のインスタンスへの誤操作を防ぎつつ、BU 内では柔軟な運用が可能となる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（Service-linked role を強調、自分が選んだ不正解）</strong>  <ul>
+<li><code>AWSServiceRoleForOrganizations</code> は主に Organizations サービス用のサービスリンクロールであり、<strong>EC2 インスタンス終了のための運用ロールとして使うものではない</strong>。  </li>
+<li>説明が Organizations サービスロールの役割と混同しており、権限設計として適切ではない。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（Service Catalog + SCP）</strong>  <ul>
+<li>Service Catalog はポートフォリオ / プロビジョニング制御向けであり、本問のような「既存 EC2 インスタンスの終了制御」には直接関係しない。  </li>
+<li>SCP はアクション全体の許可 / 拒否を定義するもので、BU ごとの柔軟なリソースレベル制御には向かない。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（Config + Control Tower）</strong>  <ul>
+<li>Config / Control Tower はガバナンス・プロビジョニングフレームワークとして有用だが、<strong>今すぐ誤ったインスタンス終了を防ぐためのシンプルな権限設計</strong> としては過度に複雑。  </li>
+<li><code>TerminateInstances</code> の権限を直接制御する IAM ロール設計の方が明確であり、試験でもそちらが意図されている。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解の選択肢</strong></p>
+<ul>
+<li><strong>選択肢1：Organizations のサービスリンクロールに頼った構成</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>サービスリンクロールは AWS サービスが内部的に利用するものであり、<strong>人間のオペレーターが AssumeRole して EC2 を終了するためのロールではない</strong>。  </li>
+<li>実際には、<strong>明示的に定義した IAM ロール + リソースレベルポリシー</strong> を用いて、BU 単位で終了権限を制御する必要がある。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>マルチアカウント戦略の問題では、  <ul>
+<li><strong>AWS Organizations の OU 構造</strong>  </li>
+<li><strong>IAM ロール + リソースレベルポリシー / タグベースアクセス制御</strong><br />
+  を組み合わせた設計がよく問われる。  </li>
+</ul>
+</li>
+<li>サービスリンクロール (<code>AWSServiceRoleFor*</code>) は <strong>サービス運用用</strong> であり、運用チームが使うクロスアカウントロールとは目的が異なる点に注意する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-37</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

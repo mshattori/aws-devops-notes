@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-47 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-47</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="47">問題47 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業は <strong>AWS Network Firewall フローログ</strong> を変換し、追加情報を付与したうえで既存の <strong>Amazon S3 バケット</strong> に保存する必要がある。<br />
+  現状では、フローログは直接 S3 バケットに書き込まれ、企業は <strong>Amazon Athena</strong> でデータを分析している。</li>
+<li>新たな要件：  <ul>
+<li>S3 に保存する前に、フローログを事前処理（変換・データ追加）したい。  </li>
+<li>既存の S3 バケットはそのまま利用する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>フローログをどのように変換し、既存の S3 バケットへ配信すればよいか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>Lambda 関数を開発してログデータを変換し、既存の S3 バケットに新しいオブジェクトとして保存する。  </li>
+<li>S3 バケットのオブジェクト作成イベントをトリガーに Lambda を起動し、再帰的な呼び出しが発生しないように注意する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>S3 Event Notifications を利用して AWS Glue ジョブをトリガーする。  </li>
+<li>Glue ジョブでログを変換し、その結果を同じ S3 バケットに書き込む。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li><strong>Amazon Data Firehose デリバリーストリーム</strong> を作成し、<strong>Lambda トランスフォーマー</strong> を設定する。  </li>
+<li>既存の S3 バケットを Firehose の <strong>デスティネーション</strong> として指定する。  </li>
+<li>Network Firewall のログ出力先を S3 ではなく <strong>Data Firehose</strong> に変更する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>Amazon SQS キューを用意し、ログを書き込むように構成する。  </li>
+<li>SQS メッセージをトリガーに Lambda 関数でログを変換し、その結果を既存の S3 バケットに保存する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の選択肢と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>Amazon Kinesis Data Firehose + Lambda transform</strong>  </li>
+<li><strong>Network Firewall ログのストリーム処理</strong>  </li>
+<li><strong>既存 S3 バケットをデスティネーションに指定</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>Network Firewall フローログはストリーム形式のデータであり、<strong>Kinesis Data Firehose</strong> を利用すると、ログを連続的に取り込みながら <strong>Lambda でオンザフライ変換</strong> し、最終的に S3 へ配信できる。  </li>
+<li>Firehose のデリバリーストリームに Lambda トランスフォーマーを設定することで、<strong>追加フィールド付与・フォーマット変換・フィルタリング</strong> などを簡単に実装可能。  </li>
+<li>デスティネーションとして既存の S3 バケットを指定できるため、Athena 側のクエリや下流処理を変更せずに済む。  </li>
+<li>Firehose はバッファリング・再試行・バッチ書き込みなどをマネージドで行うため、<strong>スケーラブルかつ運用負荷が低い</strong>。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（S3 → Lambda → S3）</strong>  <ul>
+<li>既に S3 に書き込まれたログをイベントトリガーで処理する方式は、<strong>再帰呼び出しや重複書き込みの管理が複雑</strong>。  </li>
+<li>リアルタイム性も低く、Firehose のようなストリーム処理と比べて非効率。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（S3 イベント + Glue）</strong>  <ul>
+<li>Glue ジョブはバッチ ETL 向けであり、スモールサイズのフローログを高頻度で処理する用途には過剰。  </li>
+<li>Glue の起動時間・コストを考えると、常時ログストリームを処理したい要件には適さない。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（SQS + Lambda）</strong>  <ul>
+<li>Network Firewall ログを一度 SQS に送る追加ステップが必要で、構成が不自然かつ冗長。  </li>
+<li>Firehose のような <strong>ネイティブ統合 + S3 出力 + Lambda トランスフォーム</strong> 機能を使う方がシンプル。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li><strong>ログやイベントのリアルタイム変換 + S3 配信</strong> のユースケースでは、まず <strong>Kinesis Data Firehose + Lambda トランスフォーム + S3 デスティネーション</strong> を思い出す。  </li>
+<li>S3 へ直接吐かれているログを「保存前に変換したい」という要件が出たら、<strong>ログソースの出力先を Firehose に切り替えられないか</strong> を検討する。  </li>
+<li>Glue / S3 イベント / SQS などは主にバッチ処理や別用途向けであり、<strong>ストリームログ変換には Firehose がベストフィット</strong> となるケースが多い。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-47</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-58 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-58</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="58">問題58 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業が、割引情報や週次プロモーションを提供する人気の <strong>E コマース Web サイト</strong> を運営している。<br />
+  以前は別クラウド上でホスティングされていたが、最近 AWS へ移行した。</li>
+<li>アーキテクチャ：<ul>
+<li>バックエンドは、<strong>Reserved EC2 インスタンス</strong> から構成される Auto Scaling グループ。  </li>
+<li>その前段に <strong>Application Load Balancer (ALB)</strong>。  </li>
+</ul>
+</li>
+<li>DevOps チームは、カスタムドメイン名を使用した <strong>CloudFront Web ディストリビューション</strong> を構成し、オリジンを ALB に向ける必要がある。<br />
+  要件は、<strong>CloudFront ビューワーからオリジン (ALB) までのエンドツーエンド HTTPS</strong> を正しく実装すること。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>CloudFront ビューワーから ALB オリジンまで、エンドツーエンド HTTPS 接続を適切に実装するにはどうすべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>ALB に自己署名証明書を設定し、CloudFront の Viewer Protocol Policy を <code>HTTPS Only</code> にする。  </li>
+<li>CloudFront では Trusted CA から発行された証明書を ACM または IAM 証明書ストアにインポートして使用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>Trusted CA から発行された証明書を ALB に設定し、それを ACM にインポートする。  </li>
+<li>CloudFront Viewer Protocol Policy を <code>HTTPS Only</code> に設定する。  </li>
+<li>別の証明書を S3 バケットへインポートして使用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>Trusted なサードパーティ証明書機関が署名した <strong>SSL 証明書を取得</strong> する。  </li>
+<li>証明書を <strong>AWS Certificate Manager (ACM)</strong> にインポートし、<strong>Application Load Balancer 用の証明書</strong> として利用する。  </li>
+<li>CloudFront ディストリビューションの Viewer Protocol Policy を <code>HTTPS Only</code> に設定する。  </li>
+<li>CloudFront 側でも、Trusted CA から発行された SSL/TLS 証明書を ACM または IAM 証明書ストアから指定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>Trusted CA 証明書を ALB 用にインポートし、CloudFront Viewer Protocol Policy を <code>Match Viewer</code>（HTTP/HTTPS 両対応）に設定する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の選択肢と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>エンドツーエンド HTTPS: Viewer → CloudFront → ALB</strong>  </li>
+<li><strong>ACM で管理されるトラステッド証明書</strong>  </li>
+<li><strong>CloudFront Viewer Protocol Policy = HTTPS Only</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>クライアントから CloudFront まで：  <ul>
+<li>CloudFront に、カスタムドメイン用の <strong>Trusted CA 証明書</strong>（ACM or IAM）を設定し、Viewer Protocol Policy を <code>HTTPS Only</code> にすることで、<strong>クライアントとの通信を常に HTTPS</strong> に強制できる。  </li>
+</ul>
+</li>
+<li>CloudFront から ALB まで：  <ul>
+<li>ALB には ACM から提供される <strong>同じドメイン / 内部ドメイン向け証明書</strong> を設定し、CloudFront オリジン設定を <strong>HTTPS</strong> にすることで、<strong>オリジン接続も TLS で保護</strong> される。  </li>
+</ul>
+</li>
+<li>これにより、インターネット側・内部側の両方で暗号化が確保され、<strong>エンドツーエンドの HTTPS</strong> 要件を満たす。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（ALB 自己署名証明書）</strong>  <ul>
+<li>自己署名証明書は本番トラフィックには不適切であり、証明書検証に失敗する可能性がある。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（S3 に証明書を置く）</strong>  <ul>
+<li>S3 は証明書ストアとしては使用しない。証明書は <strong>ACM または IAM 証明書ストア</strong> で管理する必要がある。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（Match Viewer）</strong>  <ul>
+<li><code>Match Viewer</code> を選ぶと HTTP / HTTPS の両方を許可する可能性があり、<strong>HTTPS Only</strong> という要件に反する。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li><strong>CloudFront + ALB 構成でエンドツーエンド HTTPS</strong> を実現する際は、  <ul>
+<li>クライアント → CloudFront：Viewer Protocol Policy = <code>HTTPS Only</code>、ACM 管理の証明書。  </li>
+<li>CloudFront → ALB：オリジンプロトコル = HTTPS、ALB に ACM 証明書。<br />
+  という 2 段階の TLS を意識する。  </li>
+</ul>
+</li>
+<li>本番環境では、<strong>自己署名証明書ではなく Trusted CA 証明書</strong> を利用するのが前提。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-58</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

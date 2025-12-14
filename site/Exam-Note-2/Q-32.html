@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-32 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-32</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="32">問題32 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>会社向けに、AWS 上で稼働している <strong>すべての EC2 インスタンスの一覧と詳細を表示するカスタム Web ダッシュボード</strong> が開発されている。</li>
+<li>この Web アプリケーションは、インスタンスの作成・終了時に更新される <strong>Amazon DynamoDB テーブル</strong> をデータソースとして利用している。</li>
+<li>会社では複数の <strong>Auto Scaling グループ</strong> を使用しており、インスタンス数の増減に応じて DynamoDB テーブルを確実に更新する効率的な方法が必要。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>インスタンスが作成または終了されるたびに DynamoDB テーブルを更新するために、どのようなステップを実装すべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li>Auto Scaling グループに対して <strong>Amazon EventBridge ターゲット</strong> を構成し、ライフサイクルアクションが発生したときに <strong>AWS Lambda 関数</strong> をトリガーする。  </li>
+<li>Lambda 関数で必要なインスタンス詳細を取得し、DynamoDB テーブルを更新する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>Auto Scaling グループのインスタンス数を監視する <strong>CloudWatch アラーム</strong> を設定し、しきい値に達したときに Lambda 関数をトリガーして DynamoDB テーブルを更新する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>Auto Scaling グループの <strong>ライフサイクルフック</strong> の通知ターゲットとして Lambda 関数を直接指定する。  </li>
+<li>スケールアウト / スケールインが発生した際にライフサイクルフックから Lambda を呼び出し、DynamoDB テーブルを更新する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>インスタンス上で動作するカスタムスクリプトを作成し、スケールイン / スケールアウトイベント時に DynamoDB テーブルを更新する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">正解の選択肢と注釈（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>Auto Scaling グループ → EventBridge イベント</strong>  </li>
+<li><strong>Lambda で DynamoDB テーブル更新</strong>  </li>
+<li><strong>ライフサイクルアクションに連動したリアルタイム更新</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>Auto Scaling グループでは、インスタンス起動 / 終了などの <strong>ライフサイクルアクションが EventBridge イベントとして公開</strong> される。  </li>
+<li>EventBridge ルールでこれらイベントをキャッチし、ターゲットとして Lambda を設定することで、<strong>インスタンスの作成 / 終了ごとに確実に Lambda が実行</strong> される。  </li>
+<li>Lambda 内で EC2 / Auto Scaling API を呼び出してインスタンス詳細（ID、タイプ、AZ、タグなど）を取得し、DynamoDB テーブルへ書き込むことで、ダッシュボード用データストアを自動的に最新状態に保てる。  </li>
+<li>CloudWatch アラームやインスタンス内スクリプトよりも <strong>シンプルかつイベント駆動な実装</strong> であり、スケーラビリティと保守性が高い。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2（CloudWatch アラームベース）</strong>  <ul>
+<li>CloudWatch アラームはメトリクスのしきい値に基づいて発火するため、<strong>個々のインスタンスの作成 / 終了イベントを直接トラッキングできない</strong>。  </li>
+<li>DynamoDB の更新タイミングがメトリクスの変化に依存し、正確性が落ちる。  </li>
+</ul>
+</li>
+<li><strong>選択肢3（ライフサイクルフック → Lambda 直接通知）</strong>  <ul>
+<li>技術的には可能だが、SNS / SQS などを経由した通知設計が一般的で、問題文の選択肢1 のような <strong>EventBridge 連携の方がシンプルに表現されている</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（インスタンス内スクリプト）</strong>  <ul>
+<li>スケールイン時にインスタンスが終了するとスクリプトも消えるため、<strong>終了イベントを確実に処理できない</strong> 恐れがある。  </li>
+<li>すべてのインスタンスにスクリプトをデプロイ・管理する必要があり、運用コストも高い。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>Auto Scaling 関連のイベント連携では、<strong>EventBridge ルール + Lambda</strong> によるイベント駆動アーキテクチャを優先的に検討する。  </li>
+<li>「インスタンスの作成 / 終了ごとに外部システムを更新したい」ケースでは、<strong>管理プレーン側のイベント（ライフサイクルアクション）をトリガーに使う</strong> のがベストプラクティス。  </li>
+<li>CloudWatch アラームはメトリクスベースの監視向けであり、<strong>個別イベント処理には EventBridge を使う</strong> という切り分けを覚えておく。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-32</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

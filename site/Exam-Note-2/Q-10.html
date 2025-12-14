@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-10 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-10</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="10">問題10 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業では、DevOps エンジニアが一部の <strong>Amazon EC2 Windows インスタンス</strong> に接続できなくなる事象や、ブート問題が発生している。</li>
+<li>これまでは、再接続できるようにするまでに多くの <strong>手作業のトラブルシューティング手順</strong> が必要だった。</li>
+<li>チームは、会社の <strong>VPC 内の障害 EC2 インスタンスを自動復旧</strong> するソリューションを設計する任務を与えられた。</li>
+<li>コンプライアンス要件として、以下を満たす必要がある。<ul>
+<li>ネットワーク設定ミス、RDP 問題、ファイアウォール設定などが原因で <strong>到達不能になった EC2 インスタンスを自動的に修復</strong> すること。</li>
+<li><strong><code>aws.trustedadvisor</code></strong> を使ってベストプラクティスを継続的に監視すること。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすために、DevOps エンジニアが実装すべき <strong>最も適切なソリューション</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li><strong>AWS Config</strong> と <strong>AWS Systems Manager Session Manager</strong> を組み合わせて、EC2 Linux / Windows インスタンス上の問題を自己診断・トラブルシュートする。  </li>
+<li><strong>Amazon CloudWatch、AWS Lambda、Systems Manager Run Command</strong> を用いた監視システムを構築し、障害 EC2 インスタンスを自動的に監視・復旧する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li><strong>AWS Trusted Advisor</strong> を使用して、EC2 インスタンスに関する一般的なセキュリティおよびパフォーマンスの問題を監視・解決し、コンプライアンスと自動復旧を実現する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>EC2 Linux / Windows Server インスタンス上の問題を診断・トラブルシュートするために <strong>EC2Rescue ツール</strong> を利用する。  </li>
+<li><strong>AWS Systems Manager Automation</strong> と <strong><code>AWSSupport-ExecuteEC2Rescue</code> ドキュメント</strong> を使用して、このツールの実行を自動化し、到達不能なインスタンスの復旧プロセスを自動化する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li><strong>AWS Config</strong> と <strong>AWS Systems Manager State Manager</strong> を統合し、EC2 Linux / Windows インスタンス上の問題を自己診断・トラブルシュートする。  </li>
+<li><strong>Systems Manager Maintenance Windows</strong> を使用して復旧プロセスを自動化する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の選択肢と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>EC2Rescue / AWSSupport-ExecuteEC2Rescue</strong></li>
+<li><strong>AWS Systems Manager Automation</strong></li>
+<li><strong>インスタンス到達不能時の自動復旧</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><strong>EC2Rescue</strong> は、ネットワーク設定ミスや RDP / ファイアウォール問題などにより到達不能になった EC2 インスタンスを診断・修復するための <strong>専用ツール</strong> であり、本問で示された障害内容に最も適している。  </li>
+<li><strong>Systems Manager Automation</strong> と <strong><code>AWSSupport-ExecuteEC2Rescue</code></strong> を組み合わせることで、CloudWatch や EventBridge からトリガーされた際に <strong>標準化された復旧ランブック</strong> を自動実行でき、手作業の復旧ステップを削減できる。  </li>
+<li>併せて <strong>Trusted Advisor</strong> を利用すれば、ベストプラクティス違反（セキュリティ / コスト / パフォーマンスなど）を継続的にチェックしつつ、実際の障害発生時には EC2Rescue による自動復旧を行う構成にできる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>Config + Session Manager + Run Command は汎用的な構成だが、<strong>到達不能なインスタンスのブート問題や RDP 問題を自動修復する専用ランブック</strong> に触れていない。  </li>
+<li>どのような診断・修復処理を実行するかが不明確であり、ベストプラクティスとして推奨される EC2Rescue ベースのアプローチより抽象度が高い。</li>
+</ul>
+</li>
+<li><strong>選択肢2（自分が選んだ不正解）</strong>  <ul>
+<li><strong>Trusted Advisor はあくまでアカウントレベルのベストプラクティスチェック</strong>（セキュリティ、コスト最適化、パフォーマンスなど）を行うサービスであり、個々のインスタンスのブート問題や RDP 設定を自動的に修復する機能は持たない。  </li>
+<li>復旧の具体的な自動化（ランブック、Automation ドキュメント）が示されておらず、「自動復旧を提供する」と記載されている点が誤り。  </li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>State Manager と Maintenance Windows は構成ドリフト修正や定期パッチ適用には適しているが、<strong>到達不能なインスタンスのオンデマンド復旧</strong> には直接結びつきにくい。  </li>
+<li>本問で求められている <strong>障害発生時の即時トラブルシュート + 修復</strong> という要件に対しては、EC2Rescue + Automation がより直接的な解決策となる。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解の選択肢</strong></p>
+<ul>
+<li><strong>選択肢2：AWS Trusted Advisor だけで監視と自動復旧を行う構成</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>Trusted Advisor は <strong>チェックとレポート（推奨事項の提示）</strong> が主目的であり、EC2 インスタンスに対して直接的な <strong>修復アクションを自動実行する仕組みではない</strong>。  </li>
+<li>ネットワーク設定ミスや RDP 問題などの具体的な OS / インスタンスレベルの障害は、Trusted Advisor ではなく <strong>EC2Rescue や Systems Manager Automation</strong> で対応すべき領域。  </li>
+<li>コンプライアンス要件として求められている「到達不能になったインスタンスを自動的に修復する」点を満たしておらず、誤った期待を置いている。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li><strong>Trusted Advisor = ベストプラクティスチェック、EC2Rescue + SSM Automation = 障害インスタンスの自動修復</strong> という役割分担を明確に覚える。  </li>
+<li>EC2 のブート失敗や RDP 接続不可といった問題が出てきたら、まず <strong><code>AWSSupport-ExecuteEC2Rescue</code> Automation ドキュメント</strong> を思い出す。  </li>
+<li>「手作業の復旧手順を自動化したい」というキーワードがある場合、<strong>Systems Manager Automation / Runbook</strong> を使った設計を優先的に検討する。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-10</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

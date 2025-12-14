@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-35 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-35</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="35">問題35 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある Web アプリケーションが、オンデマンド EC2 インスタンスから構成される <strong>Auto Scaling グループ (ASG)</strong> 上でホストされている。</li>
+<li>これとは別に、主にバッチ処理に使用する <strong>単一の Linux EC2 インスタンス</strong> が存在する。<br />
+  このインスタンスは、バッチジョブを正しく実行するために、ASG 内で稼働中のインスタンス IP アドレス一覧を元にした <strong>設定ファイル</strong> を最新状態に維持する必要がある。</li>
+<li>ASG がスケールイン / スケールアウトするたびに、この Linux インスタンス上の設定ファイルを <strong>効率よく自動更新</strong> する仕組みが求められている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>ASG のスケールイン / スケールアウト時に設定ファイルを効果的に更新できるオプションはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>毎分実行されるスケジュール付き <strong>Amazon EventBridge ルール</strong> を作成し、ターゲットとして Lambda 関数を設定する。  </li>
+<li>Lambda で ASG インスタンス一覧を取得して S3 上の設定ファイルを更新する。  </li>
+<li>さらに別の Lambda 関数を使って Linux EC2 インスタンスへ SSH 接続し、S3 から設定ファイルをダウンロードしてローカルファイルを更新する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>ASG のアクティブな EC2 インスタンスと IP アドレスを定期的にクエリするカスタムスクリプトを作成し、インスタンス内でバックグラウンド実行する。  </li>
+<li>変更を検出するたびに設定ファイルを更新する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>ASG の <strong>Launch / Terminate イベント</strong> をターゲットとする <strong>Amazon EventBridge ルール</strong> を作成する。  </li>
+<li>ルールのターゲットに <strong>AWS Systems Manager Run Command</strong> を設定し、対象の Linux EC2 インスタンス上の設定ファイルを更新するコマンドを実行する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>ASG の Launch / Terminate イベントを <strong>CloudWatch Logs</strong> でモニタリングし、そのイベントをトリガーとして Lambda 関数を実行して設定ファイルを更新する。  </li>
+<li>Lambda に EC2 インスタンスへアクセスするための IAM 権限を付与する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の選択肢と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>ASG Launch / Terminate イベント → EventBridge</strong>  </li>
+<li><strong>SSM Run Command で対象 EC2 インスタンス内の設定ファイル更新</strong>  </li>
+<li><strong>ポーリング不要のイベント駆動 + エージェントベース実行</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>ASG はインスタンスの起動 / 終了時に <strong>EventBridge イベント</strong> を発行するため、スケールイン / スケールアウトのタイミングを正確に捕捉できる。  </li>
+<li>EventBridge ルールのターゲットとして <strong>SSM Run Command</strong> を使用すれば、対象 Linux EC2 インスタンス上でスクリプトを直接実行でき、インスタンス内の設定ファイルを更新可能。  </li>
+<li>SSM Agent を利用するため、<strong>SSH キー管理や踏み台サーバーが不要</strong> であり、セキュリティと運用性の両面で優れている。  </li>
+<li>ポーリングや常駐スクリプトに頼らず、<strong>イベントドリブンで必要なときだけ設定を更新できる</strong> 点も効率的。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>毎分スケジュール実行は、ASG の変化頻度に比べて <strong>不要な実行が多く、コストと複雑さが増す</strong>。  </li>
+<li>SSH 経由でインスタンスへ接続するアプローチは、鍵管理や接続失敗時のリトライなどを考慮する必要があり、Run Command より管理が難しい。  </li>
+</ul>
+</li>
+<li><strong>選択肢2</strong>  <ul>
+<li>インスタンス内で常駐スクリプトを走らせる方式は、<strong>スケールイン時の終了処理を確実に行えない</strong> 可能性があるうえ、スクリプトのデプロイ・更新管理も煩雑。  </li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>CloudWatch Logs を経由してイベントを検知する設計は間接的で、<strong>EventBridge から直接 Run Command / Lambda を呼ぶ方がシンプル</strong>。  </li>
+<li>余計なログストリームや権限設定が必要になり、運用負荷が増える。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li><strong>インスタンス内設定の更新を自動化したい</strong> 場合は、  <ul>
+<li>イベントソースとして <strong>EventBridge（ASG / EC2 / Systems Manager イベント）</strong>  </li>
+<li>実行エンジンとして <strong>SSM Run Command / Automation</strong><br />
+  の組み合わせを優先的に検討する。  </li>
+</ul>
+</li>
+<li>SSH ベースの構成は、現在の AWS ベストプラクティスでは極力避け、<strong>SSM Agent によるコマンド実行</strong> へシフトするのが望ましい。  </li>
+<li>スケーリングイベントに反応した処理は、<strong>ポーリングではなく EventBridge を使ったイベント駆動</strong> が基本パターン。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-35</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-43 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-43</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="43">問題43 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>DevOps エンジニアが、オンプレミスで稼働していた <strong>Linux VM を Amazon EC2 へインポート</strong> した。<br />
+  このインスタンスではレガシーアプリケーションが動作しており、複製や再構築が難しい。</li>
+<li>それでも、このインスタンスのボリュームには重要なデータが保存されているため、<strong>毎日バックアップ（EBS スナップショット）</strong> を取得する必要がある。</li>
+<li>要件：  <ul>
+<li>毎日 1 回、対象 EBS ボリュームのスナップショットを自動取得する。  </li>
+<li>解決策は <strong>EASIEST way（最も簡単）</strong> であること。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たす最も簡単なバックアップ自動化方法はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>毎日深夜に実行されるスケジュール付き <strong>Amazon EventBridge ルール</strong> を作成し、ターゲットとして <strong>AWS Lambda 関数</strong> を設定する。  </li>
+<li>Lambda 関数で、指定した EBS ボリュームに対して <code>CreateSnapshot</code> を実行する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>毎日深夜に実行される EventBridge ルールを作成し、ターゲットとして <strong>AWS Systems Manager Run Command</strong> を設定する。  </li>
+<li>EC2 インスタンス内から <code>aws ec2 create-snapshot</code> コマンドを実行させる。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>インスタンス内にスクリプトを作成し、<code>aws ec2 create-snapshot</code> コマンドを実行する。  </li>
+<li><code>cron</code> を使って毎日深夜にスクリプトを実行するようスケジュールする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li>毎日深夜に実行される <strong>EventBridge スケジュールルール</strong> を作成し、ターゲットとして <strong>EBS <code>CreateSnapshot</code> API を直接呼び出す</strong> ように設定する。  </li>
+<li>これにより、必要な EBS ボリュームのスナップショットが自動的に作成される。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4">正解の選択肢と注釈（選択肢4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>EventBridge スケジュール → EC2/EBS API 直接呼び出し</strong>  </li>
+<li><strong>Lambda / SSM / インスタンス内スクリプト不要</strong>  </li>
+<li><strong>EASIEST way to automate backup</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>EventBridge では、ターゲットとして <strong>EC2 / EBS API アクションを直接指定</strong> できるため、<code>CreateSnapshot</code> をそのまま呼び出せる。  </li>
+<li>追加の Lambda 関数や SSM Run Command、インスタンス内スクリプトを用意する必要がなく、<strong>設定項目が最小限で済む</strong>。  </li>
+<li>スナップショット実行はコントロールプレーンの API であり、<strong>インスタンス自身の状態に依存せずにバックアップが実行可能</strong>。  </li>
+<li>以上より、運用・実装の両面で「最も簡単」な自動化パターンとなる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（Lambda 経由）</strong>  <ul>
+<li>機能的には問題ないが、Lambda 関数のコード・デプロイ・権限管理が必要になり、<strong>EventBridge → API 直接呼び出しに比べて構成が複雑</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（自分が選んだ不正解：SSM Run Command）</strong>  <ul>
+<li>EC2 インスタンス内からスナップショットを作成する構成は、<strong>インスタンスの状態や SSM Agent の動作に依存</strong> してしまう。  </li>
+<li>さらに、Run Command ドキュメントや IAM 権限の管理も必要であり、「EASIEST」とは言い難い。  </li>
+</ul>
+</li>
+<li><strong>選択肢3（cron スクリプト）</strong>  <ul>
+<li>インスタンス内にスクリプトを配置すると、<strong>インスタンス障害時にはバックアップ処理自体が実行されない</strong> 可能性がある。  </li>
+<li>スクリプトの更新や権限管理、<code>cron</code> 設定など運用コストも高い。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解の選択肢</strong></p>
+<ul>
+<li><strong>選択肢2：EventBridge → SSM Run Command → インスタンス内から create-snapshot 実行</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>インスタンス内からスナップショットを作成する必要はなく、<strong>コントロールプレーンから直接 API を呼び出した方が構成が簡単で故障点も少ない</strong>。  </li>
+<li>「EASIEST way」というキーワードに対して、余分なコンポーネント（Run Command、インスタンス内スクリプト）を増やしてしまっている。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>単純なスケジュールベースのバックアップやメンテナンス処理では、まず <strong>EventBridge スケジュール → サービス API 直接呼び出し</strong> を検討する。  </li>
+<li>Lambda / SSM / cron などの追加コンポーネントは、<strong>ロジックや条件分岐が必要な場合のみ採用</strong> する。  </li>
+<li>問題文に「EASIEST」や「SIMPLEST」とあれば、構成要素が最も少ないアーキテクチャを優先して選ぶ。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-43</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

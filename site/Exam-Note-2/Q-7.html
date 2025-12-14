@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-7 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-7</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="7">問題7 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>あるクラウドベースの決済会社は、<strong>Amazon EC2 インスタンス</strong> を大量に利用してアプリケーションをホストしている。</li>
+<li>セキュリティ向上のため、<strong>すべての EC2 インスタンスが IT セキュリティチームが管理する「事前承認済み AMI」からのみ起動される</strong> ようにしたいと考えている。  </li>
+<li>事前承認済み AMI のリストは <strong>IT セキュリティチームが作成・管理</strong> している。</li>
+<li>一方で、ソフトウェア開発チームには、<strong>新しい・未検証の AMI を使って EC2 インスタンスを起動する自動化された CI/CD プロセス</strong> があり、テスト環境用インスタンスを自動的に起動している。</li>
+<li>ビジネス要件として、<strong>開発プロセスへの影響を最小限に抑えつつ、承認済み AMI 以外から起動されたインスタンスを検出・対処</strong> する必要がある。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>開発プロセスへの影響を最小限に抑えながら上記要件を満たすために、エンジニアが実装すべきソリューションはどれか。  </li>
+<li><strong>Select TWO</strong>。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li><strong>AWS Lambda</strong> と <strong>CloudWatch Events（EventBridge）</strong> を統合し、VPC 内で稼働中の EC2 インスタンス一覧を毎日スキャンするプロセスをスケジュールする。  </li>
+<li>Lambda 関数で、それぞれのインスタンスが <strong>事前承認済み AMI リストに含まれているか</strong> を判定し、未承認 AMI から起動されたインスタンスを検出したら <strong>自動的に終了</strong> する。  </li>
+<li>事象発生時には <strong>Amazon SNS トピック</strong> にメッセージを発行し、IT セキュリティチームと開発チームへ通知する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（自分が選んで正解だった）</strong>  </p>
+<ul>
+<li><strong>AWS Config</strong> ルールと <strong>Lambda 関数</strong> を組み合わせ、EC2 インスタンスが承認済み AMI から起動されているかどうかを定期的に評価する。  </li>
+<li>違反を検出した場合は <strong>AWS Systems Manager Automation</strong> を使ったリメディエーションアクションを設定し、問題の EC2 インスタンスを自動終了させる。  </li>
+<li>併せて SNS 通知を発行し、IT セキュリティチームと開発チームへ共有する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li>IAM ポリシーを設定し、ユーザーが EC2 インスタンスを起動できる AMI を、IT セキュリティチームがタグ付けした <strong>事前承認済み AMI のみに制限</strong> する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li><strong>Amazon Inspector</strong> を使い、カスタムアセスメントテンプレートで EC2 インスタンスが事前承認済み AMI に基づいているかどうかを定期的にスキャンする。  </li>
+<li>違反のあるインスタンスを終了し、IT セキュリティチームへメールで通知する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢5</strong>  </p>
+<ul>
+<li>必要なポリシー・ロール・権限を持つ <strong>中央 IT 運用チーム</strong> を設置し、EC2 起動前に手動でセキュリティ承認プロセスを実施して、承認済み AMI からのみインスタンスが起動されるようにする。</li>
+</ul>
+</li>
+</ul>
+<h2 id="12">正解の選択肢と注釈（選択肢1・2）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>事前承認済み AMI</strong>  </li>
+<li><strong>Config / Lambda / Automation による違反検出と自動修復</strong>  </li>
+<li><strong>開発プロセスへの影響を最小化（Select TWO）</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この組み合わせが要件を満たす理由</strong></p>
+<ul>
+<li>選択肢1・2はいずれも、<strong>「インスタンス起動そのものは制限しすぎず、起動後に未承認 AMI を検出して自動的に対処する」</strong> という設計になっており、既存の CI/CD パイプラインによるテスト用インスタンス起動フローを壊しにくい。  </li>
+<li><strong>Lambda + CloudWatch Events / EventBridge</strong> による定期スキャン、または <strong>AWS Config ルール</strong> による継続的評価を行うことで、稼働中インスタンスが承認済み AMI リストに基づいているかを継続的にチェックできる。  </li>
+<li>違反検出時には <strong>Systems Manager Automation</strong> などの自動リメディエーションと <strong>SNS 通知</strong> を組み合わせ、運用チームと開発チーム双方へ速やかに共有できる。  </li>
+<li>これにより、セキュリティ要件（承認済み AMI からのみ運用）と、開発要件（CI/CD による柔軟なテスト環境構築）の両立が可能となる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢3（自分が選んだ不正解）</strong>  <ul>
+<li>IAM ポリシーで AMI を完全に制限すると、<strong>新しい / 未検証 AMI を使う CI/CD パイプラインが動作できなくなり、開発プロセスに大きな影響</strong> が出る。  </li>
+<li>問題文は「LEAST impact on the development process」を強調しており、起動前に厳しく制限する方式は要件と逆方向。  </li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>Amazon Inspector は脆弱性・セキュリティ評価向けサービスであり、「AMI が承認済みかどうか」を判定する主目的のサービスではない。  </li>
+<li>メール通知ベースであり、選択肢1・2のような <strong>自動リメディエーション + 継続的評価</strong> に比べて運用の自動化レベルが低い。  </li>
+</ul>
+</li>
+<li><strong>選択肢5</strong>  <ul>
+<li>手動承認プロセスに依存するため、<strong>スケールしにくく、開発スピードや CI/CD の自動化と相反</strong> する。  </li>
+<li>「最小の影響」という要件に明確に反する。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解の選択肢</strong></p>
+<ul>
+<li><strong>選択肢3：IAM ポリシーで起動可能な AMI を事前承認済みのものだけに制限する構成</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>CI/CD プロセスでは、新しい AMI を試験的に起動して検証することが重要であり、<strong>「承認済み AMI 以外を一切起動できない」制御は開発プロセスを大きく制限</strong> してしまう。  </li>
+<li>問題文は、開発プロセスへの影響を抑えつつ「運用中に未承認 AMI を検出・是正する」方向のソリューションを意図している。  </li>
+<li>未承認 AMI の利用を完全禁止するのではなく、<strong>検出・自動修復・可視化（SNS 通知）</strong> を組み合わせる方が、DevOps 的なバランスが取れている。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>「LEAST impact on the development process」というキーワードが出たら、<strong>起動前の強制ブロックよりも、起動後の検出 + 自動リメディエーション</strong> パターンを優先して検討する。  </li>
+<li><strong>AWS Config / EventBridge + Lambda + Systems Manager Automation + SNS</strong> の組み合わせは、「ポリシー準拠の継続的評価 + 自動修復 + 通知」という DevOps 典型パターンとして覚えておく。  </li>
+<li>IAM ポリシーによる過度な制限は、CI/CD や開発スピードを阻害しないかを必ずチェックする。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-7</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

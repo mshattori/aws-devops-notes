@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-24 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-24</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="24">問題24 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li><code>team-cebu-devops</code> という名前の <strong>Amazon S3 バケット</strong> が、チーム内すべての DevOps 管理者で共有されている。</li>
+<li>このバケットは、複数の <strong>CI/CD パイプライン用アーティファクトファイル</strong> を保存する用途で使われている。</li>
+<li>あるジュニア開発者が誤って S3 バケットポリシーを変更し、<br />
+  すべてのパイプラインが必要なアーティファクトをダウンロードできなくなり、<strong>全デプロイが停止</strong> してしまった。</li>
+<li>チームは今後同様の問題を防ぐため、<strong>S3 バケットポリシーに変更があった際にすぐ通知を受け取り、素早く対処</strong> できるようにしたい。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすために有効なオプションはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>S3 サーバーアクセスログを有効化し、バケットポリシーイベントに対する <strong>CloudWatch メトリクスフィルター</strong> を作成する。  </li>
+<li>このメトリクスに基づいた CloudWatch アラームを作成し、イベント発生時に通知を送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（正解）</strong>  </p>
+<ul>
+<li><strong>AWS CloudTrail トレイル</strong> を作成し、ログを <strong>Amazon CloudWatch Logs グループ</strong> に送信する。  </li>
+<li>S3 バケットポリシーイベントに対する <strong>CloudWatch メトリクスフィルター</strong> をロググループ上に定義する。  </li>
+<li>メトリクスのしきい値を監視する <strong>CloudWatch アラーム</strong> を作成し、しきい値に達した際に通知を受け取る。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>CloudTrail トレイルを作成してログを CloudWatch Logs に送信する。  </li>
+<li>S3 バケットポリシーイベント向けに <strong>Amazon EventBridge ルール</strong> を作成し、イベントに基づく通知を送信するアラームを構成する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>S3 サーバーアクセスログを有効化し、アクセスログを CloudWatch Logs グループに送信する。  </li>
+<li>バケットポリシーイベントに対するメトリクスフィルターとアラームを作成する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="2">正解の選択肢と注釈（選択肢2）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CloudTrail で S3 バケットポリシー変更を監査</strong>  </li>
+<li><strong>CloudWatch Logs + Metric Filter + Alarm</strong>  </li>
+<li><strong>設定変更の即時検知</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><strong>S3 バケットポリシーの変更は管理プレーン API コール</strong> であり、<code>PutBucketPolicy</code> などの操作は CloudTrail に記録される。  </li>
+<li>CloudTrail を CloudWatch Logs にストリーミングし、そのログに対してバケットポリシー関連イベントを拾う <strong>Metric Filter</strong> を設定することで、<strong>ポリシー変更発生時にメトリクスをインクリメント</strong> できる。  </li>
+<li>CloudWatch アラームをそのメトリクスに関連付ければ、しきい値（例：1 回以上の変更）が発生したタイミングで <strong>メール / SNS などへ即座に通知</strong> 可能。  </li>
+<li>サーバーアクセスログよりも粒度が細かく、<strong>「誰がいつバケットポリシーを変更したか」を明確に追跡</strong> できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1・4（S3 サーバーアクセスログベース）</strong>  <ul>
+<li>サーバーアクセスログは主に <strong>オブジェクトへのアクセスリクエスト</strong> を記録するものであり、バケットポリシーの変更といった管理プレーン API を直接表現しない。  </li>
+<li>ポリシー変更検出に利用するには不向きであり、CloudTrail ほど明確・低コストではない。  </li>
+</ul>
+</li>
+<li><strong>選択肢3（CloudTrail + EventBridge）</strong>  <ul>
+<li>CloudTrail イベントを EventBridge から直接扱うこともできるが、本問の選択肢文は <strong>CloudWatch Logs とアラームの関係が曖昧</strong> で、Metric Filter を用いた標準パターン（選択肢2）ほど明確ではない。  </li>
+<li>DevOps 試験では、<strong>CloudTrail → CloudWatch Logs → Metric Filter → Alarm</strong> というチェーンがバケットポリシー変更検出の代表パターンとしてよく問われる。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li><strong>S3 バケットポリシーなど設定変更の検出</strong> には、まず <strong>CloudTrail（管理プレーンの記録）</strong> を思い出す。  </li>
+<li>CloudTrail ログを CloudWatch Logs に送信し、<strong>Metric Filter + Alarm</strong> で特定イベント発生時に通知する構成は、広く使われる監査・アラートパターン。  </li>
+<li>サーバーアクセスログは主に <strong>オブジェクトへのアクセスパターン分析</strong> 用であり、<strong>設定変更の監査には CloudTrail を優先</strong> する。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-24</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

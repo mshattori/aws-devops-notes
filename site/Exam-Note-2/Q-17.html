@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-17 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-17</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="17">問題17 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある国立大学が、<strong>AWS Lambda と API Gateway</strong> を用いてサーバーレスのオンライン学習ポータルを構築した。<br />
+  学生はこのポータルから履修登録、成績閲覧、時間割確認などを行う。</li>
+<li>数週間後、ポータルが突然停止し、すべてのデータが失われるインシデントが発生した。<br />
+  DevOps コンサルタントによる調査の結果、原因はログインページに対する <strong>SQL Injection 脆弱性</strong> であり、攻撃者が悪意のある SQL コードを注入してデータベースを破壊したことが判明した。</li>
+<li>さらに、コンサルタントは、<strong>ファイアウォール（WAF）ルールや設定変更の履歴を追跡できていないこと</strong> も重大な問題として指摘した。</li>
+<li>大学は、今後同様の攻撃を防ぎつつ、<strong>コスト効率の良い</strong> 監査性の高いソリューションを求めている。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記の状況に対して、AWS 上のインフラを SQL Injection 攻撃から保護し、WAF ルールの変更を追跡できるようにする <strong>最も適切かつコスト効率の良い</strong> ソリューションはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li>API Gateway の前段に <strong>AWS WAF</strong> の <strong>web ACL</strong> を配置し、悪意のある SQL コードを含むリクエストをブロックする。  </li>
+<li>WAF ルール内に <strong>scope-down statement</strong> を設定し、特定のリクエスト要素（例：ログインパスや特定クエリパラメータ）への検査に絞り込み、パフォーマンスを向上させる。  </li>
+<li><strong>AWS Config</strong> を利用して web ACL の変更（ルールの作成・削除、設定変更など）を追跡し、コンプライアンスと監査要件を満たす。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>Lambda 関数の前段に WAF web ACL を配置し、SQL コードを含むリクエストをブロックする。  </li>
+<li>WAF ルールや web ACL の変更は <strong>AWS Firewall Manager</strong> を使用して追跡する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>攻撃者の IP アドレスを VPC の <strong>Network ACL</strong> でブロックする。  </li>
+<li>さらに Amazon CloudFront ディストリビューションを作成し、その前段に WAF web ACL を配置して SQL コードを含むリクエストをブロックする。  </li>
+<li>WAF ルールの変更は AWS Config で追跡する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>新しい <strong>Application Load Balancer</strong> を作成し、その前段に WAF を設定して SQL コードを含むリクエストをブロックする。  </li>
+<li>API Gateway を ALB の背後に配置し、<strong>AWS Firewall Manager</strong> で WAF ルールの変更を追跡する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">正解の選択肢と注釈（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>AWS WAF web ACL + API Gateway</strong>  </li>
+<li><strong>SQL Injection 保護（マネージドルール + scope-down）</strong>  </li>
+<li><strong>AWS Config による WAF ルール変更の追跡</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>サーバーレスポータルは <strong>API Gateway + Lambda</strong> ベースであり、SQL Injection などのアプリケーションレベル攻撃は <strong>API Gateway のエッジ（入り口）でブロック</strong> するのが最もシンプルでコスト効率が良い。  </li>
+<li><strong>AWS WAF</strong> のマネージドルール（<code>AWSManagedRulesSQLiRuleSet</code> など）と scope-down statement を利用すれば、ログインページなど特定エンドポイントに対してだけ詳細な検査を行え、<strong>不要なトラフィックへの検査を減らしてコストとレイテンシを削減</strong> できる。  </li>
+<li><strong>AWS Config</strong> で WAF web ACL を記録対象にすれば、ルールの追加・削除・構成変更の履歴を自動的にキャプチャし、<strong>変更管理・コンプライアンス監査</strong> を容易に行える。  </li>
+<li>追加の ALB や CloudFront ディストリビューションを新規に構築する必要がなく、現行アーキテクチャに対して最小限の変更で防御と監査性を高められる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2</strong>  <ul>
+<li>Lambda の前段に直接 WAF を置く構成は一般的ではなく、<strong>API Gateway / CloudFront / ALB</strong> と統合するのが標準。  </li>
+<li>単一アプリケーション向けに Firewall Manager を導入するのはオーバースペックであり、コスト効率の観点で選択肢1より劣る。</li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>既存構成に新たに CloudFront ディストリビューションを追加し、Network ACL で特定 IP をブロックするなど、<strong>構成が複雑で運用コストが増大</strong> する。  </li>
+<li>攻撃者の IP アドレスは容易に変わるため、Network ACL で個別 IP をブロックするのは根本的な対策にならない。</li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>新しい ALB を追加し、API Gateway をその背後に置く構成は、サーバーレスアーキテクチャのシンプルさを損ね、<strong>不要なコンポーネントが増える</strong>。  </li>
+<li>Firewall Manager は複数アカウント / 複数アプリケーションの WAF ポリシー集中管理に適したサービスであり、本問の単一アプリケーションには過剰。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>API Gateway / CloudFront / ALB など L7 エントリポイントの保護には、まず <strong>AWS WAF web ACL + マネージドルール</strong> を検討する。  </li>
+<li>WAF ルールやセキュリティ設定の変更履歴を追跡したい場合、<strong>AWS Config でリソース変更履歴を記録</strong> するパターンを覚えておく。  </li>
+<li>「MOST suitable and cost-effective」というキーワードが出たら、<strong>既存アーキテクチャに新しいコンポーネントを増やしすぎない</strong> 構成を優先して選択する。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-17</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

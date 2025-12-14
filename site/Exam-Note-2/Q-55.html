@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-55 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-55</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="55">問題55 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ユーザーがモバイルアプリ上で有効化したいプラグインを選択できる <strong>ストアモジュール</strong> を開発している。<br />
+  このモジュールは <strong>ECS Fargate</strong> 上のサービスとしてデプロイされている。</li>
+<li>クラスター作成時、サービスは <strong>Fargate の LATEST プラットフォームバージョン（1.2.0）</strong> で起動された。<br />
+  その後、新しいプラットフォームバージョン <strong>1.3.0</strong> がリリースされ、<strong>Splunk ログドライバー</strong> をサポートしているため、このバージョンへ更新したい。</li>
+<li>質問は、<strong>AWS コンソール上でサービスのプラットフォームバージョンを更新する推奨方法</strong> を問うもの。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>ECS コンソールで、サービスのプラットフォームバージョンを新バージョンへ更新する推奨手順はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>ECS 上のサービスを更新し、デプロイ戦略で「Redeploy」を選択することで、クラスターを新しいプラットフォームバージョンで再デプロイする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>ECS の自動プラットフォームバージョンアップグレード機能を有効化する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>タスク定義を新しいプラットフォームバージョンの ARN で更新し、ECS がクラスターを再デプロイするようにする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li>ECS 上のサービスを更新し、<strong>「Force new deployment」</strong> を選択することで、クラスターを新しいプラットフォームバージョンで再デプロイさせる。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4">正解の選択肢と注釈（選択肢4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>ECS Fargate プラットフォームバージョン</strong>  </li>
+<li><strong>サービス更新 + Force new deployment</strong>  </li>
+<li><strong>コンソールからのローリング更新</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>Fargate では、タスク定義で <strong><code>platformVersion</code></strong> を指定するか、サービス設定で LATEST / 特定バージョンを選択する。  </li>
+<li>コンソールでサービスのプラットフォームバージョンを 1.3.0 に変更した後、<strong>「Force new deployment」</strong> を選択すると、ECS は新しいタスクセットを作成し、<strong>ローリング方式で既存タスクを新バージョンへ置き換える</strong>。  </li>
+<li>これにより、ダウンタイムを最小限に抑えつつ、新しい Fargate プラットフォームバージョン（Splunk ログドライバー対応）へ移行できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（Redeploy）</strong>  <ul>
+<li>コンソール上の用語としては「Redeploy」ではなく <strong>「Force new deployment」</strong> が正しい。試験では UI のキーワードを正確に選ぶ必要がある。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（自動プラットフォームアップグレード機能）</strong>  <ul>
+<li>ECS には明示的な「自動プラットフォームバージョンアップグレード」機能はなく、通常はサービス更新またはタスク定義更新で制御する。  </li>
+</ul>
+</li>
+<li><strong>選択肢3（タスク定義 ARN のみ更新）</strong>  <ul>
+<li>プラットフォームバージョンはタスク定義 ARN ではなく <strong>サービス / タスク設定の <code>platformVersion</code></strong> で管理される。  </li>
+<li>単にタスク定義 ARN を変えても、期待どおりにプラットフォームバージョンが更新されるとは限らない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>ECS Fargate のプラットフォームバージョン更新は、  <ul>
+<li><strong>サービスの設定で新しい platformVersion を指定</strong>  </li>
+<li>その後 <strong>Force new deployment</strong> で新タスクセットに切り替える<br />
+  という手順がコンソールベースのベストプラクティス。  </li>
+</ul>
+</li>
+<li>試験問題でコンソール操作が問われたときは、<strong>実際の UI 文言（ボタン名やオプション名）</strong> に近い選択肢を選ぶよう意識する。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-55</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

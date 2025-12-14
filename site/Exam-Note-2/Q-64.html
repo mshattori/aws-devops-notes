@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-64 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-64</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="64">問題64 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>グローバルなクラウドベース決済処理システムが AWS 上で稼働している。<br />
+  このシステムは <strong>クレジットカード決済および Bitcoin などの暗号通貨決済</strong> を受け付ける。<br />
+  アーキテクチャは EC2、DynamoDB、S3、CloudFront 等で構成されている。</li>
+<li>ユーザーのクレジットカード情報を扱うため、システムは <strong>PCI DSS 準拠</strong> を要求されている。<br />
+  最近のサードパーティ監査で、<strong>クレジットカード番号が適切に暗号化されていない</strong> ことが判明し、PCI DSS テストに失格してしまった。<br />
+  さらに、CloudFront からオリジンサーバーへのリクエストが多く、<strong>キャッシュヒット率を向上させてパフォーマンスも改善</strong> する必要がある。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件（クレジットカード情報の保護・暗号化、および CloudFront キャッシュヒット率の向上）を満たす <strong>BEST オプション</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li>CloudFront ディストリビューションで <strong>オリジンサーバーとのエンドツーエンド HTTPS 接続</strong> を有効化し、<strong>フィールドレベル暗号化 (field-level encryption)</strong> を設定する。  </li>
+<li>オリジン側で <code>Cache-Control: max-age</code> ヘッダーを追加し、実用上最大の <code>max-age</code> 値を設定してキャッシュヒット率を高める。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>CloudFront ディストリビューションで <strong>Signed URL</strong> を使用するように変更し、オリジンで <code>Cache-Control: max-age</code> を設定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>CloudFront ディストリビューションでカスタム SSL を使用し、オリジンで <code>User-Agent</code> と <code>Host</code> ヘッダーを付加してキャッシュヒット率を上げる。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>オリジンアクセスアイデンティティ (OAI) を CloudFront に追加し、<code>User-Agent</code> と <code>Host</code> ヘッダーを付加する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">正解の選択肢と注釈（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CloudFront フィールドレベル暗号化 (FLE)</strong>  </li>
+<li><strong>エンドツーエンド HTTPS</strong>  </li>
+<li><strong>Cache-Control: max-age によるキャッシュヒット率向上</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><strong>PCI DSS 準拠の観点</strong>  <ul>
+<li>フィールドレベル暗号化を使用すると、<code>cardNumber</code> など特定の機密フィールドを、CloudFront のエッジで <strong>公開鍵暗号化</strong> し、オリジン到達時点でも暗号化されたまま扱える。  </li>
+<li>復号鍵はオリジン側のアプリケーションのみが保持するため、<strong>中間経路やログに平文のカード情報が残らない</strong>。  </li>
+<li>さらに、CloudFront ビューワーとオリジンの両方で HTTPS を強制することで、通信経路全体を暗号化できる。  </li>
+</ul>
+</li>
+<li><strong>キャッシュヒット率 / パフォーマンスの観点</strong>  <ul>
+<li>オリジンから返すレスポンスに <code>Cache-Control: max-age=&lt;長めの値&gt;</code> を設定することで、<strong>CloudFront がオブジェクトを長くキャッシュ</strong> し、エッジから配信できる割合を高められる。  </li>
+<li>これにより、オリジンへのリクエスト数が減り、レイテンシとバックエンド負荷が低減する。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2（Signed URL）</strong>  <ul>
+<li>Signed URL はリソースへのアクセス制御には有効だが、<strong>カード番号そのものの暗号化やフィールドレベル保護</strong> は提供しない。  </li>
+</ul>
+</li>
+<li><strong>選択肢3・4</strong>  <ul>
+<li>カスタム SSL や OAI はそれぞれ別目的の機能であり、<strong>クレジットカード番号の暗号化や PCI DSS 要件を直接満たすわけではない</strong>。  </li>
+<li><code>User-Agent</code> / <code>Host</code> ヘッダーを追加しても、キャッシュキーの粒度が増えることで <strong>逆にキャッシュヒット率が下がる</strong> 可能性がある。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>クレジットカード情報など <strong>非常に機密性の高いフィールド</strong> を CloudFront 経由で扱う場合、  <ul>
+<li><strong>エンドツーエンド HTTPS</strong>（Viewer ↔ CloudFront ↔ Origin）  </li>
+<li><strong>CloudFront フィールドレベル暗号化で特定フィールドを暗号化</strong><br />
+  の組み合わせがセキュリティベストプラクティスとなる。  </li>
+</ul>
+</li>
+<li>キャッシュヒット率を高めるには、まず <strong>Cache-Control / max-age / s-maxage</strong> といった HTTP キャッシュヘッダーの設定を見直す。<br />
+  不必要に多くのヘッダーをキャッシュキーに含めると、ヒット率が下がる点に注意する。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-64</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

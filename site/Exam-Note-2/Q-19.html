@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-19 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-19</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="19">問題19 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業は、開発者が自由に AWS リソースを起動して新しいビルドをテストできる <strong>専用の AWS アカウント</strong> を持っている。</li>
+<li>このアカウントでは制約が緩いため、<strong>AWS Trusted Advisor</strong> を確認したところ、<br />
+  デフォルトセキュリティグループで <strong>ポート 22（SSH）が 0.0.0.0/0 に対して開放</strong> されているインスタンスが複数存在することが判明した。</li>
+<li>テスト環境であっても、ポート 22 は <strong>オンプレミスのデータセンターのグローバル IP のみに制限</strong> すべきであり、<br />
+  会社は Trusted Advisor によるセキュリティチェック結果を通知として受け取り、<strong>非準拠状態を自動的に修正</strong> したいと考えている。</li>
+<li>要件：  <ul>
+<li>Trusted Advisor の結果を定期的に取得する。  </li>
+<li>非準拠なセキュリティグループを検出したら通知を行い、自動で修正をかける。  </li>
+<li><strong>Select THREE</strong>。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすために必要なステップの組み合わせとして、最も適切なものはどれか。（3 つ選択）</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>カスタム <strong>AWS Config ルール</strong> を設定し、リメディエーションアクションとして Lambda 関数をトリガーする。  </li>
+<li>Lambda 関数は、セキュリティグループのポート 22 をデフォルトからオフィスのパブリック IP のみに制限する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（自分が選んだ一部正解）</strong>  </p>
+<ul>
+<li>カスタム AWS Config ルールを設定し、セキュリティグループで <strong>ポート 22 がインターネットへ公開されていないか</strong> をチェックする。  </li>
+<li>非準拠が検出された場合、SNS トピックに通知を送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li><strong>Lambda 関数</strong> を作成し、<strong>Amazon EventBridge</strong>（または CloudWatch Events）と統合して、定期的に Amazon Trusted Advisor の結果を <strong>API 経由で取得</strong> するようにする。  </li>
+<li>結果に基づいて SNS トピックにメッセージを発行し、サブスクライバーへ通知する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（自分が選んだ一部正解）</strong>  </p>
+<ul>
+<li>カスタム AWS Config ルールを作成し、リメディエーションアクションとして <strong>AWS Systems Manager Automation</strong> を呼び出し、ポート 22 をオンプレミスオフィスのグローバル IP のみに制限するようにセキュリティグループを更新する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢5（不正解）</strong>  </p>
+<ul>
+<li>Lambda 関数を 1 時間ごとに実行し、API を使用して Trusted Advisor スキャン結果を更新する。  </li>
+<li>Trusted Advisor の自動通知機能に任せて、変更があれば自動的に通知を受け取る。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢6</strong>  </p>
+<ul>
+<li>AWS Config の Cron ジョブを作成し、すべてのセキュリティグループに対するチェックをスケジュールする。  </li>
+<li>非準拠リソースに対して SNS で通知を送信する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="234">正解の組み合わせと注釈（選択肢2・3・4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>Trusted Advisor API + Lambda + EventBridge</strong>  </li>
+<li><strong>AWS Config カスタムルール + SSM Automation リメディエーション</strong>  </li>
+<li><strong>SSH ポート 22 の公開制御 + SNS 通知</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この組み合わせが要件を満たす理由</strong></p>
+<ul>
+<li><strong>選択肢3</strong> により、Lambda + EventBridge のスケジュール実行で <strong>Trusted Advisor のセキュリティチェック結果を定期取得</strong> できる。  </li>
+<li><strong>選択肢2</strong> のカスタム Config ルールは、セキュリティグループのポート 22 が 0.0.0.0/0 に対して開いていないかを評価し、<strong>非準拠リソースを検出した際に SNS で通知</strong> できる。  </li>
+<li><strong>選択肢4</strong> の Systems Manager Automation をリメディエーションアクションとして紐付けることで、非準拠セキュリティグループに対して <strong>ポート 22 をオフィスのグローバル IP のみに自動修正</strong> することが可能。  </li>
+<li>これらを組み合わせることで、  <ul>
+<li>Trusted Advisor からの高レベルなセキュリティチェック  </li>
+<li>Config によるリソースレベルのコンプライアンス評価  </li>
+<li>Automation による自動修復<br />
+  を一体化した、<strong>通知 + 自動修正</strong> のフローが構築できる。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>Lambda によるリメディエーション自体は可能だが、本問では <strong>Systems Manager Automation を使った標準的な修復ランブック</strong> を示す選択肢4 がより適切。  </li>
+<li>Config のリメディエーションは Automation を推奨しており、Lambda 直接呼び出しよりも運用性が高い。  </li>
+</ul>
+</li>
+<li><strong>選択肢5</strong>  <ul>
+<li>「Trusted Advisor の自動通知に任せる」という記述は、<strong>開発アカウント固有の要件（オフィス IP に制限する修復）</strong> を考慮していない。  </li>
+<li>Trusted Advisor の通知だけでは、<strong>自動リメディエーションが行われない</strong> ため要件を満たさない。  </li>
+</ul>
+</li>
+<li><strong>選択肢6</strong>  <ul>
+<li>AWS Config には Cron ジョブという概念はなく、リソース変更や定期評価スケジュールに基づく評価を行う。記述が不正確であり、選択すべきではない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ組み合わせの問題点</strong></p>
+<ul>
+<li>Trusted Advisor のチェックに頼るだけ、あるいは Config ルールを作成しても <strong>自動リメディエーションを適切に紐付けていない</strong> など、要件である「通知 + 自動修正」の両方を満たせていなかった可能性が高い。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li>セキュリティコンプライアンス問題で <strong>「自動修正まで行いたい」</strong> 場合は、  <ul>
+<li><strong>AWS Config（検出） + Systems Manager Automation（修復） + SNS（通知）</strong> の三位一体パターンを覚えておく。  </li>
+</ul>
+</li>
+<li>Trusted Advisor は全体的なベストプラクティスチェックとして利用しつつ、<strong>個々のリソースレベルの是正は Config + Automation</strong> で行うのが典型構成。  </li>
+<li>問題文に「Select THREE」とある場合、<strong>検出 + 通知 + 修復</strong> の 3 要素を意識して選択肢を組み合わせる。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-19</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

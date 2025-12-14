@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-61 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-61</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="61">問題61 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>欧州の企業が、AWS 上に <strong>サーバーレス Web アプリケーション</strong> を構築している。<br />
+  アプリケーションは <strong>Amazon API Gateway、複数の AWS Lambda 関数、Amazon S3、Amazon RDS for MySQL</strong> などで構成される。</li>
+<li>ソースコードは <strong>AWS Serverless Application Model (AWS SAM) テンプレート</strong> と <strong>Python コード</strong> からなり、GitHub リポジトリで管理されている。</li>
+<li>最近のセキュリティ監査で、<strong>データベースのユーザー名とパスワードが GitHub 内でハードコード</strong> されていることが発見された。<br />
+  DevOps エンジニアは、以下の要件を満たすソリューションを実装しなければならない：<ul>
+<li>ハードコーディングされたシークレットを <strong>自動的に検出・防止</strong> すること。  </li>
+<li><strong>自動シークレットローテーション</strong> を実装すること。  </li>
+<li>最もセキュアなソリューションであること。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>これらの要件を満たす <strong>最もセキュアなソリューション</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>AWS Lambda 関数に <strong>Amazon CodeGuru Profiler</strong> を統合し、<code>@with_lambda_profiler()</code> デコレータを適用してコードプロファイルを取得する。  </li>
+<li>シークレットは <strong>Parameter Store のセキュアストリング</strong> として保存し、SAM テンプレートと Python コードを修正して Parameter Store から取得する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（正解）</strong>  </p>
+<ul>
+<li>GitHub リポジトリを <strong>Amazon CodeGuru Reviewer</strong> とリンクする。  </li>
+<li>コードレビューを実行し、ハードコーディングされたシークレットなどの推奨事項を確認する。  </li>
+<li>「シークレットを保護する」オプションを選択し、<strong>AWS Secrets Manager</strong> にシークレットを保存する。  </li>
+<li>SAM テンプレートと Python コードを修正して、Secrets Manager からシークレットを取得するようにする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>GitHub リポジトリを CodeGuru Reviewer とリンクし、推奨事項を確認する。  </li>
+<li>シークレットは Parameter Store のセキュアストリングとして保存し、SAM テンプレートと Python コードを修正して Parameter Store から取得する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>Lambda に CodeGuru Profiler を統合し、<code>@with_lambda_profiler()</code> を適用する。  </li>
+<li>レポートを手動で確認してシークレット保護のオプションを選択し、SAM テンプレートと Python コードを修正して Secrets Manager から取得する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="2">正解の選択肢と注釈（選択肢2）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>Amazon CodeGuru Reviewer によるハードコードシークレット検出</strong>  </li>
+<li><strong>AWS Secrets Manager での安全なシークレット保管 + 自動ローテーション</strong>  </li>
+<li><strong>SAM / Lambda コードからのシークレット取得</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><strong>CodeGuru Reviewer</strong> は GitHub リポジトリと統合することで、プルリク / コミット時に <strong>ハードコードされたシークレットやセキュリティ上の問題を自動検出</strong> できる。  </li>
+<li>CodeGuru の推奨に従い、認証情報を <strong>AWS Secrets Manager</strong> に格納することで、<strong>暗号化、細かな IAM アクセス制御、監査ログ</strong> を標準機能として利用可能。  </li>
+<li>Secrets Manager は <strong>RDS などのデータベース認証情報の自動ローテーション</strong> をサポートしており、「Automatic secrets rotation」の要件を直接満たす。  </li>
+<li>SAM テンプレートと Python コードを Secrets Manager 参照に修正すれば、アプリケーションは <strong>実行時にだけシークレットを取得</strong> し、コード内や GitHub には平文で残らない。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1・3（Parameter Store 利用）</strong>  <ul>
+<li>Parameter Store もセキュアストリングでシークレットを保存できるが、<strong>自動ローテーション機能はネイティブには提供されていない</strong>。  </li>
+<li>自動ローテーション要件を満たすには追加実装が必要であり、Secrets Manager よりセキュリティ機能が限定的。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（CodeGuru Profiler）</strong>  <ul>
+<li>CodeGuru Profiler はパフォーマンスプロファイリングのサービスであり、<strong>シークレット検出やセキュリティレビューには CodeGuru Reviewer を使用</strong> する。  </li>
+<li>Profiler を使ってもハードコードシークレットを自動検出できないため、要件を満たさない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>コード内にハードコーディングされたシークレットを検出・防止したい場合は、  <ul>
+<li><strong>CodeGuru Reviewer + GitHub 連携</strong> を使って静的解析させる。  </li>
+<li>シークレットの安全な保管と自動ローテーションには <strong>AWS Secrets Manager</strong> を選ぶ。<br />
+  という組み合わせが「最もセキュア」な回答として問われやすい。  </li>
+</ul>
+</li>
+<li>Parameter Store は設定値や一部シークレットの保存には便利だが、<strong>ローテーションや高度なシークレット管理</strong> が重要な問題では Secrets Manager を優先する。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-61</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

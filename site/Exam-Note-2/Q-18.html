@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-18 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-18</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="18">問題18 不正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>多国籍の保険会社が、複数あった AWS アカウントを <strong>AWS Organizations</strong> で統合し、部署ごとに複数の <strong>Organizational Unit (OU)</strong> を持つ構成にした。</li>
+<li>IT 部門には 2 つのチームがある：<ul>
+<li><strong>DevOps チーム</strong>：クラウドインフラのセキュリティ・コンプライアンスを担保する。  </li>
+<li><strong>Release &amp; Deployment チーム</strong>：AWS 上への新しいアプリケーションのデプロイを担当する。</li>
+</ul>
+</li>
+<li>DevOps チームは、<strong>稼働中のすべての EC2 インスタンスが承認済み AMI から起動されているかを定期的にチェックする仕組み</strong> を構築するよう指示されている。</li>
+<li>ただし、Release &amp; Deployment チームがリリースプロセスで <strong>未承認 AMI</strong> から EC2 インスタンスを起動することを <strong>事前に禁止してはならない</strong>。<br />
+  あくまで、<strong>実行中のインスタンスのコンプライアンス状態を可視化し、両チームへ通知することが目的</strong>。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記の要件を満たすために、DevOps チームが実装すべき <strong>最も適切なソリューション</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（自分が選んだ不正解）</strong>  </p>
+<ul>
+<li><strong>Service Control Policy (SCP)</strong> と IAM ポリシーを設定し、開発チームの AWS アカウントで未承認 AMI から EC2 インスタンスを起動できないように制限する。  </li>
+<li>さらに CloudWatch アラームを設定し、VPC 内で未承認 AMI を使用する EC2 インスタンスが検出された場合に DevOps チームへ自動通知する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li><strong>Amazon Inspector</strong> を用いて、使用中のすべての AMI を自動的にチェックし、未承認 AMI から起動された EC2 インスタンスがある場合は SNS トピック経由で DevOps チームと Release &amp; Deployment チームへ通知する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li><strong>AWS Config マネージドルール</strong> をセットアップし、承認済み AMI ID のリストを指定する。  </li>
+<li>ルールを変更して、稼働中の EC2 インスタンスが指定された AMI から起動されているかをチェックする。  </li>
+<li><strong>AWS Config</strong> を設定してコンフィグレーション変更と評価結果を <strong>Amazon SNS トピック</strong> にストリーミングし、非準拠インスタンスに関する通知を両チームへ送信する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li><strong>AWS Trusted Advisor</strong> チェックを使い、VPC 内で稼働中の EC2 インスタンスが承認済み AMI を使用しているかを確認する。  </li>
+<li>CloudWatch アラームを設定し、Trusted Advisor メトリクスと連携させて、未承認 AMI を使用するインスタンスが検出された際に両チームへ通知する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="3">正解の選択肢と注釈（選択肢3）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>AWS Config マネージドルール（approved AMI）</strong>  </li>
+<li><strong>コンプライアンス評価 + SNS 通知</strong>  </li>
+<li><strong>起動をブロックせず、実行中リソースの準拠状況を監視</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><strong>AWS Config</strong> は、リソース構成の変更を記録し、コンプライアンスルールに基づいて評価するためのサービスであり、<strong>「特定 AMI から起動されているか」</strong> という条件をチェックするマネージドルールが用意されている。  </li>
+<li>DevOps チームは、承認済み AMI ID のリストをルールに設定するだけで、<strong>すべての稼働中 EC2 インスタンスの準拠状況を継続的に評価</strong> できる。  </li>
+<li>評価結果（非準拠インスタンス）は SNS に送信し、<strong>DevOps / Release &amp; Deployment 両チームへ通知</strong> することで、実行中リソースの状態を可視化できる。  </li>
+<li>Config は <strong>起動自体をブロックしない</strong> ため、Release &amp; Deployment チームのリリースプロセスを妨げず、要件「未承認 AMI からの起動を事前に止めない」を満たす。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（自分が選んだ不正解：SCP + IAM でブロック）</strong>  <ul>
+<li>SCP や IAM ポリシーで未承認 AMI からの起動を禁止すると、<strong>Release &amp; Deployment チームのリリースプロセスを直接制限</strong> することになり、要件に反する。  </li>
+<li>本問は「監視と通知」が目的であり、「起動を完全に禁止する」構成はやり過ぎ。  </li>
+</ul>
+</li>
+<li><strong>選択肢2（Amazon Inspector）</strong>  <ul>
+<li>Inspector は主に <strong>脆弱性スキャンやセキュリティ評価</strong> に用いられ、AMI の承認リストに基づくコンプライアンスチェックには適していない。  </li>
+<li>AMI ID による完全な管理よりも抽象度が高く、本問の要件には過剰・不適合。  </li>
+</ul>
+</li>
+<li><strong>選択肢4（Trusted Advisor）</strong>  <ul>
+<li>Trusted Advisor はアカウントレベルのベストプラクティスチェックであり、<strong>特定 AMI ID を基準にした継続的コンプライアンス監視</strong> には向かない。  </li>
+<li>CloudWatch 連携で通知することは可能だが、Config のマネージドルールに比べて制御粒度や自動化レベルが低い。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">不正解と表示されている場合の追加注釈</h2>
+<ul>
+<li>
+<p><strong>自分が選んだ不正解の選択肢</strong></p>
+<ul>
+<li><strong>選択肢1：SCP / IAM ポリシーで未承認 AMI からの起動を禁止する構成</strong> を選択した。</li>
+</ul>
+</li>
+<li>
+<p><strong>この選択肢が要件を満たさない理由</strong></p>
+<ul>
+<li>問題文は明確に、<strong>Release &amp; Deployment チームが未承認 AMI を使って EC2 を起動することを止めない</strong> ことを条件としている。  </li>
+<li>SCP / IAM で起動をブロックすると、この条件に違反し、開発・リリースプロセスの柔軟性を損なう。  </li>
+<li>本問では、<strong>「起動を許可しつつ、実行中リソースのコンプライアンス状態を監視・通知」</strong> する AWS Config ベースのパターンを選択すべき。</li>
+</ul>
+</li>
+<li>
+<p><strong>学習ポイント</strong></p>
+<ul>
+<li><strong>AWS Config = 構成・コンプライアンス監視、SCP / IAM = アクション制御（ブロック）</strong> という役割の違いを意識する。  </li>
+<li>要件に「stop してはいけない」「LEAST impact on process」などが含まれる場合、<strong>監視 + 通知 + 自動修復</strong> のパターンを優先し、SCP / IAM でのハードブロックは慎重に検討する。  </li>
+<li>承認済み AMI の準拠チェック問題が出たら、<strong>AWS Config マネージドルール + SNS 通知</strong> をまず思い出す。</li>
+</ul>
+</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-18</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

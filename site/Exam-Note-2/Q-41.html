@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-41 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-41</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="41">問題41 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>複数チームが同じ AWS アカウントを共有しており、DevOps エンジニアが本番インフラの統括を担当している。<br />
+  各チームは主に静的メディアや画像を <strong>Amazon S3 バケット</strong> に保存しており、  </li>
+<li>一部のバケットはインターネット公開用（Public access）  </li>
+<li>一部のバケットは社内アプリケーション専用（内部アクセスのみに制限）<br />
+  として利用されている。</li>
+<li>会社はセキュリティとコンプライアンスの観点から、<strong>AWS Trusted Advisor</strong> を活用して「Public になっている S3 バケット」を特定し、<br />
+  必要なバケットだけに <code>List</code> アクセスが付与されていることを検証したい。<br />
+  さらに、<strong>誤ったパーミッション設定の Public バケットが検出された場合には通知を受け取り、必要に応じて自動修正</strong> したい。</li>
+<li>要件：  <ul>
+<li>Trusted Advisor の結果を踏まえつつ、Public バケットのパーミッションを継続的に監査。  </li>
+<li>ポリシー違反を検出したら SNS / EventBridge 経由で通知。  </li>
+<li>必要に応じて自動リメディエーションを行う。  </li>
+<li><strong>Select THREE</strong>。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たすために、DevOps エンジニアが実装すべきアクションの組み合わせとして適切なものはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li>Public S3 バケットのパーミッションをチェックする <strong>カスタム AWS Config ルール</strong> を作成し、ポリシー違反が検出されたときに <strong>Amazon EventBridge へイベントを送信</strong> する。  </li>
+<li>EventBridge ルールから <strong>Lambda 関数をトリガー</strong> し、S3 バケットポリシーを自動的に更新して適切なパーミッションへ修正する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>Public S3 バケットパーミッションをチェックする <strong>Amazon Inspector ルール</strong> を作成し、AWS Systems Manager へのアクションを設定して S3 バケットポリシーを修正する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3（正解）</strong>  </p>
+<ul>
+<li>Public S3 バケットパーミッションをチェックする <strong>カスタム AWS Config ルール</strong> を作成する。  </li>
+<li>非準拠リソースが検出されたときに、購読者へ通知を送信する <strong>Amazon SNS トピック</strong> へ通知を送る。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li><strong>EventBridge</strong> を使用して <strong>Trusted Advisor のセキュリティ推奨結果</strong> をモニタリングし、チェック結果に基づいて SNS を介したメール通知を送信するトリガーを構成する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢5</strong>  </p>
+<ul>
+<li>Public S3 バケットのパーミッションを更新する <strong>デフォルトのリメディエーションアクション付き Config ルール</strong> を作成する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢6</strong>  </p>
+<ul>
+<li>Lambda 関数を作成し、1 時間ごとに Trusted Advisor スキャン結果を API で取得する。  </li>
+<li>Trusted Advisor の通知メッセージをサブスクライブして結果を受け取る。</li>
+</ul>
+</li>
+</ul>
+<h2 id="134">正解の組み合わせと注釈（選択肢1・3・4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>AWS Config カスタムルールで Public S3 バケットを評価</strong>  </li>
+<li><strong>EventBridge + Lambda による自動リメディエーション</strong>  </li>
+<li><strong>Trusted Advisor + EventBridge + SNS によるセキュリティ推奨の可視化</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この組み合わせが要件を満たす理由</strong></p>
+<ul>
+<li><strong>選択肢1</strong>：  <ul>
+<li>Config ルールで Public パーミッションを検出し、EventBridge → Lambda で <strong>S3 バケットポリシーを自動修正</strong> することで、「必要に応じて自動リメディエーションを実行する」要件を満たす。  </li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>：  <ul>
+<li>Config ルールと SNS を組み合わせることで、コンプライアンス違反が発生した際に <strong>担当者へ即座に通知</strong> できる。  </li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>：  <ul>
+<li>Trusted Advisor のセキュリティチェックを EventBridge から監視し、SNS で結果を通知することで、<strong>全体的なアカウントセキュリティの傾向や推奨事項を把握</strong> できる。  </li>
+<li>Config ベースの詳細なバケット監査と相互補完的な関係になり、より強固な監視体制となる。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2（Inspector + SSM）</strong>  <ul>
+<li>Inspector は EC2 / ECR などの脆弱性スキャン向けサービスであり、S3 バケットポリシーの Public 設定監査には適さない。  </li>
+</ul>
+</li>
+<li><strong>選択肢5（Config デフォルトリメディエーションのみ）</strong>  <ul>
+<li>自動修正はできるが、「Trusted Advisor を活用する」「通知を行う」といった要件を十分にカバーしていない。  </li>
+<li>また、問題文の正解では EventBridge + Lambda との連携が明示されていた。  </li>
+</ul>
+</li>
+<li><strong>選択肢6（Lambda で Trusted Advisor API をポーリング）</strong>  <ul>
+<li>ポーリングベースの設計は <strong>EventBridge のネイティブ統合</strong> に比べて非効率であり、不要な実行コストが発生する。  </li>
+<li>Trusted Advisor の結果通知には、EventBridge + SNS を用いたイベント駆動アプローチの方がシンプル。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li><strong>S3 バケットの Public アクセス監査 + 自動修正</strong> では、  <ul>
+<li><strong>AWS Config カスタム / マネージドルール</strong>  </li>
+<li><strong>EventBridge + Lambda（または SSM Automation）によるリメディエーション</strong>  </li>
+<li><strong>SNS による通知</strong><br />
+  の組み合わせが基本パターン。  </li>
+</ul>
+</li>
+<li>Trusted Advisor はアカウントレベルのベストプラクティスチェックに強みがあるため、<strong>EventBridge 連携で結果を通知しつつ、リソースレベルの詳細な制御は Config ルールで行う</strong> という役割分担を押さえておく。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-41</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

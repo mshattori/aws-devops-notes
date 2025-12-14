@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-48 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-48</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="48">問題48 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>DevOps エンジニアが、複数の <strong>AWS Availability Zone (AZ)</strong> にまたがってデプロイされたアプリケーションを管理している。<br />
+  アプリケーションは <strong>Application Load Balancer (ALB)</strong> 背後の EC2 インスタンス群上で稼働しており、高可用性のために複数 AZ に分散している。</li>
+<li>最近、特定の AZ の一部インスタンスで問題が発生していることに気づいた。<br />
+  エンジニアは、影響を受けたインスタンスを <strong>隔離</strong> し、<strong>ヘルシーな AZ へトラフィックをフェイルオーバー</strong> させる必要がある。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>この状況に対して、DevOps エンジニアが実装すべきソリューションはどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1（正解）</strong>  </p>
+<ul>
+<li>ALB の <strong>クロスゾーンロードバランシングを無効化</strong> する。  </li>
+<li>さらに <strong>Amazon Route 53 Application Recovery Controller (ARC)</strong> を用いて <strong>ゾーンシフト (zonal shift)</strong> を開始し、問題のある AZ を完全に回避する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li>Auto Scaling ポリシーを実装し、影響を受けた AZ 内の異常なインスタンスを自動的に置き換える。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>ALB のクロスゾーンロードバランシングを有効化し、Route 53 ARC を使って <strong>問題のある AZ へトラフィックをルーティング</strong> する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>ALB のクロスゾーンロードバランシングを有効化し、Route 53 Failover ルーティングを構成して、トラフィックが全 AZ に均等に分散されるようにする。</li>
+</ul>
+</li>
+</ul>
+<h2 id="1">正解の選択肢と注釈（選択肢1）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>Cross-Zone Load Balancing 無効化</strong>  </li>
+<li><strong>Route 53 Application Recovery Controller (ARC)</strong>  </li>
+<li><strong>Zonal shift で問題のある AZ を回避</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>クロスゾーンロードバランシングが有効な状態だと、ALB はすべてのヘルシーターゲットへトラフィックを分散するため、<strong>問題のある AZ のインスタンスが完全には隔離されない</strong> 可能性がある。  </li>
+<li>クロスゾーンを無効化し、各 ALB ノードが同一 AZ 内のターゲットにのみトラフィックを送るようにすることで、<strong>ゾーン単位のトラフィック制御がしやすくなる</strong>。  </li>
+<li><strong>Route 53 ARC の zonal shift 機能</strong> を利用すると、特定 AZ へのトラフィックを一時的に遮断し、<strong>ヘルシーな AZ のみを経由してアプリケーションにアクセスさせる</strong> ことができる。  </li>
+<li>これにより、問題 AZ を完全に避けつつ、アプリケーションの可用性を維持できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢2</strong>  <ul>
+<li>Auto Scaling によるインスタンス置き換えは有用だが、<strong>AZ 自体に問題がある場合（ネットワーク障害など）</strong> は根本的な解決にならない。  </li>
+<li>問題が AZ レベルかインスタンスレベルか不明な状況では、まず zonal shift で AZ を丸ごと避けるのが安全。  </li>
+</ul>
+</li>
+<li><strong>選択肢3</strong>  <ul>
+<li>ARC を使って問題のある AZ へトラフィックを集めるのは要件と逆であり、障害の影響を拡大してしまう。  </li>
+</ul>
+</li>
+<li><strong>選択肢4</strong>  <ul>
+<li>クロスゾーンロードバランシングを有効化した上で Failover ルーティングを使っても、<strong>問題 AZ へのトラフィックを完全に遮断することは難しい</strong>。  </li>
+<li>本問は「impacted zone を完全に避ける」ことが目的であり、そのためには zonal shift が最適。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>AZ レベルの障害やパフォーマンス低下が疑われる場合は、  <ul>
+<li><strong>ALB のクロスゾーンロードバランシング設定</strong>  </li>
+<li><strong>Route 53 Application Recovery Controller の zonal shift</strong><br />
+  を組み合わせて、<strong>特定 AZ を迅速にトラフィックパスから外す</strong> パターンを覚えておく。  </li>
+</ul>
+</li>
+<li>Auto Scaling はインスタンスレベルの問題には有効だが、<strong>ゾーンレベルの障害には DNS / ルーティングレイヤーでの制御が必要</strong> になる。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-48</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

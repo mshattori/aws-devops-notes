@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-11 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-11</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="11">問題11 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある企業は、現在 EC2 上でホストしている社内 Web アプリケーションを、<strong>サーバーレスアーキテクチャ（API Gateway + AWS Lambda）</strong> へリアーキテクチャする計画を立てている。</li>
+<li>既存のデプロイ方法は、<strong>Auto Scaling グループ上の EC2 インスタンス</strong>、<strong>Application Load Balancer</strong>、<strong>Route 53 の weighted routing policy</strong> を組み合わせてトラフィックをシフトする方式。</li>
+<li>CIO は、新アーキテクチャへの移行時に <strong>どのようにデプロイ戦略を設計するか</strong> を懸念している。</li>
+<li>要件：<ul>
+<li>新しい機能を一部のユーザーに対してのみ段階的にリリースし、問題がなければ全ユーザーへ展開できるようにしたい（<strong>カナリアリリース</strong>）。  </li>
+<li>実現までの <strong>運用負荷・実装工数（LEAST amount of effort）</strong> を最小化したい。</li>
+</ul>
+</li>
+<li>新しいサーバーレスアプリケーションは <strong>Amazon API Gateway</strong> と <strong>AWS Lambda</strong> で構成される。</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たしつつ、最小の運用負荷でカナリアリリースを実現するには、どのデプロイオプションを採用すべきか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li><strong>AWS CloudFormation</strong> を使用して API Gateway リソースと Lambda 関数をデプロイする。  </li>
+<li>コード変更時は、新バージョンの API Gateway と Lambda 関数を含む <strong>新しい CloudFormation スタック</strong> を作成し、blue/green デプロイで徐々にトラフィックをシフトする。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2</strong>  </p>
+<ul>
+<li><strong>AWS Cloud Development Kit (AWS CDK)</strong> を使用して API Gateway と Lambda 関数をデプロイする。  </li>
+<li>コード変更時は既存の CloudFormation スタックを更新し、Route 53 の <strong>フェイルオーバールーティングポリシー</strong> を用いてカナリアリリースを行う。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li><strong>AWS Elastic Beanstalk</strong> を使用して API Gateway リソースと Lambda 関数をデプロイする。  </li>
+<li>新バージョンのデプロイ時に Elastic Beanstalk の blue/green デプロイ機能を利用する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4（正解）</strong>  </p>
+<ul>
+<li><strong>AWS Serverless Application Model (AWS SAM)</strong> を用いて API Gateway リソースと Lambda 関数をデプロイする。  </li>
+<li>コード変更時は、SAM が生成する CloudFormation スタックを更新して API と Lambda の新バージョンをデプロイする。  </li>
+<li><strong><code>DeploymentPreference</code> を <code>Canary10Percent10Minutes</code> などに設定</strong> し、カナリアリリース戦略を簡単に実装する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="4">正解の選択肢と注釈（選択肢4）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>AWS SAM</strong>  </li>
+<li><strong>DeploymentPreference / Canary10Percent10Minutes</strong>  </li>
+<li><strong>Serverless カナリアデプロイを最小工数で実現</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li><strong>AWS SAM</strong> は API Gateway + Lambda のサーバーレスアプリケーションを簡潔なテンプレートで定義でき、裏側では CloudFormation スタックとしてデプロイを管理する。  </li>
+<li>SAM の <strong><code>DeploymentPreference</code></strong> パラメータを利用すると、<strong>カナリア / 線形 / AllAtOnce</strong> などのトラフィックシフト戦略をテンプレート内の宣言だけで設定でき、追加の Route 53 設定や複雑な ALB 構成が不要。  </li>
+<li><code>Canary10Percent10Minutes</code> のような設定により、最初は 10% のトラフィックのみを新バージョンへ向け、一定時間問題がなければ自動的に 100% へ切り替えるといった <strong>段階的リリース</strong> が可能。  </li>
+<li>既存の EC2 + ALB + Route 53 構成をサーバーレスに置き換えつつ、<strong>最小限の追加実装で同等以上のカナリアリリース機能</strong> を提供できる。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1（CloudFormation + blue/green）</strong>  <ul>
+<li>blue/green デプロイ自体は有効な戦略だが、<strong>別スタックの作成と Route 53 などを組み合わせたトラフィックシフトの実装が必要</strong> で、SAM の DeploymentPreference に比べて工数が大きい。  </li>
+<li>サーバーレス特有の簡易なカナリア機能を活用しておらず、「LEAST amount of effort」という要件に劣る。</li>
+</ul>
+</li>
+<li><strong>選択肢2（CDK + Route 53 フェイルオーバー）</strong>  <ul>
+<li>CDK はインフラ定義をコード化できるが、Route 53 フェイルオーバールーティングを用いたカナリア構成は設定項目が多く、<strong>シンプルなテンプレート指定だけでカナリアを実現できる SAM より複雑</strong>。  </li>
+</ul>
+</li>
+<li><strong>選択肢3（Elastic Beanstalk + blue/green）</strong>  <ul>
+<li>Elastic Beanstalk は主に EC2 ベースアプリケーション向けの PaaS であり、API Gateway + Lambda のサーバーレス構成には適していない。  </li>
+<li>本問はサーバーレスアーキテクチャへの移行が前提であるため、Beastalk を使うのは方向性が合っていない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li>サーバーレス（API Gateway + Lambda）のデプロイ戦略では、まず <strong>AWS SAM の <code>DeploymentPreference</code> を利用したカナリアデプロイ</strong> を思い出す。  </li>
+<li>「LEAST amount of effort」「段階的リリース」のキーワードがある場合、<strong>Route 53 / ALB でのカスタム実装よりも、マネージドなトラフィックシフト機能</strong>（SAM / CodeDeploy 連携など）を優先して検討する。  </li>
+<li>既存構成が EC2 + ALB + Route 53 でも、<strong>移行後のアーキテクチャに最適化したサービス選択（SAM, Lambda, API Gateway）</strong> を行うことが重要。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-11</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>

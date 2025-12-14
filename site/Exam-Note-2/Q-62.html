@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Q-62 - AWS DevOps Notes</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    
+    <header>
+        <h1>Q-62</h1>
+    </header>
+    
+    <main>
+        
+<article>
+    <h1 id="62">問題62 正解</h1>
+<h2 id="_1">シナリオ（日本語要約）</h2>
+<ul>
+<li>ある組織が、<strong>Auto Scaling グループ上の EC2 インスタンス</strong> に Web アプリケーションをデプロイしている。<br />
+  インスタンス群は <strong>Application Load Balancer (ALB)</strong> 背後にあり、複数 AZ にまたがって配置されている。</li>
+<li>開発チームは新機能を追加したいが、本番への反映前に <strong>無停止でテスト</strong> したいという要件がある。<br />
+  デプロイ戦略の要件：<ul>
+<li>プライマリフリートと同等キャパシティの <strong>複製フリート（セカンダリ）</strong> をデプロイする。  </li>
+<li>セカンダリフリートの起動中は、<strong>オリジナルフリートを変更しない</strong>。  </li>
+<li>セカンダリフリートが完全にデプロイされたら、トラフィックをそちらへ切り替える。  </li>
+<li>切り替え完了から <strong>1 時間後にオリジナルフリートを自動的に削除</strong> する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="_2">質問</h2>
+<ul>
+<li>上記要件を満たす <strong>最も適切なソリューション</strong> はどれか。</li>
+</ul>
+<h2 id="_3">選択肢（日本語訳）</h2>
+<ul>
+<li>
+<p><strong>選択肢1</strong>  </p>
+<ul>
+<li>ALB に 1 時間の保持ポリシーを含む CloudFormation テンプレートをデプロイし、Route 53 レコードを更新する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢2（正解）</strong>  </p>
+<ul>
+<li><strong>AWS CodeDeploy</strong> を利用し、<strong>blue/green デプロイ設定</strong> を持つデプロイグループを作成する。  </li>
+<li><code>BlueInstanceTerminationOption</code> の <code>action</code> を <code>TERMINATE</code> に設定し、<code>terminationWaitTimeInMinutes</code> を <strong>60 分</strong> に設定する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢3</strong>  </p>
+<ul>
+<li>2 つの AWS Elastic Beanstalk 環境を作成して blue/green デプロイを実行し、アプリケーションバージョンライフサイクルポリシーで 1 時間後にプライマリ環境を削除する。</li>
+</ul>
+</li>
+<li>
+<p><strong>選択肢4</strong>  </p>
+<ul>
+<li>Elastic Beanstalk の Immutable 設定を有効化し、ALB の削除ポリシーを 1 時間に設定する .ebextensions ファイルを作成する。</li>
+</ul>
+</li>
+</ul>
+<h2 id="2">正解の選択肢と注釈（選択肢2）</h2>
+<ul>
+<li>
+<p><strong>キーワード</strong></p>
+<ul>
+<li><strong>CodeDeploy Blue/Green for EC2/Auto Scaling</strong>  </li>
+<li><strong>BlueInstanceTerminationOption.action = TERMINATE</strong>  </li>
+<li><strong>terminationWaitTimeInMinutes = 60</strong></li>
+</ul>
+</li>
+<li>
+<p><strong>この解決策が要件を満たす理由</strong></p>
+<ul>
+<li>CodeDeploy の <strong>EC2/Auto Scaling blue/green デプロイ</strong> を利用すると、  <ul>
+<li>既存の <strong>ブルー環境（オリジナルフリート）</strong> を残したまま、同等キャパシティの <strong>グリーン環境（新フリート）</strong> を作成できる。  </li>
+<li>テストが完了し問題なければ、トラフィックを ALB 経由でグリーン環境へ切り替えることができる。  </li>
+</ul>
+</li>
+<li><code>BlueInstanceTerminationOption.action = TERMINATE</code> と <code>terminationWaitTimeInMinutes = 60</code> を設定することで、  <ul>
+<li>切り替え後も <strong>1 時間はブルー環境を残しつつ</strong> ロールバックの余地を確保し、  </li>
+<li>その後自動的にブルー環境を Terminate してコストを削減できる。  </li>
+</ul>
+</li>
+<li>これらは問題文の 4 つの要件（複製フリート、オリジナル維持、完全デプロイ後のトラフィックシフト、1 時間後の自動削除）に完全に一致する。</li>
+</ul>
+</li>
+<li>
+<p><strong>他の選択肢が不適切な理由（要点）</strong></p>
+<ul>
+<li><strong>選択肢1</strong>  <ul>
+<li>ALB の保持ポリシーだけでは、インスタンスフリートの複製 / トラフィック切替 / 自動削除といった要件を満たせない。  </li>
+</ul>
+</li>
+<li><strong>選択肢3・4（Elastic Beanstalk）</strong>  <ul>
+<li>現在のアーキテクチャは <strong>Auto Scaling + ALB + EC2</strong> で構成されており、Beanstalk への移行は前提条件から外れる。  </li>
+<li>また、Beanstalk のライフサイクル設定では、問題文のような細かな切替・待機時間制御を直接的に表現できない。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="_4">学習ポイント</h2>
+<ul>
+<li><strong>EC2/Auto Scaling + ALB 環境での Blue/Green デプロイ</strong> は、  <ul>
+<li><strong>AWS CodeDeploy Blue/Green</strong> を第一候補として考える。  </li>
+<li><code>BlueInstanceTerminationOption</code> と <code>terminationWaitTimeInMinutes</code> を使うと、<strong>旧環境の保持期間と自動削除タイミング</strong> を細かく制御できる。  </li>
+</ul>
+</li>
+<li>Route 53 や CloudFormation だけでは、<strong>アプリケーションレベルのデプロイ戦略（段階的切替、ロールバック）</strong> を十分に表現できない点も押さえておく。</li>
+</ul>
+</article>
+
+    </main>
+    <footer class="footer" role="contentinfo">
+        <span class="footer__title" id="title">Q-62</span>
+        <span class="footer__percentage" aria-live="polite"><span id="scrollPercentage">0%</span></span>
+    </footer>
+    <script src="static/script.js"></script>
+</body>
+</html>
